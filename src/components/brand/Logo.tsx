@@ -31,8 +31,13 @@ export const Logo: React.FC<LogoProps> = ({
                 />
                 <Home
                     className={cn(
-                        "w-4 h-4 absolute text-white",
-                        isWhite ? "text-primary" : "text-white",
+                        "w-4 h-4 absolute",
+                        // Default (Light BG): Primary (Blue)
+                        !isWhite && !isMidnight && "text-primary",
+                        // White Variant (Dark BG): Primary (Blue) - makes it pop vs white shield outline? Or should be dark?
+                        // Let's stick to simple:
+                        isWhite && "text-primary",
+                        // Midnight Variant: Dark
                         isMidnight && "text-gray-900"
                     )}
                 />
