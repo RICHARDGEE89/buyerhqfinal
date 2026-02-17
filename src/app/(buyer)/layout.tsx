@@ -73,9 +73,11 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             </div>
 
             {/* Main Content */}
-            <main className="flex-1 w-full lg:w-auto pt-20 lg:pt-0">
-                {children}
-            </main>
+            <div className="flex-1 flex flex-col">
+                <main className="flex-1 p-6 md:p-12 max-w-7xl mx-auto w-full pt-20 lg:pt-0">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }

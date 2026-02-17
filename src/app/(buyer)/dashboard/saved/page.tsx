@@ -38,22 +38,22 @@ export default function SavedAgentsPage() {
         <div className="space-y-12">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-stone font-bold text-xs uppercase tracking-widest mb-1">
-                        <Link href="/dashboard" className="hover:text-ocean transition-colors flex items-center gap-1">
+                    <div className="flex items-center gap-2 text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">
+                        <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center gap-1">
                             <ArrowLeft className="w-3 h-3" />
                             Dashboard
                         </Link>
                     </div>
                     <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        Saved <span className="text-ocean">Agents</span>
+                        Saved <span className="text-primary">Agents</span>
                     </h1>
-                    <p className="text-stone font-medium">Your shortlist of verified property experts.</p>
+                    <p className="text-gray-500 font-medium">Your shortlist of verified property experts.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900">
+                    <Button variant="outline" className="h-12 px-6 rounded-xl border-gray-200 font-bold text-gray-900 hover:bg-gray-50">
                         Export List
                     </Button>
-                    <Button className="bg-ocean hover:bg-ocean/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-ocean/20">
+                    <Button className="bg-primary hover:bg-primary-700 text-white font-black h-12 px-8 rounded-xl shadow-lg">
                         Send Multi-Enquiry
                     </Button>
                 </div>
@@ -81,16 +81,16 @@ export default function SavedAgentsPage() {
                     ))}
                 </div>
             ) : (
-                <div className="py-24 text-center bg-white rounded-[3rem] border border-dashed border-stone/20">
-                    <div className="w-20 h-20 bg-warm/50 rounded-3xl flex items-center justify-center text-stone mx-auto mb-6">
+                <div className="py-24 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
+                    <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-gray-400 mx-auto mb-6">
                         <Heart className="w-10 h-10" />
                     </div>
                     <h3 className="text-2xl font-display font-black text-gray-900">No agents saved yet</h3>
-                    <p className="text-stone font-medium mt-2 max-w-sm mx-auto">
+                    <p className="text-gray-500 font-medium mt-2 max-w-sm mx-auto">
                         Browse the directory and click the heart icon to start building your professional shortlist.
                     </p>
                     <Link href="/agents">
-                        <Button className="mt-8 bg-gray-900 text-white font-black h-12 px-8 rounded-xl">
+                        <Button className="mt-8 bg-primary text-white font-black h-12 px-8 rounded-xl">
                             Browse Directory
                         </Button>
                     </Link>
