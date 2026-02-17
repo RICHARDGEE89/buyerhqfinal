@@ -19,7 +19,7 @@ export const LocationGrid = () => {
     return (
         <section className="py-24 bg-midnight relative overflow-hidden">
             {/* Decorative background circle */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-ocean/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal/5 rounded-full blur-[100px] -mr-64 -mt-64" />
 
             <div className="container mx-auto px-6 relative z-10">
                 <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
@@ -39,13 +39,13 @@ export const LocationGrid = () => {
                             className="group p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white hover:border-white transition-all duration-500"
                         >
                             <div className="flex flex-col h-full">
-                                <div className="w-10 h-10 rounded-xl bg-white/10 group-hover:bg-sky flex items-center justify-center text-white group-hover:text-ocean transition-colors mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-white/10 group-hover:bg-teal flex items-center justify-center text-white transition-colors mb-4">
                                     <MapPin className="w-5 h-5" />
                                 </div>
                                 <h3 className="text-xl font-display font-black text-white group-hover:text-midnight transition-colors">
                                     {loc.name}
                                 </h3>
-                                <p className="text-stone group-hover:text-ocean transition-colors text-xs font-bold uppercase tracking-widest mt-1">
+                                <p className="text-stone group-hover:text-teal transition-colors text-xs font-bold uppercase tracking-widest mt-1">
                                     {loc.state}
                                 </p>
 
@@ -53,7 +53,7 @@ export const LocationGrid = () => {
                                     <span className="text-[10px] font-mono font-bold text-white/40 group-hover:text-stone uppercase tracking-widest">
                                         {loc.count} Experts
                                     </span>
-                                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-ocean transition-all transform group-hover:translate-x-1" />
+                                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-teal transition-all transform group-hover:translate-x-1" />
                                 </div>
                             </div>
                         </Link>

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 export const AgentSearchHeader = () => {
     return (
         <section className="pt-32 pb-16 bg-topo relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(26,107,138,0.1)_0,rgba(13,27,42,0)_70%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,186,188,0.1)_0,rgba(13,27,42,0)_70%)] pointer-events-none" />
 
             <div className="container mx-auto px-6 relative z-10">
                 <div className="max-w-4xl mx-auto text-center space-y-6">
@@ -16,7 +16,7 @@ export const AgentSearchHeader = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-4xl md:text-5xl font-display font-black text-white tracking-tight"
                     >
-                        Find Your <span className="text-ocean">Property Expert</span>
+                        Find Your <span className="text-teal">Property Expert</span>
                     </motion.h1>
 
                     <motion.div

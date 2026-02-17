@@ -39,7 +39,7 @@ export default function AgentLeadsPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'new': return 'bg-ocean/10 text-ocean border-ocean/20';
+            case 'new': return 'bg-teal/10 text-teal border-teal/20';
             case 'replied': return 'bg-verified/10 text-verified border-verified/20';
             case 'read': return 'bg-amber/10 text-amber border-amber/20';
             default: return 'bg-stone/10 text-stone border-stone/10';
@@ -51,7 +51,7 @@ export default function AgentLeadsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Leads & <span className="text-ocean">Enquiries</span>
+                        Leads & <span className="text-teal">Enquiries</span>
                     </h1>
                     <p className="text-stone font-medium">Manage and respond to property buyer interest.</p>
                 </div>
@@ -59,7 +59,7 @@ export default function AgentLeadsPage() {
                     <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-midnight bg-white">
                         Download CSV
                     </Button>
-                    <Button className="bg-ocean text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-ocean/20">
+                    <Button className="bg-teal text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
                         Bulk Action
                     </Button>
                 </div>
@@ -93,7 +93,7 @@ export default function AgentLeadsPage() {
                 {/* Leads Grid/Table */}
                 <div className="space-y-4">
                     {filteredLeads.map((lead) => (
-                        <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-ocean/20 transition-all overflow-hidden">
+                        <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-teal/20 transition-all overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="p-8 flex flex-col lg:flex-row lg:items-center gap-8">
                                     {/* Buyer Identity */}
@@ -117,7 +117,7 @@ export default function AgentLeadsPage() {
                                         <div className="space-y-1">
                                             <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Property Goal</div>
                                             <div className="flex items-center gap-2 text-sm font-bold text-midnight">
-                                                <MapPin className="w-3.5 h-3.5 text-ocean" />
+                                                <MapPin className="w-3.5 h-3.5 text-teal" />
                                                 {lead.location}
                                             </div>
                                             <div className="text-xs text-stone font-medium">{lead.type}</div>
@@ -145,7 +145,7 @@ export default function AgentLeadsPage() {
                                             <MessageSquare className="w-4 h-4 mr-2" />
                                             Quick Reply
                                         </Button>
-                                        <Button className="h-14 w-14 rounded-xl bg-warm/50 text-midnight hover:bg-ocean hover:text-white transition-all flex items-center justify-center flex-shrink-0">
+                                        <Button className="h-14 w-14 rounded-xl bg-warm/50 text-midnight hover:bg-teal hover:text-white transition-all flex items-center justify-center flex-shrink-0">
                                             <ChevronRight className="w-6 h-6" />
                                         </Button>
                                     </div>

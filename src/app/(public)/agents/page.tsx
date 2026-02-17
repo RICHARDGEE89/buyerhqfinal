@@ -4,7 +4,7 @@ import { FilterSidebar } from '@/components/agents/FilterSidebar';
 import { AgentCard } from '@/components/agents/AgentCard';
 import { Agent } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Grid, List, Map as MapIcon } from 'lucide-react';
+import { Grid, List, Map as MapIcon, Search } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,53 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default function AgentsPage() {
-    // Mock data for initial directory view
-    const agents = [
-        {
-            id: '1',
-            slug: 'prestige-property-group',
-            business_name: 'Prestige Property Group',
-            primary_suburb: 'Double Bay',
-            primary_state: 'NSW',
-            licence_verified: true,
-            years_experience: 15,
-            specialisations: ['Luxury Homes', 'Off-Market Deals'],
-            bio: "Sydney's leading luxury buyer's agency with over $2B in properties secured for our clients."
-        },
-        {
-            id: '2',
-            slug: 'melbourne-buyer-experts',
-            business_name: 'Melbourne Buyer Experts',
-            primary_suburb: 'Toorak',
-            primary_state: 'VIC',
-            licence_verified: true,
-            years_experience: 12,
-            specialisations: ['Family Homes', 'Auction Bidding'],
-            bio: "We help Melbourne families find and secure their dream home without the typical real estate stress."
-        },
-        {
-            id: '3',
-            slug: 'sunshine-coast-advocates',
-            business_name: 'Sunshine Coast Advocates',
-            primary_suburb: 'Noosa Heads',
-            primary_state: 'QLD',
-            licence_verified: true,
-            years_experience: 8,
-            specialisations: ['Holiday Homes', 'Interstate Buyers'],
-            bio: "Local Sunshine Coast experts specializing in high-growth investment and premium lifestyle properties."
-        },
-        {
-            id: '4',
-            slug: 'brisbane-buying-pros',
-            business_name: 'Brisbane Buying Pros',
-            primary_suburb: 'New Farm',
-            primary_state: 'QLD',
-            licence_verified: true,
-            years_experience: 10,
-            specialisations: ['Investment Strategy', 'First Home Buyers'],
-            bio: "Boutique agency focused on Brisbane's inner-ring high growth corridors."
-        }
-    ];
+    // Purged mock data - Ready for high-quality verified listings
+    const agents: any[] = [];
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -101,14 +56,26 @@ export default function AgentsPage() {
 
                             {/* Agent Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {agents.map((agent) => (
-                                    <AgentCard key={agent.id} agent={agent as Partial<Agent>} />
-                                ))}
+                                {agents.length > 0 ? (
+                                    agents.map((agent) => (
+                                        <AgentCard key={agent.id} agent={agent as Partial<Agent>} />
+                                    ))
+                                ) : (
+                                    <div className="col-span-full py-32 text-center bg-warm/30 rounded-[3rem] border-2 border-dashed border-stone/10">
+                                        <div className="w-20 h-20 bg-teal/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-teal">
+                                            <Search className="w-10 h-10" />
+                                        </div>
+                                        <h3 className="text-xl font-display font-black text-midnight mb-2">Expanding Our Network</h3>
+                                        <p className="text-stone font-medium max-w-sm mx-auto">
+                                            We're currently verifying property experts in this area. Check back soon for the best professional representation.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Pagination Placeholder */}
                             <div className="pt-12 flex justify-center">
-                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-ocean transition-all">
+                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-teal transition-all">
                                     Load More Agents
                                 </Button>
                             </div>

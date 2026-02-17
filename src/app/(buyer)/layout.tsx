@@ -31,7 +31,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             <aside className="hidden lg:flex w-72 bg-midnight flex-col p-6 sticky top-0 h-screen">
                 <div className="mb-12 px-2">
                     <Logo variant="white" />
-                    <div className="mt-2 text-[10px] font-mono font-bold text-ocean uppercase tracking-[0.2em] px-1">
+                    <div className="mt-2 text-[10px] font-mono font-bold text-teal uppercase tracking-[0.2em] px-1">
                         Buyer Portal
                     </div>
                 </div>
@@ -51,17 +51,17 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                             <div className="flex items-center gap-3">
                                 <item.icon className={cn(
                                     "w-5 h-5",
-                                    pathname === item.href ? "text-ocean" : "text-white/20 group-hover:text-white/40"
+                                    pathname === item.href ? "text-teal" : "text-white/20 group-hover:text-white/40"
                                 )} />
                                 <span className="font-bold text-sm tracking-tight">{item.name}</span>
                             </div>
-                            {pathname === item.href && <ChevronRight className="w-4 h-4 text-ocean" />}
+                            {pathname === item.href && <ChevronRight className="w-4 h-4 text-teal" />}
                         </Link>
                     ))}
                 </nav>
 
                 <div className="pt-8 border-t border-white/5">
-                    <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-coral hover:bg-coral/5 rounded-2xl p-4 h-auto">
+                    <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-amber hover:bg-amber/5 rounded-2xl p-4 h-auto">
                         <LogOut className="w-5 h-5 mr-3" />
                         <span className="font-bold text-sm tracking-tight">Log Out</span>
                     </Button>
@@ -73,7 +73,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                 {/* Mobile Nav Header */}
                 <header className="lg:hidden bg-midnight p-4 flex items-center justify-between">
                     <Logo variant="white" iconOnly />
-                    <div className="text-[10px] font-mono font-bold text-ocean uppercase tracking-widest">
+                    <div className="text-[10px] font-mono font-bold text-teal uppercase tracking-widest">
                         Dashboard
                     </div>
                     <button className="text-white p-2">

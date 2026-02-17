@@ -6,42 +6,8 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export const FeaturedAgents = () => {
-    // Mock data for featured agents
-    const featuredAgents = [
-        {
-            id: '1',
-            slug: 'prestige-property-group',
-            business_name: 'Prestige Property Group',
-            primary_suburb: 'Double Bay',
-            primary_state: 'NSW',
-            licence_verified: true,
-            years_experience: 15,
-            specialisations: ['Luxury Homes', 'Off-Market Deals', 'Investment'],
-            bio: "Sydney's leading luxury buyer's agency with over $2B in properties secured for our clients."
-        },
-        {
-            id: '2',
-            slug: 'melbourne-buyer-experts',
-            business_name: 'Melbourne Buyer Experts',
-            primary_suburb: 'Toorak',
-            primary_state: 'VIC',
-            licence_verified: true,
-            years_experience: 12,
-            specialisations: ['Family Homes', 'First Home Buyers', 'Auction Bidding'],
-            bio: "We help Melbourne families find and secure their dream home without the typical real estate stress."
-        },
-        {
-            id: '3',
-            slug: 'sunshine-coast-advocates',
-            business_name: 'Sunshine Coast Advocates',
-            primary_suburb: 'Noosa Heads',
-            primary_state: 'QLD',
-            licence_verified: true,
-            years_experience: 8,
-            specialisations: ['Holiday Homes', 'Interstate Buyers', 'Development'],
-            bio: "Local Sunshine Coast experts specializing in high-growth investment and premium lifestyle properties."
-        }
-    ];
+    // Purged mock data - Ready for Supabase fetch or user listings
+    const featuredAgents: any[] = [];
 
     return (
         <section className="py-24 bg-white">
@@ -56,7 +22,7 @@ export const FeaturedAgents = () => {
                         </p>
                     </div>
                     <Link href="/agents">
-                        <Button variant="ghost" className="text-ocean font-bold flex items-center gap-2 group">
+                        <Button variant="ghost" className="text-teal font-bold flex items-center gap-2 group">
                             Browse All Agents
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Button>
@@ -64,9 +30,15 @@ export const FeaturedAgents = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {featuredAgents.map((agent) => (
-                        <AgentCard key={agent.id} agent={agent as Partial<Agent>} />
-                    ))}
+                    {featuredAgents.length > 0 ? (
+                        featuredAgents.map((agent) => (
+                            <AgentCard key={agent.id} agent={agent as Partial<Agent>} />
+                        ))
+                    ) : (
+                        <div className="col-span-full py-20 text-center bg-warm/30 rounded-[3rem] border-2 border-dashed border-stone/10">
+                            <p className="text-stone font-bold italic">Checking for newly verified experts...</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

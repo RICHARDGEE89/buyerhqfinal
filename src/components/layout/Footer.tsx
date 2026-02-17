@@ -22,7 +22,6 @@ export const Footer = () => {
         ],
         professionals: [
             { name: 'List Your Service', href: '/join' },
-            { name: 'Pricing', href: '/pricing' },
             { name: 'Agent Login', href: '/login' },
             { name: 'Blog', href: '/blog' },
         ]
@@ -38,10 +37,10 @@ export const Footer = () => {
                             Australia&apos;s leading marketplace for verified buyer&apos;s advocacy.
                         </p>
                         <div className="flex items-center gap-4">
-                            <Link href="#" className="text-white/60 hover:text-white transition-colors"><Linkedin className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-white/60 hover:text-white transition-colors"><Instagram className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-white/60 hover:text-white transition-colors"><Facebook className="w-5 h-5" /></Link>
-                            <Link href="mailto:hello@buyerhq.com.au" className="text-white/60 hover:text-white transition-colors"><Mail className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-teal transition-colors"><Linkedin className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-teal transition-colors"><Instagram className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-teal transition-colors"><Facebook className="w-5 h-5" /></Link>
+                            <Link href="mailto:hello@buyerhq.com.au" className="text-white/60 hover:text-teal transition-colors"><Mail className="w-5 h-5" /></Link>
                         </div>
                     </div>
 
@@ -50,7 +49,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.directory.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-ocean transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-teal transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -63,7 +62,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.professionals.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-ocean transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-teal transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -76,7 +75,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.company.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-ocean transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-teal transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>

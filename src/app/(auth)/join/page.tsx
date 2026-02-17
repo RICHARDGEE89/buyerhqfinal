@@ -49,7 +49,7 @@ export default function AgentJoinPage() {
                         <div key={s.id} className="flex flex-col items-center gap-2 relative">
                             <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
-                                i <= currentStep ? "bg-ocean text-white shadow-lg shadow-ocean/20" : "bg-white/10 text-white/40"
+                                i <= currentStep ? "bg-teal text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
                             )}>
                                 <s.icon className="w-5 h-5" />
                             </div>
@@ -98,7 +98,7 @@ export default function AgentJoinPage() {
                                         <Input placeholder="Trading / Business Name" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
                                         <div className="relative">
                                             <Input placeholder="ABN" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-ocean/50 uppercase">Verify ABN</div>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-teal/50 uppercase">Verify ABN</div>
                                         </div>
                                     </div>
                                 </div>
@@ -107,7 +107,7 @@ export default function AgentJoinPage() {
                             {/* ... Other steps hidden for brevity in this tool call but would be fully implemented ... */}
                             {currentStep > 1 && (
                                 <div className="flex flex-col items-center justify-center py-10 space-y-6 text-center">
-                                    <div className="w-16 h-16 bg-sky rounded-2xl flex items-center justify-center text-ocean">
+                                    <div className="w-16 h-16 bg-teal/10 rounded-2xl flex items-center justify-center text-teal">
                                         {React.createElement(steps[currentStep].icon, { className: "w-8 h-8" })}
                                     </div>
                                     <h2 className="text-2xl font-display font-black text-midnight">{steps[currentStep].title}</h2>
@@ -129,7 +129,7 @@ export default function AgentJoinPage() {
 
                         <Button
                             onClick={handleNext}
-                            className="h-16 px-12 bg-ocean hover:bg-ocean/90 text-white font-black rounded-2xl shadow-xl shadow-ocean/20 text-lg group"
+                            className="h-16 px-12 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
                         >
                             {currentStep === steps.length - 1 ? 'Finish Registry' : 'Continue'}
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

@@ -23,7 +23,7 @@ export const Logo: React.FC<LogoProps> = ({
                 <Shield
                     className={cn(
                         "w-8 h-8 transition-transform group-hover:scale-110 duration-300",
-                        isWhite ? "text-white" : "text-ocean",
+                        isWhite ? "text-white" : "text-teal",
                         isMidnight && "text-white"
                     )}
                     fill={isWhite ? "white" : "currentColor"}
@@ -32,7 +32,7 @@ export const Logo: React.FC<LogoProps> = ({
                 <Home
                     className={cn(
                         "w-4 h-4 absolute text-white",
-                        isWhite ? "text-ocean" : "text-white",
+                        isWhite ? "text-teal" : "text-white",
                         isMidnight && "text-midnight"
                     )}
                 />
@@ -45,7 +45,7 @@ export const Logo: React.FC<LogoProps> = ({
                     isWhite ? "text-white" : "text-midnight",
                     isMidnight && "text-white"
                 )}>
-                    Buyer<span className={cn(isWhite ? "text-white/80" : "text-ocean")}>HQ</span>
+                    Buyer<span className={cn(isWhite ? "text-white/80" : "text-teal")}>HQ</span>
                 </span>
             )}
         </div>

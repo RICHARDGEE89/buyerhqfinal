@@ -50,7 +50,7 @@ export default function MyEnquiriesPage() {
                         </Link>
                     </div>
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        My <span className="text-ocean">Enquiries</span>
+                        My <span className="text-teal">Enquiries</span>
                     </h1>
                     <p className="text-stone font-medium">Track your communication with property experts.</p>
                 </div>
@@ -59,11 +59,11 @@ export default function MyEnquiriesPage() {
             <div className="space-y-6">
                 {enquiries.length > 0 ? (
                     enquiries.map((enq) => (
-                        <Card key={enq.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-ocean/30 transition-all overflow-hidden">
+                        <Card key={enq.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-teal/30 transition-all overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center text-ocean flex-shrink-0">
+                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center text-teal flex-shrink-0">
                                             <MessageSquare className="w-8 h-8" />
                                         </div>
                                         <div className="space-y-1">
@@ -91,7 +91,7 @@ export default function MyEnquiriesPage() {
                                         <Button variant="outline" className="flex-1 md:flex-none h-12 px-6 rounded-xl border-stone/10 font-bold text-midnight">
                                             View Thread
                                         </Button>
-                                        <Button className="flex-1 md:flex-none bg-midnight hover:bg-ocean text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
+                                        <Button className="flex-1 md:flex-none bg-midnight hover:bg-teal text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
                                             Follow Up
                                         </Button>
                                     </div>

@@ -88,10 +88,10 @@ export default function MatchQuizContent() {
                 {/* Progress Bar */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
-                        <div className="text-[10px] font-mono font-bold text-sky/60 uppercase tracking-[0.2em]">
+                        <div className="text-[10px] font-mono font-bold text-teal/40 uppercase tracking-[0.2em]">
                             Step {currentStep + 1} of {steps.length}
                         </div>
-                        <div className="text-[10px] font-mono font-black text-white uppercase tracking-widest bg-ocean/20 px-3 py-1 rounded-full border border-white/10">
+                        <div className="text-[10px] font-mono font-black text-white uppercase tracking-widest bg-teal/20 px-3 py-1 rounded-full border border-white/10">
                             {Math.round(progress)}% Complete
                         </div>
                     </div>
@@ -106,7 +106,7 @@ export default function MatchQuizContent() {
                     className="bg-white rounded-[3rem] p-10 md:p-14 shadow-2xl border border-stone/5 space-y-10"
                 >
                     <div className="space-y-4 text-center">
-                        <div className="w-16 h-16 bg-sky rounded-2xl flex items-center justify-center text-ocean mx-auto mb-6">
+                        <div className="w-16 h-16 bg-teal/10 rounded-2xl flex items-center justify-center text-teal mx-auto mb-6">
                             <step.icon className="w-8 h-8" />
                         </div>
                         <h2 className="text-3xl md:text-4xl font-display font-black text-midnight tracking-tight">
@@ -122,7 +122,7 @@ export default function MatchQuizContent() {
                             <div className="space-y-6">
                                 <Input
                                     placeholder="e.g. Bondi, Sydney"
-                                    className="h-16 rounded-2xl border-stone/10 bg-warm/20 text-lg font-bold px-6 focus:ring-ocean focus:border-ocean transition-all"
+                                    className="h-16 rounded-2xl border-stone/10 bg-warm/20 text-lg font-bold px-6 focus:ring-teal focus:border-teal transition-all"
                                     value={formData.location || ''}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                     onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleNext()}
@@ -144,20 +144,20 @@ export default function MatchQuizContent() {
                                         className={cn(
                                             "flex items-center justify-between p-6 rounded-2xl border-2 transition-all group hover:scale-[1.02] active:scale-[0.98]",
                                             formData[step.id] === opt
-                                                ? "border-ocean bg-sky/50 shadow-lg shadow-ocean/5"
-                                                : "border-stone/5 bg-warm/10 hover:border-ocean/30 hover:bg-white"
+                                                ? "border-teal bg-teal/5 shadow-lg shadow-teal/5"
+                                                : "border-stone/5 bg-warm/10 hover:border-teal/30 hover:bg-white"
                                         )}
                                     >
                                         <span className={cn(
                                             "text-lg font-bold tracking-tight",
-                                            formData[step.id] === opt ? "text-ocean" : "text-midnight"
+                                            formData[step.id] === opt ? "text-teal" : "text-midnight"
                                         )}>
                                             {opt}
                                         </span>
                                         <div className={cn(
                                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
                                             formData[step.id] === opt
-                                                ? "border-ocean bg-ocean text-white"
+                                                ? "border-teal bg-teal text-white"
                                                 : "border-stone/20"
                                         )}>
                                             {formData[step.id] === opt && <CheckCircle2 className="w-4 h-4" />}

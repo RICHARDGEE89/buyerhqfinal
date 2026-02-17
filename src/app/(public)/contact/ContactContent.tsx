@@ -15,9 +15,9 @@ export default function ContactContent() {
             <section className="pt-40 pb-24 bg-topo relative">
                 <div className="container mx-auto px-6 text-center space-y-6 max-w-4xl">
                     <h1 className="text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-tight">
-                        How can we <span className="text-ocean">Help?</span>
+                        How can we <span className="text-teal">Help?</span>
                     </h1>
-                    <p className="text-xl text-sky/70 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
                         Whether you&apos;re a buyer looking for advice or an agent wanting to join the directory, we&apos;d love to hear from you.
                     </p>
                 </div>
@@ -40,7 +40,7 @@ export default function ContactContent() {
 
                             <div className="space-y-8">
                                 <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-sky flex items-center justify-center text-ocean">
+                                    <div className="w-14 h-14 rounded-2xl bg-teal/10 flex items-center justify-center text-teal">
                                         <Mail className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -50,7 +50,7 @@ export default function ContactContent() {
                                 </div>
 
                                 <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-sky flex items-center justify-center text-ocean">
+                                    <div className="w-14 h-14 rounded-2xl bg-teal/10 flex items-center justify-center text-teal">
                                         <MessageSquare className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -63,9 +63,9 @@ export default function ContactContent() {
                             <div className="space-y-6 pt-10 border-t border-stone/5">
                                 <h3 className="text-sm font-black text-stone uppercase tracking-widest">Connect with us</h3>
                                 <div className="flex items-center gap-4">
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-ocean hover:text-white transition-all"><Linkedin className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-ocean hover:text-white transition-all"><Instagram className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-ocean hover:text-white transition-all"><Facebook className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-teal hover:text-white transition-all"><Linkedin className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-teal hover:text-white transition-all"><Instagram className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-teal hover:text-white transition-all"><Facebook className="w-5 h-5" /></Link>
                                 </div>
                             </div>
                         </div>
@@ -98,7 +98,7 @@ export default function ContactContent() {
                                     </div>
                                 </div>
 
-                                <Button className="w-full h-16 bg-ocean hover:bg-ocean/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-ocean/20">
+                                <Button className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-teal/20">
                                     Send Message
                                     <Send className="ml-2 w-5 h-5" />
                                 </Button>

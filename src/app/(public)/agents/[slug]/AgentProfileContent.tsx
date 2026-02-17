@@ -92,7 +92,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                     </div>
 
                                     <div className="space-y-4 pt-8 border-t border-stone/5">
-                                        <Button className="w-full h-16 bg-ocean hover:bg-ocean/90 text-white font-black rounded-2xl shadow-xl shadow-ocean/20 text-lg group">
+                                        <Button className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group">
                                             Enquire Now
                                             <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         </Button>
@@ -106,10 +106,10 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
                             <Card className="border-stone/10 rounded-[2.5rem] bg-midnight text-white p-8 space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <ShieldCheck className="w-5 h-5 text-ocean" />
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-ocean">BuyerHQ Guarantee</h4>
+                                    <ShieldCheck className="w-5 h-5 text-teal" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-teal">BuyerHQ Guarantee</h4>
                                 </div>
-                                <p className="text-sm text-sky/60 font-medium leading-relaxed">
+                                <p className="text-sm text-white/40 font-medium leading-relaxed">
                                     This agent has undergone our 7-step verification process, including direct ABN and licence audit.
                                 </p>
                             </Card>
@@ -127,8 +127,8 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                 { label: 'Licence Status', value: 'Verified', icon: BadgeCheck },
                                 { label: 'Specialisations', value: agent.specialisations.length, icon: Star }
                             ].map((stat, i) => (
-                                <Card key={i} className="border-stone/5 rounded-3xl bg-white p-6 shadow-soft group hover:border-ocean/20 transition-all">
-                                    <div className="w-10 h-10 rounded-xl bg-warm/50 flex items-center justify-center text-ocean mb-4 group-hover:bg-ocean group-hover:text-white transition-all">
+                                <Card key={i} className="border-stone/5 rounded-3xl bg-white p-6 shadow-soft group hover:border-teal/20 transition-all">
+                                    <div className="w-10 h-10 rounded-xl bg-warm/50 flex items-center justify-center text-teal mb-4 group-hover:bg-teal group-hover:text-white transition-all">
                                         <stat.icon className="w-5 h-5" />
                                     </div>
                                     <div className="text-2xl font-mono font-black text-midnight leading-none mb-1">
@@ -144,7 +144,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                         {/* About */}
                         <div className="space-y-6">
                             <h2 className="text-3xl font-display font-black text-white tracking-tight">About {agent.business_name}</h2>
-                            <p className="text-xl text-sky/60 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: agent.bio }} />
+                            <p className="text-xl text-white/40 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: agent.bio }} />
                         </div>
 
                         {/* Specialisations */}
@@ -165,14 +165,14 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                 <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Recent Success Stories</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {agent.case_studies.map((cs) => (
-                                        <Card key={cs.id} className="border-stone/5 rounded-[2rem] overflow-hidden bg-warm/10 shadow-sm group hover:border-ocean/20 transition-all">
+                                        <Card key={cs.id} className="border-stone/5 rounded-[2rem] overflow-hidden bg-warm/10 shadow-sm group hover:border-teal/20 transition-all">
                                             <CardContent className="p-8 space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <MapPin className="w-4 h-4 text-ocean" />
+                                                        <MapPin className="w-4 h-4 text-teal" />
                                                         <span className="font-bold text-midnight">{cs.suburb}</span>
                                                     </div>
-                                                    <Badge className="bg-ocean/10 text-ocean border-ocean/20 rounded-lg text-[10px] font-black uppercase">
+                                                    <Badge className="bg-teal/10 text-teal border-teal/20 rounded-lg text-[10px] font-black uppercase">
                                                         {cs.type}
                                                     </Badge>
                                                 </div>
@@ -203,7 +203,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                         <div key={review.id} className="p-8 rounded-[2.5rem] border border-stone/10 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-ocean/10 flex items-center justify-center font-bold text-ocean uppercase text-xs">
+                                                    <div className="w-10 h-10 rounded-full bg-teal/10 flex items-center justify-center font-bold text-teal uppercase text-xs">
                                                         {review.author[0]}
                                                     </div>
                                                     <div>
@@ -226,7 +226,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
                         {/* Agency Links */}
                         <div className="flex items-center gap-8 pt-12 border-t border-white/5">
-                            <a href="#" className="flex items-center gap-2 text-sky/40 hover:text-white transition-colors text-sm font-bold">
+                            <a href="#" className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold">
                                 <ExternalLink className="w-4 h-4" />
                                 Official Website
                             </a>
@@ -243,7 +243,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
             {/* Sticky Mobile CTA */}
             <div className="lg:hidden fixed bottom-10 inset-x-6 z-50">
-                <Button className="w-full h-16 bg-ocean text-white font-black rounded-2xl shadow-2xl shadow-ocean/40 text-lg group">
+                <Button className="w-full h-16 bg-teal text-white font-black rounded-2xl shadow-2xl shadow-teal/40 text-lg group">
                     Contact Agent
                     <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>

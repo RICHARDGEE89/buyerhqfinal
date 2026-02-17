@@ -14,8 +14,8 @@ import Link from 'next/link';
 
 export default function BuyerDashboardOverview() {
     const stats = [
-        { label: 'Saved Agents', value: 4, icon: Heart, color: 'text-coral bg-coral/10' },
-        { label: 'Active Enquiries', value: 1, icon: MessageSquare, color: 'text-ocean bg-ocean/10' },
+        { label: 'Saved Agents', value: 4, icon: Heart, color: 'text-amber bg-amber/10' },
+        { label: 'Active Enquiries', value: 1, icon: MessageSquare, color: 'text-teal bg-teal/10' },
         { label: 'Match Quiz Result', value: 'Ready', icon: Heart, color: 'text-amber bg-amber/10' },
     ];
 
@@ -25,12 +25,12 @@ export default function BuyerDashboardOverview() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Hi, <span className="text-ocean">Richard</span>
+                        Hi, <span className="text-teal">Richard</span>
                     </h1>
                     <p className="text-stone font-medium">Here&apos;s what&apos;s happening with your property search.</p>
                 </div>
                 <Link href="/get-matched">
-                    <Button className="bg-ocean hover:bg-ocean/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-ocean/20">
+                    <Button className="bg-teal hover:bg-teal/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
                         Find New Matches
                     </Button>
                 </Link>
@@ -64,7 +64,7 @@ export default function BuyerDashboardOverview() {
                             <Card key={i} className="border-stone/5 rounded-[2rem] bg-white shadow-sm overflow-hidden group">
                                 <CardContent className="p-6 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center font-display font-black text-ocean">
+                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center font-display font-black text-teal">
                                             BHQ
                                         </div>
                                         <div>
@@ -72,14 +72,14 @@ export default function BuyerDashboardOverview() {
                                             <p className="text-xs text-stone font-medium">Matches your &apos;Bondi&apos; search criteria</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="text-stone group-hover:text-ocean transition-colors">
+                                    <Button variant="ghost" size="icon" className="text-stone group-hover:text-teal transition-colors">
                                         <ArrowRight className="w-5 h-5" />
                                     </Button>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
-                    <Link href="/agents" className="inline-flex items-center text-ocean font-bold text-sm hover:underline">
+                    <Link href="/agents" className="inline-flex items-center text-teal font-bold text-sm hover:underline">
                         Browse all agents <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>
                 </div>

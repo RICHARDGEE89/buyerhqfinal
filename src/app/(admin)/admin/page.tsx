@@ -19,10 +19,10 @@ import Link from 'next/link';
 
 export default function AdminDashboardOverview() {
     const metrics = [
-        { label: 'Total Enquiries', value: '2,842', icon: MessageSquare, color: 'text-ocean bg-ocean/10' },
-        { label: 'Verified Agents', value: '342', icon: CheckCircle2, color: 'text-verified bg-verified/10' },
-        { label: 'Pending Apps', value: '12', icon: ShieldAlert, color: 'text-coral bg-coral/10' },
-        { label: 'Platform Revenue', value: '$52,400', icon: TrendingUp, color: 'text-midnight bg-midnight/10' },
+        { label: 'Total Enquiries', value: '0', icon: MessageSquare, color: 'text-teal bg-teal/10' },
+        { label: 'Verified Agents', value: '0', icon: CheckCircle2, color: 'text-verified bg-verified/10' },
+        { label: 'Pending Apps', value: '0', icon: ShieldAlert, color: 'text-amber bg-amber/10' },
+        { label: 'Platform Revenue', value: '$0', icon: TrendingUp, color: 'text-midnight bg-midnight/10' },
     ];
 
     const pendingVerifications = [
@@ -37,7 +37,7 @@ export default function AdminDashboardOverview() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        System <span className="text-coral">Overview</span>
+                        System <span className="text-teal">Overview</span>
                     </h1>
                     <p className="text-stone font-medium">Global platform health and operational status.</p>
                 </div>
@@ -45,16 +45,18 @@ export default function AdminDashboardOverview() {
                     <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-midnight bg-white">
                         System Health
                     </Button>
-                    <Button className="bg-coral text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-coral/20">
-                        Platform Settings
-                    </Button>
+                    <Link href="/admin/bulk-upload">
+                        <Button className="bg-teal text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
+                            Bulk Upload
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
             {/* Admin Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {metrics.map((m) => (
-                    <Card key={m.label} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft transition-all hover:border-coral/20">
+                    <Card key={m.label} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft transition-all hover:border-teal/20">
                         <CardContent className="p-8 space-y-4">
                             <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", m.color)}>
                                 <m.icon className="w-6 h-6" />
@@ -74,13 +76,13 @@ export default function AdminDashboardOverview() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-display font-black text-midnight tracking-tight">Verification Queue</h2>
-                        <Link href="/admin/verifications" className="text-coral font-bold text-sm hover:underline flex items-center gap-2">
+                        <Link href="/admin/verifications" className="text-teal font-bold text-sm hover:underline flex items-center gap-2">
                             View all applications <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                     <div className="space-y-4">
                         {pendingVerifications.map((app) => (
-                            <Card key={app.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-sm overflow-hidden group hover:border-coral/20 transition-all">
+                            <Card key={app.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-sm overflow-hidden group hover:border-teal/20 transition-all">
                                 <CardContent className="p-8 flex items-center justify-between">
                                     <div className="flex items-center gap-6">
                                         <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center text-midnight font-display font-black">
@@ -89,7 +91,7 @@ export default function AdminDashboardOverview() {
                                         <div>
                                             <div className="flex items-center gap-3">
                                                 <h4 className="font-bold text-midnight text-lg">{app.agency}</h4>
-                                                <Badge className="bg-coral/10 text-coral border-coral/20 px-3 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest">
+                                                <Badge className="bg-teal/10 text-teal border-teal/20 px-3 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest">
                                                     {app.type}
                                                 </Badge>
                                             </div>
@@ -116,15 +118,15 @@ export default function AdminDashboardOverview() {
                     <div className="space-y-4">
                         <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 space-y-6 shadow-soft">
                             <div className="space-y-4">
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-ocean hover:text-white text-midnight font-bold rounded-xl transition-all">
+                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-teal hover:text-white text-midnight font-bold rounded-xl transition-all">
                                     <UserPlus className="w-5 h-5 mr-4" />
                                     Invite New Agency
                                 </Button>
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-ocean hover:text-white text-midnight font-bold rounded-xl transition-all">
+                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-teal hover:text-white text-midnight font-bold rounded-xl transition-all">
                                     <FileText className="w-5 h-5 mr-4" />
                                     Generate Site Report
                                 </Button>
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-coral hover:text-white text-midnight font-bold rounded-xl transition-all">
+                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-amber hover:text-white text-midnight font-bold rounded-xl transition-all">
                                     <ShieldAlert className="w-5 h-5 mr-4" />
                                     Review Flagged Content
                                 </Button>
@@ -133,8 +135,8 @@ export default function AdminDashboardOverview() {
 
                         <Card className="border-stone/10 rounded-[2.5rem] bg-midnight text-white p-8 space-y-4 shadow-xl">
                             <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-coral" />
-                                <h4 className="text-xs font-black text-coral uppercase tracking-widest">System Health</h4>
+                                <Clock className="w-5 h-5 text-teal" />
+                                <h4 className="text-xs font-black text-teal uppercase tracking-widest">System Health</h4>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center text-xs font-bold">

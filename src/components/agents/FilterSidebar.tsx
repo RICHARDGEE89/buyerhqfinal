@@ -24,7 +24,7 @@ export const FilterSidebar = () => {
             {/* Search Header for Mobile only */}
             <div className="flex items-center justify-between lg:hidden mb-6">
                 <h3 className="font-display font-black text-midnight text-xl">Refine Search</h3>
-                <Button variant="ghost" size="sm" className="text-ocean font-bold">Reset</Button>
+                <Button variant="ghost" size="sm" className="text-teal font-bold">Reset</Button>
             </div>
 
             <Card className="border-stone/10 rounded-[2rem] overflow-hidden sticky top-24">
@@ -69,7 +69,7 @@ export const FilterSidebar = () => {
                         <h4 className="text-[10px] font-mono font-bold text-stone uppercase tracking-[0.2em]">Region / State</h4>
                         <div className="grid grid-cols-2 gap-2">
                             {states.map((state) => (
-                                <label key={state} className="flex items-center gap-3 p-3 border border-stone/10 rounded-xl hover:border-ocean hover:bg-sky/30 cursor-pointer transition-all">
+                                <label key={state} className="flex items-center gap-3 p-3 border border-stone/10 rounded-xl hover:border-teal hover:bg-teal/5 cursor-pointer transition-all">
                                     <Checkbox id={state} />
                                     <span className="text-xs font-bold text-midnight">{state}</span>
                                 </label>

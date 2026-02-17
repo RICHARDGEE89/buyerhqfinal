@@ -18,7 +18,7 @@ interface AgentCardProps {
 export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
     return (
         <Link href={`/agents/${agent.slug}`} className={cn("group block", className)}>
-            <Card className="overflow-hidden border-stone/10 group-hover:border-ocean/30 group-hover:shadow-soft transition-all duration-500 bg-white rounded-[2rem] flex flex-col h-full hover:-translate-y-2">
+            <Card className="overflow-hidden border-stone/10 group-hover:border-teal/30 group-hover:shadow-soft transition-all duration-500 bg-white rounded-[2rem] flex flex-col h-full hover:-translate-y-2">
                 <CardContent className="p-0 flex flex-col h-full">
                     {/* Top section: Headshot + Primary Info */}
                     <div className="p-8 bg-warm/30 flex flex-col items-center justify-center border-b border-stone/5 relative overflow-hidden">
@@ -26,7 +26,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm text-stone/40 hover:text-coral transition-colors"
+                                className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm text-stone/40 hover:text-amber transition-colors"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -43,7 +43,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
                         )}
 
                         {/* Avatar Placeholder / Image */}
-                        <div className="w-24 h-24 rounded-3xl bg-ocean/10 flex items-center justify-center mb-4 border-4 border-white shadow-lg overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                        <div className="w-24 h-24 rounded-3xl bg-teal/10 flex items-center justify-center mb-4 border-4 border-white shadow-lg overflow-hidden group-hover:scale-110 transition-transform duration-500">
                             {agent.headshot_url ? (
                                 <Image
                                     src={agent.headshot_url}
@@ -53,7 +53,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="text-ocean font-display font-black text-3xl">BHQ</div>
+                                <div className="text-teal font-display font-black text-3xl">BHQ</div>
                             )}
                         </div>
 
@@ -76,7 +76,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
 
                         <div className="flex flex-wrap gap-2">
                             {agent.specialisations?.slice(0, 3).map(spec => (
-                                <Badge key={spec} variant="secondary" className="bg-sky text-ocean border-transparent font-bold px-3 py-1 text-[10px] uppercase tracking-wider rounded-lg">
+                                <Badge key={spec} variant="secondary" className="bg-teal/5 text-teal border-transparent font-bold px-3 py-1 text-[10px] uppercase tracking-wider rounded-lg">
                                     {spec}
                                 </Badge>
                             ))}
@@ -84,12 +84,12 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
 
                         <div className="flex items-center justify-between pt-6 border-t border-stone/5 mt-auto">
                             <div className="flex items-center gap-2 text-xs font-bold text-midnight">
-                                <div className="w-6 h-6 bg-sky rounded-lg flex items-center justify-center">
-                                    <Award className="w-3.5 h-3.5 text-ocean" />
+                                <div className="w-6 h-6 bg-teal/10 rounded-lg flex items-center justify-center">
+                                    <Award className="w-3.5 h-3.5 text-teal" />
                                 </div>
                                 {agent.years_experience || 10}+ Years
                             </div>
-                            <Button className="bg-midnight group-hover:bg-ocean text-white font-black h-10 px-6 rounded-xl transition-all shadow-lg flex items-center gap-2">
+                            <Button className="bg-midnight group-hover:bg-teal text-white font-black h-10 px-6 rounded-xl transition-all shadow-lg flex items-center gap-2">
                                 View Profile
                                 <ChevronRight className="w-4 h-4" />
                             </Button>

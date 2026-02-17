@@ -44,7 +44,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({ rating, count, classNa
                 )}>
                     {rating.toFixed(1)} {count !== undefined && <span className={cn(
                         "font-medium font-sans",
-                        variant === 'dark' ? "text-sky/40" : "text-stone"
+                        variant === 'dark' ? "text-white/40" : "text-stone"
                     )}>({count})</span>}
                 </span>
             )}
