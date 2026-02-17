@@ -32,7 +32,7 @@ export const HeroSection = () => {
                         className="text-5xl md:text-8xl font-display font-black tracking-tight text-white leading-[0.9] mb-8"
                     >
                         Find Your Perfect <br className="hidden md:block" />
-                        <span className="text-primary">Buyer&apos;s Agent.</span>
+                        <span className="text-primary-400">Buyer&apos;s Agent.</span>
                     </motion.h1>
 
                     {/* P */}
@@ -40,7 +40,7 @@ export const HeroSection = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-xl md:text-2xl text-primary/40 mb-12 max-w-2xl mx-auto leading-relaxed font-medium"
+                        className="text-xl md:text-2xl text-gray-200 mb-12 max-w-2xl mx-auto leading-relaxed font-medium"
                     >
                         The intelligent way to find your next property. We match you with Australia&apos;s most successful, verified buyer&apos;s agents.
                     </motion.p>
@@ -64,19 +64,19 @@ export const HeroSection = () => {
                     >
                         <div className="flex -space-x-3">
                             {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-12 h-12 rounded-2xl border-2 border-midnight bg-warm flex items-center justify-center font-display font-black text-xs text-gray-900">
+                                <div key={i} className="w-12 h-12 rounded-2xl border-2 border-gray-900 bg-white flex items-center justify-center font-display font-black text-xs text-gray-900">
                                     BHQ
                                 </div>
                             ))}
                         </div>
                         <div className="text-left">
-                            <div className="flex items-center gap-1 text-primary mb-1">
-                                {[1, 2, 3, 4, 5].map((s) => <Sparkles key={s} className="w-3 h-3 fill-lime" />)}
+                            <div className="flex items-center gap-1 text-primary-400 mb-1">
+                                {[1, 2, 3, 4, 5].map((s) => <Sparkles key={s} className="w-3 h-3 fill-primary-400" />)}
                             </div>
-                            <p className="text-white/40 text-xs font-mono font-bold uppercase tracking-[0.2em] leading-tight">
+                            <p className="text-gray-300 text-xs font-mono font-bold uppercase tracking-[0.2em] leading-tight">
                                 &quot;The best decision we made in our property journey.&quot;
                                 <br />
-                                <span className="text-primary">— Sarah &amp; David, Bondi</span>
+                                <span className="text-white">— Sarah &amp; David, Bondi</span>
                             </p>
                         </div>
                     </motion.div>
