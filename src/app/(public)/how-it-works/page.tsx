@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { Search, UserCheck, MessageSquare, ShieldCheck, ArrowRight, Zap } from 'lucide-react';
+import { MessageSquare, ShieldCheck, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 

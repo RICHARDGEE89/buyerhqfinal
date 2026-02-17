@@ -11,7 +11,7 @@ import Link from 'next/link';
 export default function MatchResultsPage() {
     // In a real app, we'd fetch these based on the quiz ID or direct results
     // Purged mock results - Ready for algorithmic matching
-    const mockResults: any[] = [];
+    const mockResults: Partial<Agent>[] = [];
 
     return (
         <div className="min-h-screen pt-32 pb-20 bg-topo">
@@ -67,7 +67,7 @@ export default function MatchResultsPage() {
                         <div className="col-span-full py-20 text-center bg-white/5 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-white/10">
                             <h3 className="text-xl font-display font-black text-white mb-2">Sourcing Top Talent...</h3>
                             <p className="text-white/40 font-medium max-w-sm mx-auto">
-                                We're currently matching your requirements with our newest verified agents.
+                                We&apos;re currently matching your requirements with our newest verified agents.
                             </p>
                         </div>
                     )}

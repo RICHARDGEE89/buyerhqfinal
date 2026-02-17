@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 export default function BulkUploadPage() {
     const [jsonData, setJsonData] = useState('');
@@ -29,8 +30,9 @@ export default function BulkUploadPage() {
 
             setResult({ success: true, message: `Successfully uploaded ${profiles.length} agent profiles.` });
             setJsonData('');
-        } catch (err: any) {
-            setResult({ success: false, message: err.message || 'Invalid JSON format or database error.' });
+        } catch (err: unknown) {
+            const error = err as Error;
+            setResult({ success: false, message: error.message || 'Invalid JSON format or database error.' });
         } finally {
             setIsUploading(false);
         }
@@ -122,7 +124,3 @@ export default function BulkUploadPage() {
     );
 }
 
-// Helper for cn in this file if missing global
-function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(' ');
-}

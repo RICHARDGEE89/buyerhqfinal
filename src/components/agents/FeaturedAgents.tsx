@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react';
 
 export const FeaturedAgents = () => {
     // Purged mock data - Ready for Supabase fetch or user listings
-    const featuredAgents: any[] = [];
+    const featuredAgents: Partial<Agent>[] = [];
 
     return (
         <section className="py-24 bg-white">

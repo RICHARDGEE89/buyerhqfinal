@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { ShieldCheck, Scale, Award, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Scale, Award, Zap, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';

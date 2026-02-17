@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function AgentsPage() {
     // Purged mock data - Ready for high-quality verified listings
-    const agents: any[] = [];
+    const agents: Partial<Agent>[] = [];
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -67,7 +67,7 @@ export default function AgentsPage() {
                                         </div>
                                         <h3 className="text-xl font-display font-black text-midnight mb-2">Expanding Our Network</h3>
                                         <p className="text-stone font-medium max-w-sm mx-auto">
-                                            We're currently verifying property experts in this area. Check back soon for the best professional representation.
+                                            We&apos;re currently verifying property experts in this area. Check back soon for the best professional representation.
                                         </p>
                                     </div>
                                 )}

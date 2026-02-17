@@ -3,7 +3,6 @@ import { Metadata } from 'next';
 import { ArrowRight, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: "Blog | Property Market Insights & Tips | BuyerHQ",

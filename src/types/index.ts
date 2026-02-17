@@ -55,6 +55,7 @@ export interface Agent {
     rating?: number;
     review_count?: number;
     admin_notes?: string;
+    match_score?: number;
     created_at: string;
     updated_at: string;
 }
