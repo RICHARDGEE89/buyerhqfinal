@@ -24,7 +24,7 @@ export const FilterSidebar = () => {
             {/* Search Header for Mobile only */}
             <div className="flex items-center justify-between lg:hidden mb-6">
                 <h3 className="font-display font-black text-midnight text-xl">Refine Search</h3>
-                <Button variant="ghost" size="sm" className="text-teal font-bold">Reset</Button>
+                <Button variant="ghost" size="sm" className="text-lime font-bold">Reset</Button>
             </div>
 
             <Card className="border-stone/10 rounded-[2rem] overflow-hidden sticky top-24">
@@ -41,10 +41,10 @@ export const FilterSidebar = () => {
                                 </div>
                                 <Checkbox defaultChecked />
                             </label>
-                            <label className="flex items-center justify-between p-3 rounded-xl bg-amber/5 border border-amber/10 cursor-pointer group">
+                            <label className="flex items-center justify-between p-3 rounded-xl bg-lime/5 border border-lime/10 cursor-pointer group">
                                 <div className="flex items-center gap-3">
-                                    <Star className="w-5 h-5 text-amber fill-amber" />
-                                    <span className="text-sm font-bold text-midnight group-hover:text-amber transition-colors">Top Rated (4.5+)</span>
+                                    <Star className="w-5 h-5 text-lime fill-lime" />
+                                    <span className="text-sm font-bold text-midnight group-hover:text-lime transition-colors">Top Rated (4.5+)</span>
                                 </div>
                                 <Checkbox />
                             </label>
@@ -69,7 +69,7 @@ export const FilterSidebar = () => {
                         <h4 className="text-[10px] font-mono font-bold text-stone uppercase tracking-[0.2em]">Region / State</h4>
                         <div className="grid grid-cols-2 gap-2">
                             {states.map((state) => (
-                                <label key={state} className="flex items-center gap-3 p-3 border border-stone/10 rounded-xl hover:border-teal hover:bg-teal/5 cursor-pointer transition-all">
+                                <label key={state} className="flex items-center gap-3 p-3 border border-stone/10 rounded-xl hover:border-lime hover:bg-lime/5 cursor-pointer transition-all">
                                     <Checkbox id={state} />
                                     <span className="text-xs font-bold text-midnight">{state}</span>
                                 </label>

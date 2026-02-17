@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const FeatureRow = ({ icon: Icon, text }: { icon: React.ElementType, text: string }) => (
     <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-stone/5 shadow-sm">
-        <div className="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center text-teal">
+        <div className="w-10 h-10 rounded-xl bg-lime/10 flex items-center justify-center text-lime">
             <Icon className="w-5 h-5" />
         </div>
         <span className="font-bold text-midnight text-sm tracking-tight">{text}</span>
@@ -23,7 +23,7 @@ export const WhyBuyerHQ = () => {
                         <div className="space-y-4">
                             <h2 className="text-4xl md:text-5xl font-display font-black tracking-tight leading-tight text-midnight">
                                 Peace of mind for <br />
-                                <span className="text-teal">Home Buyers.</span>
+                                <span className="text-lime">Home Buyers.</span>
                             </h2>
                             <p className="text-lg text-stone font-medium leading-relaxed max-w-lg">
                                 Avoid the stress of searching alone. We only list agents who meet our strict quality and licensing criteria.
@@ -43,7 +43,7 @@ export const WhyBuyerHQ = () => {
                             <Link href="/agents">
                                 <Button className="bg-midnight hover:bg-midnight/90 text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-midnight/20 text-lg group">
                                     Find an Agent Free
-                                    <Zap className="ml-2 w-4 h-4 text-amber fill-amber opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <Zap className="ml-2 w-4 h-4 text-lime fill-lime opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </Button>
                             </Link>
                         </div>
@@ -54,7 +54,7 @@ export const WhyBuyerHQ = () => {
                         <div className="space-y-4">
                             <h2 className="text-4xl md:text-5xl font-display font-black tracking-tight leading-tight text-midnight text-left">
                                 Grow your business <br />
-                                <span className="text-teal">as an Expert.</span>
+                                <span className="text-lime">as an Expert.</span>
                             </h2>
                             <p className="text-lg text-stone font-medium leading-relaxed max-w-lg">
                                 Reach active buyers searching for property in your area right now.
@@ -70,7 +70,7 @@ export const WhyBuyerHQ = () => {
 
                         <div className="pt-4">
                             <Link href="/join">
-                                <Button variant="outline" className="border-stone/20 text-midnight hover:bg-white hover:border-teal transition-all font-bold h-14 px-10 rounded-2xl text-lg w-full sm:w-auto">
+                                <Button variant="outline" className="border-stone/20 text-midnight hover:bg-white hover:border-lime transition-all font-bold h-14 px-10 rounded-2xl text-lg w-full sm:w-auto">
                                     List Your Profile
                                 </Button>
                             </Link>

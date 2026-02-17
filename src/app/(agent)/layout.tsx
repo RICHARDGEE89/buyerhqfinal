@@ -35,7 +35,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             <aside className="hidden lg:flex w-80 bg-midnight flex-col p-8 sticky top-0 h-screen shadow-2xl z-50">
                 <div className="mb-14 px-2">
                     <Logo variant="white" />
-                    <div className="mt-2 text-[10px] font-mono font-bold text-teal/40 uppercase tracking-[0.3em] px-1">
+                    <div className="mt-2 text-[10px] font-mono font-bold text-lime/40 uppercase tracking-[0.3em] px-1">
                         Agent Command Center
                     </div>
                 </div>
@@ -48,7 +48,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             className={cn(
                                 "flex items-center justify-between p-5 rounded-3xl transition-all group",
                                 pathname === item.href
-                                    ? "bg-teal text-white shadow-xl shadow-teal/20"
+                                    ? "bg-lime text-white shadow-xl shadow-teal/20"
                                     : "text-white/40 hover:text-white hover:bg-white/5"
                             )}
                         >
@@ -66,12 +66,12 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
                 <div className="pt-10 border-t border-white/5 space-y-4">
                     <Link href="/agents/prestige-property-group" target="_blank">
-                        <Button variant="ghost" className="w-full justify-start text-teal hover:text-white hover:bg-teal/10 rounded-2xl p-4 h-auto">
+                        <Button variant="ghost" className="w-full justify-start text-lime hover:text-white hover:bg-lime/10 rounded-2xl p-4 h-auto">
                             <ExternalLink className="w-5 h-5 mr-3" />
                             <span className="font-bold text-sm tracking-tight">View Live Profile</span>
                         </Button>
                     </Link>
-                    <Button variant="ghost" className="w-full justify-start text-white/30 hover:text-amber hover:bg-amber/5 rounded-2xl p-4 h-auto">
+                    <Button variant="ghost" className="w-full justify-start text-white/30 hover:text-lime hover:bg-lime/5 rounded-2xl p-4 h-auto">
                         <LogOut className="w-5 h-5 mr-3" />
                         <span className="font-bold text-sm tracking-tight">Log Out</span>
                     </Button>
@@ -94,7 +94,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                     <div className="flex items-center gap-6">
                         <button className="relative p-2 text-stone hover:text-midnight transition-colors">
                             <Bell className="w-6 h-6" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-amber rounded-full border-2 border-white" />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-lime rounded-full border-2 border-white" />
                         </button>
                         <div className="h-10 w-px bg-stone/5" />
                         <div className="flex items-center gap-4">

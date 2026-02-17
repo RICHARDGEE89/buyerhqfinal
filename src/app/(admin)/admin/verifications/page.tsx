@@ -42,7 +42,7 @@ export default function AdminVerificationsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Agency <span className="text-teal">Verifications</span>
+                        Agency <span className="text-lime">Verifications</span>
                     </h1>
                     <p className="text-stone font-medium">Review and approve new property expert applications.</p>
                 </div>
@@ -66,7 +66,7 @@ export default function AdminVerificationsPage() {
                                     <div className="flex items-center gap-2">
                                         <Badge className={cn(
                                             "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border",
-                                            app.status === 'pending' ? "bg-amber/10 text-amber border-amber/20" : "bg-teal/10 text-teal border-teal/20"
+                                            app.status === 'pending' ? "bg-lime/10 text-lime border-lime/20" : "bg-lime/10 text-lime border-lime/20"
                                         )}>
                                             {app.status.replace('_', ' ')}
                                         </Badge>
@@ -79,7 +79,7 @@ export default function AdminVerificationsPage() {
                                         <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">ABN Number</div>
                                         <div className="text-sm font-bold text-midnight tracking-tight flex items-center gap-2">
                                             {app.abn}
-                                            <ExternalLink className="w-3.5 h-3.5 text-teal" />
+                                            <ExternalLink className="w-3.5 h-3.5 text-lime" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
@@ -90,7 +90,7 @@ export default function AdminVerificationsPage() {
                                         <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Submitted Documents</div>
                                         <div className="flex flex-wrap gap-2">
                                             {app.docs.map(doc => (
-                                                <div key={doc} className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-stone/10 text-xs font-bold text-midnight hover:border-teal transition-all cursor-pointer">
+                                                <div key={doc} className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-stone/10 text-xs font-bold text-midnight hover:border-lime transition-all cursor-pointer">
                                                     <FileText className="w-3.5 h-3.5 text-stone" />
                                                     {doc}
                                                 </div>
@@ -105,7 +105,7 @@ export default function AdminVerificationsPage() {
                                         <BadgeCheck className="w-5 h-5 mr-2" />
                                         Approve Expert
                                     </Button>
-                                    <Button variant="outline" className="w-full h-14 border-amber/20 text-amber font-black rounded-2xl hover:bg-amber/5 transition-all">
+                                    <Button variant="outline" className="w-full h-14 border-lime/20 text-lime font-black rounded-2xl hover:bg-lime/5 transition-all">
                                         <XCircle className="w-5 h-5 mr-2" />
                                         Reject / Flag
                                     </Button>

@@ -36,12 +36,12 @@ export default function FAQPage() {
         <div className="bg-white min-h-screen pt-40 pb-24">
             <div className="container mx-auto px-6 max-w-3xl">
                 <div className="text-center space-y-4 mb-20">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal/5 text-teal text-xs font-bold uppercase tracking-widest border border-teal/10">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-lime/5 text-lime text-xs font-bold uppercase tracking-widest border border-lime/10">
                         <HelpCircle className="w-4 h-4 mr-2" />
                         Common Questions
                     </div>
                     <h1 className="text-5xl font-display font-black text-midnight tracking-tight">
-                        Support <span className="text-teal">&amp; FAQ.</span>
+                        Support <span className="text-lime">&amp; FAQ.</span>
                     </h1>
                 </div>
 
@@ -61,7 +61,7 @@ export default function FAQPage() {
                 <div className="mt-20 p-10 bg-midnight rounded-[2.5rem] text-center space-y-6">
                     <h3 className="text-white text-2xl font-display font-black">Still have a question?</h3>
                     <p className="text-stone font-medium italic">&quot;Our team is here to help you navigate the agent selection process.&quot;</p>
-                    <a href="/contact" className="inline-flex items-center text-teal font-black text-lg hover:underline gap-2">
+                    <a href="/contact" className="inline-flex items-center text-lime font-black text-lg hover:underline gap-2">
                         Contact Support <ArrowRight className="w-5 h-5" />
                     </a>
                 </div>

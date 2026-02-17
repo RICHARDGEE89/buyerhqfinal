@@ -10,7 +10,7 @@ export default function TermsPage() {
         <div className="bg-white min-h-screen pt-40 pb-24">
             <div className="container mx-auto px-6 max-w-3xl space-y-12">
                 <header className="space-y-4">
-                    <h1 className="text-5xl font-display font-black text-midnight">Terms of <span className="text-teal">Service.</span></h1>
+                    <h1 className="text-5xl font-display font-black text-midnight">Terms of <span className="text-lime">Service.</span></h1>
                     <p className="text-stone font-mono font-bold uppercase tracking-widest text-xs">Last Updated: February 2024</p>
                 </header>
 

@@ -8,7 +8,7 @@ const steps = [
         title: 'Tell Us What You Need',
         desc: "Define your budget, preferred suburbs, and property type to find the best match.",
         icon: MessageSquare,
-        color: 'bg-teal'
+        color: 'bg-lime'
     },
     {
         title: 'Browse Verified Agents',
@@ -65,7 +65,7 @@ export const HowItWorks = () => {
 
                 <div className="mt-16 text-center">
                     <Link href="/get-matched">
-                        <Button className="bg-teal hover:bg-teal/90 text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-teal/20 transition-all active:scale-95 text-lg">
+                        <Button className="bg-lime hover:bg-lime/90 text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-teal/20 transition-all active:scale-95 text-lg">
                             Take the Match Quiz
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>

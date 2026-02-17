@@ -62,7 +62,7 @@ export default function AgentsPage() {
                                     ))
                                 ) : (
                                     <div className="col-span-full py-32 text-center bg-warm/30 rounded-[3rem] border-2 border-dashed border-stone/10">
-                                        <div className="w-20 h-20 bg-teal/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-teal">
+                                        <div className="w-20 h-20 bg-lime/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-lime">
                                             <Search className="w-10 h-10" />
                                         </div>
                                         <h3 className="text-xl font-display font-black text-midnight mb-2">Expanding Our Network</h3>
@@ -75,7 +75,7 @@ export default function AgentsPage() {
 
                             {/* Pagination Placeholder */}
                             <div className="pt-12 flex justify-center">
-                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-teal transition-all">
+                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-lime transition-all">
                                     Load More Agents
                                 </Button>
                             </div>

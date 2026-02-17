@@ -45,8 +45,8 @@ export const Navbar = () => {
                             key={link.href}
                             href={link.href}
                             className={cn(
-                                "text-sm font-bold tracking-tight transition-colors hover:text-teal",
-                                pathname === link.href ? "text-teal" : "text-midnight"
+                                "text-sm font-bold tracking-tight transition-colors hover:text-lime",
+                                pathname === link.href ? "text-lime" : "text-midnight"
                             )}
                         >
                             {link.name}
@@ -55,11 +55,11 @@ export const Navbar = () => {
                 </div>
 
                 <div className="hidden lg:flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-bold text-midnight hover:text-teal transition-colors">
+                    <Link href="/login" className="text-sm font-bold text-midnight hover:text-lime transition-colors">
                         Sign In
                     </Link>
                     <Link href="/join">
-                        <Button size="sm" className="bg-teal hover:bg-teal/90 text-white rounded-full px-6 font-bold">
+                        <Button size="sm" className="bg-lime hover:bg-lime/90 text-midnight rounded-full px-6 font-bold">
                             list your agency
                         </Button>
                     </Link>
@@ -91,7 +91,7 @@ export const Navbar = () => {
                     <div className="flex flex-col gap-4">
                         <Link href="/login" className="text-lg font-bold text-midnight">Sign In</Link>
                         <Link href="/join">
-                            <Button className="w-full bg-teal text-white rounded-full font-bold h-12">
+                            <Button className="w-full bg-lime text-white rounded-full font-bold h-12">
                                 list your agency
                             </Button>
                         </Link>

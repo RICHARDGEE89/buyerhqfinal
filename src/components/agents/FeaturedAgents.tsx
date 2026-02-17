@@ -22,7 +22,7 @@ export const FeaturedAgents = () => {
                         </p>
                     </div>
                     <Link href="/agents">
-                        <Button variant="ghost" className="text-teal font-bold flex items-center gap-2 group">
+                        <Button variant="ghost" className="text-lime font-bold flex items-center gap-2 group">
                             Browse All Agents
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Button>

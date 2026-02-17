@@ -31,7 +31,7 @@ export default function AgentBillingPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Billing & <span className="text-teal">Subscription</span>
+                        Billing & <span className="text-lime">Subscription</span>
                     </h1>
                     <p className="text-stone font-medium">Manage your agency&apos;s professional membership.</p>
                 </div>
@@ -42,11 +42,11 @@ export default function AgentBillingPage() {
                 {/* Current Plan & Management */}
                 <div className="lg:col-span-2 space-y-8">
                     <Card className="border-stone/5 rounded-[3rem] bg-midnight text-white overflow-hidden shadow-2xl relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-teal/20 rounded-full blur-[100px] -mr-32 -mt-32" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-lime/20 rounded-full blur-[100px] -mr-32 -mt-32" />
                         <CardContent className="p-10 md:p-14 space-y-10 relative z-10">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div className="space-y-4">
-                                    <Badge className="bg-teal text-white border-transparent font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[10px]">
+                                    <Badge className="bg-lime text-white border-transparent font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[10px]">
                                         Current Plan
                                     </Badge>
                                     <h2 className="text-4xl md:text-5xl font-display font-black tracking-tight">{currentPlan.name}</h2>
@@ -63,28 +63,28 @@ export default function AgentBillingPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-10 border-t border-white/5">
                                 <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-teal" />
+                                    <CheckCircle2 className="w-5 h-5 text-lime" />
                                     <p className="text-sm font-medium text-white/60">Unlimited Leads & Enquiries</p>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-teal" />
+                                    <CheckCircle2 className="w-5 h-5 text-lime" />
                                     <p className="text-sm font-medium text-white/60">Verified Badge on Directory</p>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-teal" />
+                                    <CheckCircle2 className="w-5 h-5 text-lime" />
                                     <p className="text-sm font-medium text-white/60">Premium SEO Profile Page</p>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-teal" />
+                                    <CheckCircle2 className="w-5 h-5 text-lime" />
                                     <p className="text-sm font-medium text-white/60">Advanced Analytics Dashboard</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-wrap gap-4 pt-10">
-                                <Button className="bg-white text-midnight font-black px-10 h-14 rounded-2xl hover:bg-teal hover:text-white transition-all shadow-xl">
+                                <Button className="bg-white text-midnight font-black px-10 h-14 rounded-2xl hover:bg-lime hover:text-white transition-all shadow-xl">
                                     Change Plan
                                 </Button>
-                                <Button variant="ghost" className="text-white/40 hover:text-amber hover:bg-amber/5 rounded-2xl p-4 h-14">
+                                <Button variant="ghost" className="text-white/40 hover:text-lime hover:bg-lime/5 rounded-2xl p-4 h-14">
                                     Cancel Subscription
                                 </Button>
                             </div>
@@ -94,7 +94,7 @@ export default function AgentBillingPage() {
                     {/* Payment Method */}
                     <div className="space-y-6">
                         <h3 className="text-2xl font-display font-black text-midnight tracking-tight">Payment Method</h3>
-                        <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 group hover:border-teal/30 transition-all shadow-soft">
+                        <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 group hover:border-lime/30 transition-all shadow-soft">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-6">
                                     <div className="w-16 h-12 bg-midnight rounded-xl flex items-center justify-center text-white">
@@ -105,7 +105,7 @@ export default function AgentBillingPage() {
                                         <div className="text-stone text-[10px] font-bold uppercase tracking-widest">Expires 12/26</div>
                                     </div>
                                 </div>
-                                <Button variant="ghost" className="text-teal font-bold text-sm hover:underline">
+                                <Button variant="ghost" className="text-lime font-bold text-sm hover:underline">
                                     Update
                                 </Button>
                             </div>
@@ -124,7 +124,7 @@ export default function AgentBillingPage() {
                                         <div className="font-black text-midnight tracking-tight">{inv.amount}</div>
                                         <div className="text-stone text-[10px] font-bold uppercase tracking-widest mt-0.5">{inv.date}</div>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl bg-warm/50 text-stone hover:text-teal transition-all">
+                                    <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl bg-warm/50 text-stone hover:text-lime transition-all">
                                         <Download className="w-4 h-4" />
                                     </Button>
                                 </div>
@@ -134,7 +134,7 @@ export default function AgentBillingPage() {
 
                     <Card className="border-stone/10 rounded-[2rem] bg-warm/20 p-8 space-y-4 shadow-soft">
                         <div className="flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-teal" />
+                            <AlertCircle className="w-5 h-5 text-lime" />
                             <h4 className="text-xs font-black text-midnight uppercase tracking-widest">Business Info</h4>
                         </div>
                         <p className="text-xs text-stone font-medium leading-relaxed">

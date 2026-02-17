@@ -92,7 +92,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                     </div>
 
                                     <div className="space-y-4 pt-8 border-t border-stone/5">
-                                        <Button className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group">
+                                        <Button className="w-full h-16 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group">
                                             Enquire Now
                                             <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         </Button>
@@ -106,8 +106,8 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
                             <Card className="border-stone/10 rounded-[2.5rem] bg-midnight text-white p-8 space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <ShieldCheck className="w-5 h-5 text-teal" />
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-teal">BuyerHQ Guarantee</h4>
+                                    <ShieldCheck className="w-5 h-5 text-lime" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-lime">BuyerHQ Guarantee</h4>
                                 </div>
                                 <p className="text-sm text-white/40 font-medium leading-relaxed">
                                     This agent has undergone our 7-step verification process, including direct ABN and licence audit.
@@ -127,8 +127,8 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                 { label: 'Licence Status', value: 'Verified', icon: BadgeCheck },
                                 { label: 'Specialisations', value: agent.specialisations.length, icon: Star }
                             ].map((stat, i) => (
-                                <Card key={i} className="border-stone/5 rounded-3xl bg-white p-6 shadow-soft group hover:border-teal/20 transition-all">
-                                    <div className="w-10 h-10 rounded-xl bg-warm/50 flex items-center justify-center text-teal mb-4 group-hover:bg-teal group-hover:text-white transition-all">
+                                <Card key={i} className="border-stone/5 rounded-3xl bg-white p-6 shadow-soft group hover:border-lime/20 transition-all">
+                                    <div className="w-10 h-10 rounded-xl bg-warm/50 flex items-center justify-center text-lime mb-4 group-hover:bg-lime group-hover:text-white transition-all">
                                         <stat.icon className="w-5 h-5" />
                                     </div>
                                     <div className="text-2xl font-mono font-black text-midnight leading-none mb-1">
@@ -165,14 +165,14 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                 <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Recent Success Stories</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {agent.case_studies.map((cs) => (
-                                        <Card key={cs.id} className="border-stone/5 rounded-[2rem] overflow-hidden bg-warm/10 shadow-sm group hover:border-teal/20 transition-all">
+                                        <Card key={cs.id} className="border-stone/5 rounded-[2rem] overflow-hidden bg-warm/10 shadow-sm group hover:border-lime/20 transition-all">
                                             <CardContent className="p-8 space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <MapPin className="w-4 h-4 text-teal" />
+                                                        <MapPin className="w-4 h-4 text-lime" />
                                                         <span className="font-bold text-midnight">{cs.suburb}</span>
                                                     </div>
-                                                    <Badge className="bg-teal/10 text-teal border-teal/20 rounded-lg text-[10px] font-black uppercase">
+                                                    <Badge className="bg-lime/10 text-lime border-lime/20 rounded-lg text-[10px] font-black uppercase">
                                                         {cs.type}
                                                     </Badge>
                                                 </div>
@@ -203,7 +203,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                         <div key={review.id} className="p-8 rounded-[2.5rem] border border-stone/10 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-teal/10 flex items-center justify-center font-bold text-teal uppercase text-xs">
+                                                    <div className="w-10 h-10 rounded-full bg-lime/10 flex items-center justify-center font-bold text-lime uppercase text-xs">
                                                         {review.author[0]}
                                                     </div>
                                                     <div>
@@ -212,7 +212,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3.5 h-3.5 fill-amber text-amber" />)}
+                                                    {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3.5 h-3.5 fill-lime text-lime" />)}
                                                 </div>
                                             </div>
                                             <p className="text-stone font-medium text-sm leading-relaxed mb-6 italic">
@@ -243,7 +243,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
             {/* Sticky Mobile CTA */}
             <div className="lg:hidden fixed bottom-10 inset-x-6 z-50">
-                <Button className="w-full h-16 bg-teal text-white font-black rounded-2xl shadow-2xl shadow-teal/40 text-lg group">
+                <Button className="w-full h-16 bg-lime text-white font-black rounded-2xl shadow-2xl shadow-teal/40 text-lg group">
                     Contact Agent
                     <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>

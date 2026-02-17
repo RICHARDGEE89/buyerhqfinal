@@ -29,7 +29,7 @@ export const SearchBar = ({ className }: { className?: string }) => {
                 className="relative flex flex-col sm:flex-row items-stretch gap-2 p-2 bg-white rounded-[2rem] shadow-soft border border-stone/10"
             >
                 <div className="flex-1 flex items-center px-4 gap-3 border-b sm:border-b-0 sm:border-r border-stone/5 py-3 sm:py-0">
-                    <MapPin className="w-5 h-5 text-teal" />
+                    <MapPin className="w-5 h-5 text-lime" />
                     <input
                         type="text"
                         placeholder="Suburb, state, or postcode..."
@@ -43,7 +43,7 @@ export const SearchBar = ({ className }: { className?: string }) => {
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hidden lg:flex items-center gap-2 text-stone hover:text-teal transition-colors font-bold px-4"
+                        className="hidden lg:flex items-center gap-2 text-stone hover:text-lime transition-colors font-bold px-4"
                     >
                         <SlidersHorizontal className="w-4 h-4" />
                         <span>Filters</span>
@@ -51,7 +51,7 @@ export const SearchBar = ({ className }: { className?: string }) => {
 
                     <Button
                         type="submit"
-                        className="h-14 px-8 bg-teal hover:bg-teal/90 text-white text-lg font-bold rounded-2xl shadow-lg shadow-teal/20 transition-all active:scale-95 flex items-center gap-2"
+                        className="h-14 px-8 bg-lime hover:bg-lime/90 text-white text-lg font-bold rounded-2xl shadow-lg shadow-teal/20 transition-all active:scale-95 flex items-center gap-2"
                     >
                         <span>Find Agents</span>
                         <Search className="w-5 h-5" />

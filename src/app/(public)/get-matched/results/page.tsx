@@ -22,7 +22,7 @@ export default function MatchResultsPage() {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 bg-teal/10 px-4 py-2 rounded-full text-teal text-xs font-black uppercase tracking-widest border border-teal/20"
+                        className="inline-flex items-center gap-2 bg-lime/10 px-4 py-2 rounded-full text-lime text-xs font-black uppercase tracking-widest border border-lime/20"
                     >
                         <Sparkles className="w-4 h-4 fill-teal" />
                         Professional Matches
@@ -33,7 +33,7 @@ export default function MatchResultsPage() {
                         className="text-4xl md:text-6xl font-display font-black text-white tracking-tight"
                     >
                         We&apos;ve Found Your <br />
-                        <span className="text-teal">Perfect Experts.</span>
+                        <span className="text-lime">Perfect Experts.</span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
@@ -56,8 +56,8 @@ export default function MatchResultsPage() {
                                 transition={{ delay: 0.2 + i * 0.1 }}
                                 className="relative"
                             >
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 bg-midnight text-white px-6 py-2 rounded-2xl border-2 border-teal font-mono font-black text-xs shadow-xl flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-teal" />
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 bg-midnight text-white px-6 py-2 rounded-2xl border-2 border-lime font-mono font-black text-xs shadow-xl flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-lime" />
                                     {agent.match_score}% MATCH
                                 </div>
                                 <AgentCard agent={agent as Partial<Agent>} className="h-full pt-4" />
@@ -77,13 +77,13 @@ export default function MatchResultsPage() {
                 <div className="mt-24 flex flex-col items-center gap-8">
                     <div className="flex flex-col sm:flex-row gap-6">
                         <Link href="/get-matched">
-                            <Button variant="outline" className="h-16 px-10 rounded-[2rem] border-teal/20 text-white font-bold hover:bg-white hover:text-midnight transition-all">
+                            <Button variant="outline" className="h-16 px-10 rounded-[2rem] border-lime/20 text-white font-bold hover:bg-white hover:text-midnight transition-all">
                                 <RefreshCcw className="w-4 h-4 mr-2" />
                                 Redo Match Quiz
                             </Button>
                         </Link>
                         <Link href="/agents">
-                            <Button className="h-16 px-12 bg-white text-midnight font-black rounded-[2rem] shadow-2xl hover:bg-teal hover:text-white transition-all text-lg">
+                            <Button className="h-16 px-12 bg-white text-midnight font-black rounded-[2rem] shadow-2xl hover:bg-lime hover:text-white transition-all text-lg">
                                 Browse More Agents
                                 <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>

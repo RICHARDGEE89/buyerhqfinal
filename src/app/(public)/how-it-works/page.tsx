@@ -15,7 +15,7 @@ export default function HowItWorksPage() {
             title: "1. Define Your Needs",
             desc: "Tell us about your property goals, budget, and target suburbs in less than 2 minutes.",
             icon: Zap,
-            color: "text-teal bg-teal/10"
+            color: "text-lime bg-lime/10"
         },
         {
             title: "2. View Verified Matches",
@@ -38,7 +38,7 @@ export default function HowItWorksPage() {
                 <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
                     <h1 className="text-5xl md:text-7xl font-display font-black text-white tracking-tight mb-8">
                         The Smarter Way <br />
-                        to Find an <span className="text-teal">Agent.</span>
+                        to Find an <span className="text-lime">Agent.</span>
                     </h1>
                     <p className="text-xl text-white/60 leading-relaxed mb-12">
                         BuyerHQ is Australia&apos;s first truly independent directory designed to put the power back in the hands of property buyers.
@@ -71,14 +71,14 @@ export default function HowItWorksPage() {
             <section className="py-24 bg-warm/50 border-y border-stone/5">
                 <div className="container mx-auto px-6 max-w-4xl text-center space-y-8">
                     <h2 className="text-3xl md:text-5xl font-display font-black text-midnight tracking-tight">
-                        Why Independence <span className="text-teal">Matters.</span>
+                        Why Independence <span className="text-lime">Matters.</span>
                     </h2>
                     <p className="text-lg text-stone font-medium leading-relaxed">
                         Traditional real estate portals are built for sellers. We built BuyerHQ because we believe buyers deserve their own team of experts. We don&apos;t charge commissions, and we don&apos;t favour specific agencies. We just verify the best local talent and let you choose.
                     </p>
                     <div className="pt-8">
                         <Link href="/agents">
-                            <Button className="bg-teal hover:bg-teal/90 text-white font-black h-16 px-12 rounded-2xl text-lg shadow-xl shadow-teal/20 transition-all active:scale-95">
+                            <Button className="bg-lime hover:bg-lime/90 text-white font-black h-16 px-12 rounded-2xl text-lg shadow-xl shadow-teal/20 transition-all active:scale-95">
                                 Start Your Search
                                 <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>

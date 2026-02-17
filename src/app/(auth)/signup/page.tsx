@@ -29,7 +29,7 @@ export default function SignupPage() {
                     <div className="space-y-4">
                         <h2 className="text-4xl font-display font-black tracking-tight leading-tight">
                             Start your journey <br />
-                            <span className="text-teal">to the right home.</span>
+                            <span className="text-lime">to the right home.</span>
                         </h2>
                         <p className="text-white/40 font-medium leading-relaxed">
                             Join thousands of buyers who use BuyerHQ to find local property experts.
@@ -39,7 +39,7 @@ export default function SignupPage() {
                     <div className="space-y-6">
                         {benefits.map((b) => (
                             <div key={b.title} className="flex gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-teal">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lime">
                                     <b.icon className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -89,14 +89,14 @@ export default function SignupPage() {
 
                     <Button
                         onClick={() => alert("Registration system active. Please complete the form.")}
-                        className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
+                        className="w-full h-16 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
                     >
                         Create Free Account
                     </Button>
 
                     <div className="text-center">
                         <p className="text-stone text-xs font-medium">
-                            Already have an account? <Link href="/login" className="text-teal font-bold hover:underline">Log in</Link>
+                            Already have an account? <Link href="/login" className="text-lime font-bold hover:underline">Log in</Link>
                         </p>
                     </div>
 

@@ -32,7 +32,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({ rating, count, classNa
                         key={star}
                         className={cn(
                             "w-4 h-4",
-                            star <= rating ? "text-amber fill-amber" : "text-stone/20 fill-stone/20"
+                            star <= rating ? "text-lime fill-lime" : "text-stone/20 fill-stone/20"
                         )}
                     />
                 ))}

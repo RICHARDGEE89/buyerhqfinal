@@ -42,13 +42,13 @@ export default function BulkUploadPage() {
         <div className="space-y-12">
             <div className="flex items-center gap-6">
                 <Link href="/admin">
-                    <Button variant="ghost" size="icon" className="rounded-xl border border-stone/10 h-12 w-12 hover:bg-teal/5">
+                    <Button variant="ghost" size="icon" className="rounded-xl border border-stone/10 h-12 w-12 hover:bg-lime/5">
                         <ArrowLeft className="w-5 h-5 text-midnight" />
                     </Button>
                 </Link>
                 <div className="space-y-1">
                     <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Bulk <span className="text-teal">Upload</span>
+                        Bulk <span className="text-lime">Upload</span>
                     </h1>
                     <p className="text-stone font-medium italic">&quot;Batch import profiles directly into the directory.&quot;</p>
                 </div>
@@ -60,7 +60,7 @@ export default function BulkUploadPage() {
                         <CardContent className="p-10 space-y-8">
                             <div className="space-y-4">
                                 <label className="text-sm font-black text-midnight uppercase tracking-widest flex items-center gap-2">
-                                    <FileJson className="w-4 h-4 text-teal" />
+                                    <FileJson className="w-4 h-4 text-lime" />
                                     JSON Data
                                 </label>
                                 <Textarea
@@ -74,7 +74,7 @@ export default function BulkUploadPage() {
                             <Button
                                 onClick={handleUpload}
                                 disabled={isUploading || !jsonData.trim()}
-                                className="w-full h-16 bg-teal text-white font-black rounded-2xl shadow-xl shadow-teal/20 flex items-center justify-center text-lg gap-2"
+                                className="w-full h-16 bg-lime text-white font-black rounded-2xl shadow-xl shadow-teal/20 flex items-center justify-center text-lg gap-2"
                             >
                                 <Upload className="w-5 h-5" />
                                 {isUploading ? 'Uploading...' : 'Finalize Upload'}
@@ -85,7 +85,7 @@ export default function BulkUploadPage() {
                     {result && (
                         <div className={cn(
                             "p-6 rounded-2xl flex items-center gap-4 border animate-in slide-in-from-bottom duration-300",
-                            result.success ? "bg-verified/5 border-verified/20 text-verified" : "bg-amber/5 border-amber/20 text-amber"
+                            result.success ? "bg-verified/5 border-verified/20 text-verified" : "bg-lime/5 border-lime/20 text-lime"
                         )}>
                             {result.success ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
                             <p className="font-bold text-sm tracking-tight">{result.message}</p>
@@ -101,7 +101,7 @@ export default function BulkUploadPage() {
                             <ul className="space-y-2">
                                 {['business_name', 'slug', 'primary_suburb', 'primary_state'].map(f => (
                                     <li key={f} className="flex items-center gap-3 text-midnight font-mono text-xs">
-                                        <div className="w-1.5 h-1.5 bg-teal rounded-full" />
+                                        <div className="w-1.5 h-1.5 bg-lime rounded-full" />
                                         {f}
                                     </li>
                                 ))}
@@ -112,7 +112,7 @@ export default function BulkUploadPage() {
                             <p className="text-sm font-medium leading-relaxed">
                                 Ensure your JSON is formatted as an array. The system will automatically check for duplicate slugs. Verified status defaults to true if omitted.
                             </p>
-                            <div className="pt-4 flex items-center gap-2 text-[10px] font-mono font-bold text-teal uppercase tracking-widest">
+                            <div className="pt-4 flex items-center gap-2 text-[10px] font-mono font-bold text-lime uppercase tracking-widest">
                                 <ShieldCheck className="w-4 h-4" />
                                 Encrypted &amp; Secure Transfer
                             </div>

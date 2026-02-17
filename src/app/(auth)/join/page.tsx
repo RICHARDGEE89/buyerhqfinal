@@ -45,7 +45,7 @@ export default function AgentJoinPage() {
                         <div key={s.id} className="flex flex-col items-center gap-2 relative">
                             <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
-                                i <= currentStep ? "bg-teal text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
+                                i <= currentStep ? "bg-lime text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
                             )}>
                                 <s.icon className="w-5 h-5" />
                             </div>
@@ -131,7 +131,7 @@ export default function AgentJoinPage() {
 
                         <Button
                             onClick={() => currentStep === steps.length - 1 ? alert("Application Received! We will verify your credentials.") : handleNext()}
-                            className="h-16 px-12 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
+                            className="h-16 px-12 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
                         >
                             {currentStep === steps.length - 1 ? 'Finish Registry' : 'Continue'}
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
