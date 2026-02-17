@@ -8,19 +8,19 @@ const steps = [
         title: 'Tell Us What You Need',
         desc: "Define your budget, preferred suburbs, and property type to find the best match.",
         icon: MessageSquare,
-        color: 'bg-primary'
+        color: 'bg-gray-100 text-gray-900'
     },
     {
         title: 'Browse Verified Agents',
         desc: "Compare local experts with verified licences and real buyer reviews.",
         icon: UserCheck,
-        color: 'bg-indigo-600'
+        color: 'bg-gray-100 text-gray-900'
     },
     {
         title: 'Connect and Buy with Confidence',
         desc: "Enquire directly, compare agents, and secure your next home or investment.",
         icon: CheckCircle2,
-        color: 'bg-verified'
+        color: 'bg-gray-100 text-gray-900'
     }
 ];
 
@@ -43,7 +43,7 @@ export const HowItWorks = () => {
                             key={i}
                             className="relative p-10 bg-white rounded-[2.5rem] shadow-soft border border-stone/5 group hover:-translate-y-2 transition-transform duration-500"
                         >
-                            <div className={`w-14 h-14 ${step.color} rounded-2xl flex items-center justify-center text-white shadow-lg mb-8 group-hover:scale-110 transition-transform duration-500`}>
+                            <div className={`w-14 h-14 ${step.color} rounded-2xl flex items-center justify-center shadow-sm mb-8 group-hover:scale-110 transition-transform duration-500`}>
                                 <step.icon className="w-7 h-7" />
                             </div>
                             <h3 className="text-xl font-display font-black text-gray-900 mb-4">
