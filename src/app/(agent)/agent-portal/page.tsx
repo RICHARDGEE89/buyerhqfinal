@@ -15,19 +15,56 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AgentDashboardOverview() {
-    const metrics = [
-        { label: 'Total Leads', value: '124', icon: Users, trend: '+12%', trendUp: true, color: 'text-primary bg-primary/10' },
-        { label: 'Profile Views', value: '1.2k', icon: Eye, trend: '+5%', trendUp: true, color: 'text-gray-900 bg-gray-900/10' },
-        { label: 'Click Rate', value: '4.8%', icon: MousePointer2, trend: '-2%', trendUp: false, color: 'text-verified bg-verified/10' },
-        { label: 'Match Rate', value: '72%', icon: Sparkles, trend: '+8%', trendUp: true, color: 'text-primary bg-primary/10' },
-    ];
+    const [agent, setAgent] = React.useState<any>(null)
+    const [leads, setLeads] = React.useState<any[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const supabase = createClient()
+    const router = useRouter()
 
-    const recentLeads = [
-        { id: '1', name: 'James Wilson', type: 'First Home Buyer', location: 'Bondi, NSW', date: '2 hours ago', status: 'new' },
-        { id: '2', name: 'Sarah Jenkins', type: 'Investment', location: 'Surry Hills, NSW', date: '5 hours ago', status: 'read' },
-        { id: '3', name: 'Robert Chen', type: 'Luxury Home', location: 'Vaucluse, NSW', date: '1 day ago', status: 'replied' },
+    React.useEffect(() => {
+        const fetchDashboard = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                router.push('/login')
+                return
+            }
+
+            // Fetch Agent Profile
+            const { data: agentData, error: agentError } = await supabase
+                .from('agents')
+                .select('*')
+                .eq('id', user.id)
+                .single()
+
+            if (agentData) {
+                setAgent(agentData)
+
+                // Fetch Leads
+                const { data: leadsData } = await supabase
+                    .from('enquiries')
+                    .select('*')
+                    .eq('agent_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5)
+
+                if (leadsData) setLeads(leadsData)
+            }
+            setLoading(false)
+        }
+        fetchDashboard()
+    }, [router, supabase])
+
+    if (loading) return <div className="p-12 text-center text-gray-500 font-bold">Loading dashboard...</div>
+
+    const metrics = [
+        { label: 'Total Leads', value: leads.length.toString(), icon: Users, trend: '+12%', trendUp: true, color: 'text-primary bg-primary/10' },
+        { label: 'Profile Views', value: '1.2k', icon: Eye, trend: '+5%', trendUp: true, color: 'text-gray-900 bg-gray-900/10' }, // Mock for now
+        { label: 'Click Rate', value: '4.8%', icon: MousePointer2, trend: '-2%', trendUp: false, color: 'text-verified bg-verified/10' }, // Mock
+        { label: 'Match Rate', value: '72%', icon: Sparkles, trend: '+8%', trendUp: true, color: 'text-primary bg-primary/10' }, // Mock
     ];
 
     return (
@@ -38,7 +75,7 @@ export default function AgentDashboardOverview() {
                     <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
                         Dashboard <span className="text-primary">Overview</span>
                     </h1>
-                    <p className="text-stone font-medium">Performance summary for Prestige Property Group.</p>
+                    <p className="text-stone font-medium">Performance summary for {agent?.business_name || 'Your Agency'}.</p>
                 </div>
                 <div className="flex gap-4">
                     <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white">
@@ -86,40 +123,42 @@ export default function AgentDashboardOverview() {
                             View all leads <ChevronRight className="w-4 h-4" />
                         </Link>
                     </div>
-                    <div className="space-y-4">
-                        {recentLeads.map((lead) => (
-                            <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
-                                <CardContent className="p-8 flex items-center justify-between">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-14 h-14 rounded-2xl bg-warm flex items-center justify-center font-display font-black text-primary">
-                                            {lead.name.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="font-bold text-gray-900 text-lg">{lead.name}</h4>
-                                                <div className={cn(
-                                                    "px-3 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest border",
-                                                    lead.status === 'new' ? "bg-primary/10 text-primary border-primary/20" : "bg-stone/5 text-stone border-stone/10"
-                                                )}>
-                                                    {lead.status}
-                                                </div>
+                    {leads.length > 0 ? (
+                        <div className="space-y-4">
+                            {leads.map((lead) => (
+                                <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
+                                    <CardContent className="p-8 flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-14 h-14 rounded-2xl bg-warm flex items-center justify-center font-display font-black text-primary">
+                                                {lead.buyer_name ? lead.buyer_name.split(' ').map((n: string) => n[0]).join('') : 'U'}
                                             </div>
-                                            <p className="text-sm text-stone font-medium">{lead.type} • {lead.location}</p>
+                                            <div>
+                                                <div className="flex items-center gap-3">
+                                                    <h4 className="font-bold text-gray-900 text-lg">{lead.buyer_name || 'New Enquirer'}</h4>
+                                                    <div className={cn(
+                                                        "px-3 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest border",
+                                                        lead.status === 'new' ? "bg-primary/10 text-primary border-primary/20" : "bg-stone/5 text-stone border-stone/10"
+                                                    )}>
+                                                        {lead.status}
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-stone font-medium">{lead.subject || 'General Enquiry'} • {new Date(lead.created_at).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-right hidden md:block">
-                                            <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Received</div>
-                                            <div className="text-sm font-bold text-gray-900">{lead.date}</div>
+                                        <div className="flex items-center gap-6">
+                                            <Button variant="ghost" size="icon" className="bg-warm/50 hover:bg-primary hover:text-white transition-all rounded-xl w-12 h-12">
+                                                <ChevronRight className="w-5 h-5" />
+                                            </Button>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="bg-warm/50 hover:bg-primary hover:text-white transition-all rounded-xl w-12 h-12">
-                                            <ChevronRight className="w-5 h-5" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-10 text-center border border-dashed border-gray-200 rounded-[2.5rem]">
+                            <p className="text-stone font-bold">No leads yet.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Center / Tips */}

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Mail, MessageSquare, Linkedin, Instagram, Facebook, Send } from 'lucide-react';
+import { Mail, MessageSquare, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -63,9 +63,7 @@ export default function ContactContent() {
                             <div className="space-y-6 pt-10 border-t border-stone/5">
                                 <h3 className="text-sm font-black text-stone uppercase tracking-widest">Connect with us</h3>
                                 <div className="flex items-center gap-4">
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Linkedin className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Instagram className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Facebook className="w-5 h-5" /></Link>
+                                    {/* Socials placeholder */}
                                 </div>
                             </div>
                         </div>

@@ -25,7 +25,31 @@ ON CONFLICT (id) DO UPDATE SET
   last_name = EXCLUDED.last_name,
   updated_at = now();
 
--- 3. CREATE ENQUIRIES TABLE
+-- 3. CREATE AGENTS TABLE
+CREATE TABLE IF NOT EXISTS public.agents (
+  id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  slug TEXT UNIQUE NOT NULL,
+  business_name TEXT NOT NULL,
+  abn TEXT,
+  licence_number TEXT,
+  licence_verified BOOLEAN DEFAULT false,
+  bio TEXT,
+  headshot_url TEXT,
+  video_intro_url TEXT,
+  years_experience INTEGER DEFAULT 0,
+  primary_suburb TEXT,
+  primary_state TEXT,
+  location_point GEOGRAPHY(POINT),
+  specialisations TEXT[],
+  rating DECIMAL(3,2) DEFAULT 0,
+  review_count INTEGER DEFAULT 0,
+  subscription_status TEXT CHECK (subscription_status IN ('inactive', 'active', 'past_due')) DEFAULT 'inactive',
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 4. CREATE ENQUIRIES TABLE
 CREATE TABLE IF NOT EXISTS public.enquiries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   buyer_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
@@ -38,7 +62,7 @@ CREATE TABLE IF NOT EXISTS public.enquiries (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. CREATE SAVED AGENTS TABLE
+-- 5. CREATE SAVED AGENTS TABLE
 CREATE TABLE IF NOT EXISTS public.saved_agents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   buyer_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -47,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.saved_agents (
   UNIQUE(buyer_id, agent_id)
 );
 
--- 5. CREATE MATCH RESULTS TABLE
+-- 6. CREATE MATCH RESULTS TABLE
 CREATE TABLE IF NOT EXISTS public.match_results (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   buyer_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -56,14 +80,14 @@ CREATE TABLE IF NOT EXISTS public.match_results (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. ENABLE ROW LEVEL SECURITY
+-- 7. ENABLE ROW LEVEL SECURITY
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.saved_agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.match_results ENABLE ROW LEVEL SECURITY;
 
--- 7. DROP EXISTING POLICIES (if any)
+-- 8. DROP EXISTING POLICIES (if any)
 DROP POLICY IF EXISTS "Users can view own data" ON public.users;
 DROP POLICY IF EXISTS "Users can update own data" ON public.users;
 DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
@@ -75,7 +99,7 @@ DROP POLICY IF EXISTS "Buyers can view their enquiries" ON public.enquiries;
 DROP POLICY IF EXISTS "Buyers can insert enquiries" ON public.enquiries;
 DROP POLICY IF EXISTS "Buyers can manage their saved agents" ON public.saved_agents;
 
--- 8. CREATE RLS POLICIES
+-- 9. CREATE RLS POLICIES
 
 -- Users policies
 CREATE POLICY "Users can view own data" ON public.users 
@@ -117,7 +141,7 @@ CREATE POLICY "Buyers can insert enquiries" ON public.enquiries
 CREATE POLICY "Buyers can manage their saved agents" ON public.saved_agents 
   FOR ALL USING (auth.uid() = buyer_id);
 
--- 9. CREATE AUTO-SYNC TRIGGER FOR NEW USERS
+-- 10. CREATE AUTO-SYNC TRIGGER FOR NEW USERS
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -139,7 +163,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 10. VERIFY SETUP
+-- 11. VERIFY SETUP
 SELECT 
   '✅ DATABASE SETUP COMPLETE!' as status,
   (SELECT COUNT(*) FROM public.users WHERE role = 'admin') as admin_count,

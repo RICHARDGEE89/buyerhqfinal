@@ -226,14 +226,7 @@ export default function AgentProfileContent({ agent }: { agent: AgentProfile }) 
 
                         {/* Agency Links */}
                         <div className="flex items-center gap-8 pt-12 border-t border-white/5">
-                            <a href="#" className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm font-bold">
-                                <ExternalLink className="w-4 h-4" />
-                                Official Website
-                            </a>
-                            <a href="#" className="flex items-center gap-2 text-sky/40 hover:text-white transition-colors text-sm font-bold">
-                                <MessageSquare className="w-4 h-4" />
-                                Portfolio
-                            </a>
+                            {/* External links removed until DB support added */}
                         </div>
 
                     </div>

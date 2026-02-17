@@ -6,6 +6,8 @@ import { Logo } from '@/components/brand/Logo';
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { CheckCircle2, ShieldCheck, Star, Lock } from 'lucide-react';
 
 const benefits = [
@@ -16,6 +18,52 @@ const benefits = [
 ];
 
 export default function SignupPage() {
+    const [email, setEmail] = React.useState('')
+    const [password, setPassword] = React.useState('')
+    const [firstname, setFirstname] = React.useState('')
+    const [lastname, setLastname] = React.useState('')
+    const [loading, setLoading] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
+    const router = useRouter()
+    const supabase = createClient()
+
+    const handleSignup = async () => {
+        if (!email || !password || !firstname || !lastname) {
+            setError("Please fill in all fields")
+            return
+        }
+
+        setLoading(true)
+        setError(null)
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    first_name: firstname,
+                    last_name: lastname,
+                    role: 'buyer'
+                }
+            }
+        })
+
+        if (error) {
+            setError(error.message)
+            setLoading(false)
+        } else {
+            // Check if email confirmation is required?
+            // For now, assume auto-confirm or redirect to dashboard if session exists
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                router.push('/dashboard')
+            } else {
+                setError("Account created! Please check your email to verify.")
+                setLoading(false)
+            }
+        }
+    }
+
     return (
         <div className="min-h-screen bg-topo flex flex-col items-center justify-center p-6">
             <Link href="/" className="mb-12">
@@ -67,31 +115,59 @@ export default function SignupPage() {
                     </div>
 
                     <div className="space-y-4">
+                        {error && (
+                            <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl text-center">
+                                {error}
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">First Name</label>
-                                <Input placeholder="John" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                <Input
+                                    placeholder="John"
+                                    className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                    value={firstname}
+                                    onChange={(e) => setFirstname(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Last Name</label>
-                                <Input placeholder="Doe" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                <Input
+                                    placeholder="Doe"
+                                    className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                    value={lastname}
+                                    onChange={(e) => setLastname(e.target.value)}
+                                />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Email Address</label>
-                            <Input placeholder="john@example.com" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                            <Input
+                                placeholder="john@example.com"
+                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Password</label>
-                            <Input type="password" placeholder="••••••••" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                            <Input
+                                type="password"
+                                placeholder="••••••••"
+                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSignup()}
+                            />
                         </div>
                     </div>
 
                     <Button
-                        onClick={() => alert("Registration system active. Please complete the form.")}
-                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
+                        onClick={handleSignup}
+                        disabled={loading}
+                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all disabled:opacity-50"
                     >
-                        Create Free Account
+                        {loading ? 'Creating Account...' : 'Create Free Account'}
                     </Button>
 
                     <div className="text-center">
@@ -102,7 +178,7 @@ export default function SignupPage() {
 
                     <div className="bg-warm/30 p-4 rounded-xl border border-stone/5">
                         <p className="text-[10px] text-stone font-medium text-center leading-relaxed">
-                            By creating an account, you agree to our <Link href="#" className="underline">Terms</Link> and <Link href="#" className="underline">Privacy Policy</Link>.
+                            By creating an account, you agree to our <Link href="/terms" className="underline">Terms</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>.
                         </p>
                     </div>
                 </CardContent>

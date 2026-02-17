@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
-import { Mail, Linkedin, Instagram, Facebook } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -38,9 +38,7 @@ export const Footer = () => {
                             Australia&apos;s leading marketplace for verified buyer&apos;s advocacy.
                         </p>
                         <div className="flex items-center gap-4">
-                            <Link href="#" className="text-gray-400 hover:text-primary transition-colors"><Linkedin className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-gray-400 hover:text-primary transition-colors"><Instagram className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-gray-400 hover:text-primary transition-colors"><Facebook className="w-5 h-5" /></Link>
+                            {/* Socials removed */}
                             <Link href="mailto:hello@buyerhq.com.au" className="text-gray-400 hover:text-primary transition-colors"><Mail className="w-5 h-5" /></Link>
                         </div>
                     </div>

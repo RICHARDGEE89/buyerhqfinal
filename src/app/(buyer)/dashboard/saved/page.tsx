@@ -5,34 +5,65 @@ import { AgentCard } from '@/components/agents/AgentCard';
 import { Button } from '@/components/ui/button';
 import { Trash2, ArrowLeft } from 'lucide-react';
 import { Agent } from '@/types';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 export default function SavedAgentsPage() {
-    // Mock saved agents
-    const savedAgents = [
-        {
-            id: '1',
-            slug: 'prestige-property-group',
-            business_name: 'Prestige Property Group',
-            primary_suburb: 'Double Bay',
-            primary_state: 'NSW',
-            licence_verified: true,
-            years_experience: 15,
-            specialisations: ['Luxury Homes', 'Off-Market Deals'],
-            bio: "Sydney's leading luxury buyer's agency with over $2B in properties secured for our clients."
-        },
-        {
-            id: '2',
-            slug: 'melbourne-buyer-experts',
-            business_name: 'Melbourne Buyer Experts',
-            primary_suburb: 'Toorak',
-            primary_state: 'VIC',
-            licence_verified: true,
-            years_experience: 12,
-            specialisations: ['Family Homes', 'First Home Buyers'],
-            bio: "We help Melbourne families find and secure their dream home without the typical real estate stress."
+    const [savedAgents, setSavedAgents] = React.useState<any[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const supabase = createClient()
+    const router = useRouter()
+
+    React.useEffect(() => {
+        const fetchSaved = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                router.push('/login')
+                return
+            }
+
+            const { data, error } = await supabase
+                .from('saved_agents')
+                .select(`
+                    id,
+                    agent:agents (
+                        id,
+                        business_name,
+                        slug,
+                        primary_suburb,
+                        primary_state,
+                        years_experience,
+                        licence_verified,
+                        specialisations,
+                        bio
+                    )
+                `)
+                .order('created_at', { ascending: false })
+
+            if (data) {
+                // Flatten structure
+                const flattened = data.map((item: any) => ({
+                    saved_id: item.id,
+                    ...item.agent
+                })).filter(a => a) // Remove nulls if any
+                setSavedAgents(flattened)
+            }
+            setLoading(false)
         }
-    ];
+        fetchSaved()
+    }, [router, supabase])
+
+    const handleRemove = async (savedId: string) => {
+        const { error } = await supabase.from('saved_agents').delete().eq('id', savedId)
+        if (!error) {
+            setSavedAgents(prev => prev.filter(a => a.saved_id !== savedId))
+        }
+    }
+
+    if (loading) {
+        return <div className="py-20 text-center font-bold text-gray-500">Loading saved agents...</div>
+    }
 
     return (
         <div className="space-y-12">
@@ -62,8 +93,8 @@ export default function SavedAgentsPage() {
             {savedAgents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {savedAgents.map((agent) => (
-                        <div key={agent.id} className="relative group">
-                            <AgentCard agent={agent as Partial<Agent>} />
+                        <div key={agent.saved_id} className="relative group">
+                            <AgentCard agent={agent} />
                             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <Button
                                     variant="destructive"
@@ -71,7 +102,7 @@ export default function SavedAgentsPage() {
                                     className="w-10 h-10 rounded-full shadow-lg"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        // Handle remove
+                                        handleRemove(agent.saved_id)
                                     }}
                                 >
                                     <Trash2 className="w-4 h-4" />
