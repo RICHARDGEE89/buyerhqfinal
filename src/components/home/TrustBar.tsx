@@ -21,10 +21,7 @@ const StatItem: React.FC<StatItemProps> = ({ label, value, suffix }) => (
 export const TrustBar = () => {
     // In a real app, these values would be fetched from Supabase
     const stats = [
-        { label: "Verified Agents", value: 8 },
-        { label: "States Covered", value: 8 },
-        { label: "Enquiries MTD", value: "2.4", suffix: "k" },
-        { label: "Avg Response", value: "<1", suffix: "hr" }
+        { label: "Verified Agents", value: 0 },
     ];
 
     return (

@@ -3,16 +3,14 @@ import { MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 const locations = [
-    { name: 'Sydney', state: 'NSW', count: 0 },
-    { name: 'Melbourne', state: 'VIC', count: 0 },
-    { name: 'Brisbane', state: 'QLD', count: 0 },
-    { name: 'Perth', state: 'WA', count: 0 },
-    { name: 'Adelaide', state: 'SA', count: 0 },
-    { name: 'Gold Coast', state: 'QLD', count: 0 },
-    { name: 'Canberra', state: 'ACT', count: 0 },
-    { name: 'Sunshine Coast', state: 'QLD', count: 0 },
-    { name: 'Hobart', state: 'TAS', count: 0 },
-    { name: 'Darwin', state: 'NT', count: 0 },
+    { name: 'New South Wales', state: 'NSW', count: 0 },
+    { name: 'Victoria', state: 'VIC', count: 0 },
+    { name: 'Queensland', state: 'QLD', count: 0 },
+    { name: 'Western Australia', state: 'WA', count: 0 },
+    { name: 'South Australia', state: 'SA', count: 0 },
+    { name: 'Tasmania', state: 'TAS', count: 0 },
+    { name: 'Australian Capital Territory', state: 'ACT', count: 0 },
+    { name: 'Northern Territory', state: 'NT', count: 0 },
 ];
 
 export const LocationGrid = () => {
@@ -31,12 +29,12 @@ export const LocationGrid = () => {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {locations.map((loc) => (
                         <Link
                             key={loc.name}
-                            href={`/agents?state=${loc.state}&suburb=${loc.name}`}
-                            className="group p-8 bg-gray-50 border border-gray-200 rounded-[2rem] hover:bg-white hover:border-primary hover:shadow-lg transition-all duration-500"
+                            href={`/agents?state=${loc.state}`}
+                            className="group p-8 bg-gray-50 border border-gray-200 rounded-[2rem] hover:bg-white hover:border-primary hover:shadow-lg transition-all duration-500 min-h-[160px] flex flex-col justify-between"
                         >
                             <div className="flex flex-col h-full">
                                 <div className="w-10 h-10 rounded-xl bg-white group-hover:bg-primary flex items-center justify-center text-gray-900 group-hover:text-white transition-colors mb-4 border border-gray-100">

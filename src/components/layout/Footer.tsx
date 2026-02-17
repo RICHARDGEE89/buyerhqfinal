@@ -21,7 +21,7 @@ export const Footer = () => {
             { name: 'Terms of Service', href: '/terms' },
         ],
         professionals: [
-            { name: 'list your agency', href: '/join' },
+            { name: 'List Your Agency', href: '/join' },
             { name: 'Agent Login', href: '/login' },
             { name: 'Blog', href: '/blog' },
             { name: 'Admin Console', href: '/admin-login' },

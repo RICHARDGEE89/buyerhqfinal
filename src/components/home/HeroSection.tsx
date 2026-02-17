@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { SearchBar } from './SearchBar';
-import { BadgeCheck, Sparkles } from 'lucide-react';
+import { BadgeCheck } from 'lucide-react';
 
 export const HeroSection = () => {
     return (
@@ -55,31 +55,7 @@ export const HeroSection = () => {
                         <SearchBar />
                     </motion.div>
 
-                    {/* Secondary Trust Signal */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12"
-                    >
-                        <div className="flex -space-x-3">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-12 h-12 rounded-2xl border-2 border-white bg-gray-100 flex items-center justify-center font-display font-black text-xs text-gray-900">
-                                    BHQ
-                                </div>
-                            ))}
-                        </div>
-                        <div className="text-left">
-                            <div className="flex items-center gap-1 text-gray-900 mb-1">
-                                {[1, 2, 3, 4, 5].map((s) => <Sparkles key={s} className="w-3 h-3 fill-gray-900 text-gray-900" />)}
-                            </div>
-                            <p className="text-gray-500 text-xs font-mono font-bold uppercase tracking-[0.2em] leading-tight">
-                                &quot;The best decision we made in our property journey.&quot;
-                                <br />
-                                <span className="text-gray-900">— Sarah &amp; David, Bondi</span>
-                            </p>
-                        </div>
-                    </motion.div>
+
                 </div>
             </div>
         </section>

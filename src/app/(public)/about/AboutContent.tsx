@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Heart, Eye, Users, BadgeCheck, Scale, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Heart, Eye, Users, Scale, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const values = [
@@ -30,21 +30,14 @@ export default function AboutContent() {
     return (
         <div className="bg-white min-h-screen">
             {/* Hero */}
-            <section className="pt-40 pb-24 bg-topo relative">
+            {/* Hero */}
+            <section className="pt-40 pb-24 bg-white relative">
                 <div className="container mx-auto px-6 text-center space-y-6 max-w-4xl">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-primary text-xs font-bold uppercase tracking-widest border border-white/20 backdrop-blur-sm"
-                    >
-                        <BadgeCheck className="w-4 h-4 mr-2 text-verified fill-verified/20" />
-                        Our Mission & Standards
-                    </motion.div>
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-tight"
+                        className="text-5xl md:text-7xl font-display font-black text-gray-900 tracking-tight leading-tight"
                     >
                         The Agent Directory <br className="hidden md:block" />
                         Designed for <span className="text-primary">Buyers.</span>
@@ -53,7 +46,7 @@ export default function AboutContent() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
+                        className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed"
                     >
                         BuyerHQ was built to solve a single problem: finding a trustworthy, local buyer&apos;s agent shouldn&apos;t be a guessing game.
                     </motion.p>
