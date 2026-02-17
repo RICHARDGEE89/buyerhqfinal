@@ -16,7 +16,7 @@ export const AgentSearchHeader = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-4xl md:text-5xl font-display font-black text-white tracking-tight"
                     >
-                        Find Your <span className="text-lime">Property Expert</span>
+                        Find Your <span className="text-primary">Property Expert</span>
                     </motion.h1>
 
                     <motion.div

@@ -8,7 +8,7 @@ const steps = [
         title: 'Tell Us What You Need',
         desc: "Define your budget, preferred suburbs, and property type to find the best match.",
         icon: MessageSquare,
-        color: 'bg-lime'
+        color: 'bg-primary'
     },
     {
         title: 'Browse Verified Agents',
@@ -29,7 +29,7 @@ export const HowItWorks = () => {
         <section className="py-24 bg-warm">
             <div className="container mx-auto px-6">
                 <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-                    <h2 className="text-3xl md:text-5xl font-display font-black text-midnight tracking-tight">
+                    <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
                         How BuyerHQ Works
                     </h2>
                     <p className="text-stone font-medium text-lg leading-relaxed">
@@ -46,7 +46,7 @@ export const HowItWorks = () => {
                             <div className={`w-14 h-14 ${step.color} rounded-2xl flex items-center justify-center text-white shadow-lg mb-8 group-hover:scale-110 transition-transform duration-500`}>
                                 <step.icon className="w-7 h-7" />
                             </div>
-                            <h3 className="text-xl font-display font-black text-midnight mb-4">
+                            <h3 className="text-xl font-display font-black text-gray-900 mb-4">
                                 {step.title}
                             </h3>
                             <p className="text-stone font-medium leading-relaxed">
@@ -65,7 +65,7 @@ export const HowItWorks = () => {
 
                 <div className="mt-16 text-center">
                     <Link href="/get-matched">
-                        <Button className="bg-lime hover:bg-lime/90 text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-teal/20 transition-all active:scale-95 text-lg">
+                        <Button className="bg-primary hover:bg-primary/90 text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-teal/20 transition-all active:scale-95 text-lg">
                             Take the Match Quiz
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>

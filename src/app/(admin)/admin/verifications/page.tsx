@@ -41,8 +41,8 @@ export default function AdminVerificationsPage() {
         <div className="space-y-12">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Agency <span className="text-lime">Verifications</span>
+                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
+                        Agency <span className="text-primary">Verifications</span>
                     </h1>
                     <p className="text-stone font-medium">Review and approve new property expert applications.</p>
                 </div>
@@ -56,17 +56,17 @@ export default function AdminVerificationsPage() {
 
                                 {/* Agency Info */}
                                 <div className="lg:col-span-1 space-y-6">
-                                    <div className="w-20 h-20 rounded-3xl bg-midnight flex items-center justify-center text-white font-display font-black text-2xl">
+                                    <div className="w-20 h-20 rounded-3xl bg-gray-900 flex items-center justify-center text-white font-display font-black text-2xl">
                                         {app.agency.split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-2xl font-display font-black text-midnight tracking-tight">{app.agency}</h3>
+                                        <h3 className="text-2xl font-display font-black text-gray-900 tracking-tight">{app.agency}</h3>
                                         <p className="text-stone font-medium text-sm">{app.owner}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Badge className={cn(
                                             "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border",
-                                            app.status === 'pending' ? "bg-lime/10 text-lime border-lime/20" : "bg-lime/10 text-lime border-lime/20"
+                                            app.status === 'pending' ? "bg-primary/10 text-primary border-primary/20" : "bg-primary/10 text-primary border-primary/20"
                                         )}>
                                             {app.status.replace('_', ' ')}
                                         </Badge>
@@ -77,20 +77,20 @@ export default function AdminVerificationsPage() {
                                 <div className="lg:col-span-2 grid grid-cols-2 gap-8 items-center bg-warm/20 rounded-[2rem] p-8 border border-stone/5">
                                     <div className="space-y-1">
                                         <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">ABN Number</div>
-                                        <div className="text-sm font-bold text-midnight tracking-tight flex items-center gap-2">
+                                        <div className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
                                             {app.abn}
-                                            <ExternalLink className="w-3.5 h-3.5 text-lime" />
+                                            <ExternalLink className="w-3.5 h-3.5 text-primary" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Real Estate Licence</div>
-                                        <div className="text-sm font-bold text-midnight tracking-tight">{app.licence}</div>
+                                        <div className="text-sm font-bold text-gray-900 tracking-tight">{app.licence}</div>
                                     </div>
                                     <div className="space-y-4 col-span-2 pt-4 border-t border-stone/5">
                                         <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Submitted Documents</div>
                                         <div className="flex flex-wrap gap-2">
                                             {app.docs.map(doc => (
-                                                <div key={doc} className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-stone/10 text-xs font-bold text-midnight hover:border-lime transition-all cursor-pointer">
+                                                <div key={doc} className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-stone/10 text-xs font-bold text-gray-900 hover:border-primary transition-all cursor-pointer">
                                                     <FileText className="w-3.5 h-3.5 text-stone" />
                                                     {doc}
                                                 </div>
@@ -105,7 +105,7 @@ export default function AdminVerificationsPage() {
                                         <BadgeCheck className="w-5 h-5 mr-2" />
                                         Approve Expert
                                     </Button>
-                                    <Button variant="outline" className="w-full h-14 border-lime/20 text-lime font-black rounded-2xl hover:bg-lime/5 transition-all">
+                                    <Button variant="outline" className="w-full h-14 border-primary/20 text-primary font-black rounded-2xl hover:bg-primary/5 transition-all">
                                         <XCircle className="w-5 h-5 mr-2" />
                                         Reject / Flag
                                     </Button>

@@ -39,9 +39,9 @@ export default function AgentLeadsPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'new': return 'bg-lime/10 text-lime border-lime/20';
+            case 'new': return 'bg-primary/10 text-primary border-primary/20';
             case 'replied': return 'bg-verified/10 text-verified border-verified/20';
-            case 'read': return 'bg-lime/10 text-lime border-lime/20';
+            case 'read': return 'bg-primary/10 text-primary border-primary/20';
             default: return 'bg-stone/10 text-stone border-stone/10';
         }
     };
@@ -50,16 +50,16 @@ export default function AgentLeadsPage() {
         <div className="space-y-12">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
-                        Leads & <span className="text-lime">Enquiries</span>
+                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
+                        Leads & <span className="text-primary">Enquiries</span>
                     </h1>
                     <p className="text-stone font-medium">Manage and respond to property buyer interest.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-midnight bg-white">
+                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white">
                         Download CSV
                     </Button>
-                    <Button className="bg-lime text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
+                    <Button className="bg-primary text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
                         Bulk Action
                     </Button>
                 </div>
@@ -77,7 +77,7 @@ export default function AgentLeadsPage() {
                                 onClick={() => setFilter(f)}
                                 className={cn(
                                     "rounded-xl h-10 px-6 font-bold capitalize transition-all",
-                                    filter === f ? "bg-white shadow-sm text-midnight" : "text-stone hover:text-midnight"
+                                    filter === f ? "bg-white shadow-sm text-gray-900" : "text-stone hover:text-gray-900"
                                 )}
                             >
                                 {f}
@@ -93,17 +93,17 @@ export default function AgentLeadsPage() {
                 {/* Leads Grid/Table */}
                 <div className="space-y-4">
                     {filteredLeads.map((lead) => (
-                        <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-lime/20 transition-all overflow-hidden">
+                        <Card key={lead.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft group hover:border-primary/20 transition-all overflow-hidden">
                             <CardContent className="p-0">
                                 <div className="p-8 flex flex-col lg:flex-row lg:items-center gap-8">
                                     {/* Buyer Identity */}
                                     <div className="flex items-center gap-6 min-w-[300px]">
-                                        <div className="w-16 h-16 rounded-2xl bg-midnight flex items-center justify-center text-white font-display font-black text-xl">
+                                        <div className="w-16 h-16 rounded-2xl bg-gray-900 flex items-center justify-center text-white font-display font-black text-xl">
                                             {lead.name.split(' ').map(n => n[0]).join('')}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <h4 className="font-bold text-midnight text-lg tracking-tight">{lead.name}</h4>
+                                                <h4 className="font-bold text-gray-900 text-lg tracking-tight">{lead.name}</h4>
                                                 <Badge className={cn("px-2.5 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest border", getStatusColor(lead.status))}>
                                                     {lead.status}
                                                 </Badge>
@@ -116,15 +116,15 @@ export default function AgentLeadsPage() {
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-8 flex-1">
                                         <div className="space-y-1">
                                             <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Property Goal</div>
-                                            <div className="flex items-center gap-2 text-sm font-bold text-midnight">
-                                                <MapPin className="w-3.5 h-3.5 text-lime" />
+                                            <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                                                <MapPin className="w-3.5 h-3.5 text-primary" />
                                                 {lead.location}
                                             </div>
                                             <div className="text-xs text-stone font-medium">{lead.type}</div>
                                         </div>
                                         <div className="space-y-1">
                                             <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Budget</div>
-                                            <div className="text-sm font-bold text-midnight tracking-tight">{lead.budget}</div>
+                                            <div className="text-sm font-bold text-gray-900 tracking-tight">{lead.budget}</div>
                                             <div className="text-xs text-verified font-bold uppercase tracking-widest flex items-center gap-1">
                                                 <BadgeCheck className="w-3 h-3" />
                                                 Funds Verified
@@ -132,7 +132,7 @@ export default function AgentLeadsPage() {
                                         </div>
                                         <div className="space-y-1 hidden md:block">
                                             <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Received</div>
-                                            <div className="flex items-center gap-2 text-sm font-bold text-midnight">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
                                                 <Calendar className="w-3.5 h-3.5 text-stone" />
                                                 {lead.date}
                                             </div>
@@ -141,11 +141,11 @@ export default function AgentLeadsPage() {
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-4">
-                                        <Button variant="outline" className="h-14 px-8 rounded-xl border-stone/10 font-black text-midnight flex-1 lg:flex-none">
+                                        <Button variant="outline" className="h-14 px-8 rounded-xl border-stone/10 font-black text-gray-900 flex-1 lg:flex-none">
                                             <MessageSquare className="w-4 h-4 mr-2" />
                                             Quick Reply
                                         </Button>
-                                        <Button className="h-14 w-14 rounded-xl bg-warm/50 text-midnight hover:bg-lime hover:text-white transition-all flex items-center justify-center flex-shrink-0">
+                                        <Button className="h-14 w-14 rounded-xl bg-warm/50 text-gray-900 hover:bg-primary hover:text-white transition-all flex items-center justify-center flex-shrink-0">
                                             <ChevronRight className="w-6 h-6" />
                                         </Button>
                                     </div>
@@ -158,7 +158,7 @@ export default function AgentLeadsPage() {
                 {/* Empty State Mock */}
                 {filteredLeads.length === 0 && (
                     <div className="py-32 text-center bg-white rounded-[3rem] border border-dashed border-stone/20">
-                        <h3 className="text-2xl font-display font-black text-midnight">No leads found</h3>
+                        <h3 className="text-2xl font-display font-black text-gray-900">No leads found</h3>
                         <p className="text-stone font-medium mt-2">Try adjusting your filters to see more results.</p>
                     </div>
                 )}

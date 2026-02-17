@@ -35,19 +35,19 @@ export default function AgentsPage() {
                             {/* Directory Controls */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-8 border-b border-stone/5">
                                 <div className="text-stone font-bold text-sm uppercase tracking-widest">
-                                    Showing <span className="text-midnight">{agents.length}</span> Verified Agents
+                                    Showing <span className="text-gray-900">{agents.length}</span> Verified Agents
                                 </div>
 
                                 <div className="flex items-center gap-2 bg-warm/30 p-1.5 rounded-2xl border border-stone/5">
-                                    <Button variant="ghost" size="sm" className="bg-white shadow-sm rounded-xl h-9 px-4 text-midnight font-bold">
+                                    <Button variant="ghost" size="sm" className="bg-white shadow-sm rounded-xl h-9 px-4 text-gray-900 font-bold">
                                         <Grid className="w-4 h-4 mr-2" />
                                         Grid
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="text-stone hover:text-midnight rounded-xl h-9 px-4 font-bold">
+                                    <Button variant="ghost" size="sm" className="text-stone hover:text-gray-900 rounded-xl h-9 px-4 font-bold">
                                         <List className="w-4 h-4 mr-2" />
                                         List
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="text-stone hover:text-midnight rounded-xl h-9 px-4 font-bold">
+                                    <Button variant="ghost" size="sm" className="text-stone hover:text-gray-900 rounded-xl h-9 px-4 font-bold">
                                         <MapIcon className="w-4 h-4 mr-2" />
                                         Map
                                     </Button>
@@ -62,10 +62,10 @@ export default function AgentsPage() {
                                     ))
                                 ) : (
                                     <div className="col-span-full py-32 text-center bg-warm/30 rounded-[3rem] border-2 border-dashed border-stone/10">
-                                        <div className="w-20 h-20 bg-lime/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-lime">
+                                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-primary">
                                             <Search className="w-10 h-10" />
                                         </div>
-                                        <h3 className="text-xl font-display font-black text-midnight mb-2">Expanding Our Network</h3>
+                                        <h3 className="text-xl font-display font-black text-gray-900 mb-2">Expanding Our Network</h3>
                                         <p className="text-stone font-medium max-w-sm mx-auto">
                                             We&apos;re currently verifying property experts in this area. Check back soon for the best professional representation.
                                         </p>
@@ -75,7 +75,7 @@ export default function AgentsPage() {
 
                             {/* Pagination Placeholder */}
                             <div className="pt-12 flex justify-center">
-                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-lime transition-all">
+                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-primary transition-all">
                                     Load More Agents
                                 </Button>
                             </div>

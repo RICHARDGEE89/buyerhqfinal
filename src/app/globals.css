@@ -3,34 +3,61 @@
 @tailwind utilities;
 
 :root {
-  /* Backgrounds */
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F7F7F7;
-  --bg-dark: #1C1040;
-
-  /* Text */
-  --text-primary: #1C1040;
-  --text-muted: #6B7280;
-  --text-light: #FFFFFF;
-
-  /* Accent */
-  --accent: #CDFF4F;
-
-  /* Utility */
-  --border: #E5E7EB;
-
+  /* Universal Color System */
   --background: #FFFFFF;
-  --foreground: #1C1040;
+  --foreground: #0F172A;
+
+  /* Primary Brand - Professional Blue */
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary/Accent - Emerald */
+  --secondary: #10B981;
+  --secondary-foreground: #FFFFFF;
+
+  /* Neutrals */
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #3B82F6;
+
+  /* Status */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
 }
 
 body {
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  font-family: var(--font-dm-sans), sans-serif;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+  background-color: #2563EB;
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.btn-secondary:hover {
+  background-color: #059669;
 }

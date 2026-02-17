@@ -36,19 +36,19 @@ export default function FAQPage() {
         <div className="bg-white min-h-screen pt-40 pb-24">
             <div className="container mx-auto px-6 max-w-3xl">
                 <div className="text-center space-y-4 mb-20">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-lime/5 text-lime text-xs font-bold uppercase tracking-widest border border-lime/10">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest border border-primary/10">
                         <HelpCircle className="w-4 h-4 mr-2" />
                         Common Questions
                     </div>
-                    <h1 className="text-5xl font-display font-black text-midnight tracking-tight">
-                        Support <span className="text-lime">&amp; FAQ.</span>
+                    <h1 className="text-5xl font-display font-black text-gray-900 tracking-tight">
+                        Support <span className="text-primary">&amp; FAQ.</span>
                     </h1>
                 </div>
 
                 <Accordion type="single" collapsible className="space-y-6">
                     {faqs.map((faq, i) => (
                         <AccordionItem key={i} value={`item-${i}`} className="border-stone/10 rounded-2xl overflow-hidden px-6 bg-warm/30">
-                            <AccordionTrigger className="text-lg font-bold text-midnight text-left hover:no-underline py-6">
+                            <AccordionTrigger className="text-lg font-bold text-gray-900 text-left hover:no-underline py-6">
                                 {faq.q}
                             </AccordionTrigger>
                             <AccordionContent className="text-stone font-medium leading-relaxed pb-8">
@@ -58,10 +58,10 @@ export default function FAQPage() {
                     ))}
                 </Accordion>
 
-                <div className="mt-20 p-10 bg-midnight rounded-[2.5rem] text-center space-y-6">
+                <div className="mt-20 p-10 bg-gray-900 rounded-[2.5rem] text-center space-y-6">
                     <h3 className="text-white text-2xl font-display font-black">Still have a question?</h3>
                     <p className="text-stone font-medium italic">&quot;Our team is here to help you navigate the agent selection process.&quot;</p>
-                    <a href="/contact" className="inline-flex items-center text-lime font-black text-lg hover:underline gap-2">
+                    <a href="/contact" className="inline-flex items-center text-primary font-black text-lg hover:underline gap-2">
                         Contact Support <ArrowRight className="w-5 h-5" />
                     </a>
                 </div>

@@ -32,10 +32,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="min-h-screen bg-[#F1F5F9] flex">
             {/* Sidebar */}
-            <aside className="hidden lg:flex w-72 bg-midnight flex-col p-6 sticky top-0 h-screen shadow-2xl z-50">
+            <aside className="hidden lg:flex w-72 bg-gray-900 flex-col p-6 sticky top-0 h-screen shadow-2xl z-50">
                 <div className="mb-12 px-2 flex flex-col items-center">
                     <Logo variant="white" iconOnly />
-                    <div className="mt-4 text-[10px] font-mono font-black text-lime uppercase tracking-[0.4em] bg-lime/10 px-3 py-1 rounded-full border border-lime/20">
+                    <div className="mt-4 text-[10px] font-mono font-black text-primary uppercase tracking-[0.4em] bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                         Internal Admin
                     </div>
                 </div>
@@ -55,12 +55,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <div className="flex items-center gap-3">
                                 <item.icon className={cn(
                                     "w-4 h-4 transition-colors",
-                                    pathname === item.href ? "text-lime" : "text-white/20 group-hover:text-white/40"
+                                    pathname === item.href ? "text-primary" : "text-white/20 group-hover:text-white/40"
                                 )} />
                                 <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
                             </div>
                             {item.alert && (
-                                <div className="w-5 h-5 rounded-full bg-lime flex items-center justify-center text-[10px] font-black text-white shadow-lg">
+                                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-black text-white shadow-lg">
                                     {item.alert}
                                 </div>
                             )}
@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 <div className="pt-8 border-t border-white/5">
-                    <Button variant="ghost" className="w-full justify-start text-white/30 hover:text-lime hover:bg-lime/5 rounded-2xl p-4 h-auto">
+                    <Button variant="ghost" className="w-full justify-start text-white/30 hover:text-primary hover:bg-primary/5 rounded-2xl p-4 h-auto">
                         <LogOut className="w-4 h-4 mr-3" />
                         <span className="font-bold text-[13px] tracking-tight">Main Terminal Exit</span>
                     </Button>
@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                         <div className="h-8 w-px bg-stone/5" />
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-midnight border-2 border-white shadow-lg flex items-center justify-center text-white font-display font-black text-xs">
+                            <div className="w-10 h-10 rounded-xl bg-gray-900 border-2 border-white shadow-lg flex items-center justify-center text-white font-display font-black text-xs">
                                 AD
                             </div>
                         </div>

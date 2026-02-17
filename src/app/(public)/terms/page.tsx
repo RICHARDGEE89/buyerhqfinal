@@ -10,11 +10,11 @@ export default function TermsPage() {
         <div className="bg-white min-h-screen pt-40 pb-24">
             <div className="container mx-auto px-6 max-w-3xl space-y-12">
                 <header className="space-y-4">
-                    <h1 className="text-5xl font-display font-black text-midnight">Terms of <span className="text-lime">Service.</span></h1>
+                    <h1 className="text-5xl font-display font-black text-gray-900">Terms of <span className="text-primary">Service.</span></h1>
                     <p className="text-stone font-mono font-bold uppercase tracking-widest text-xs">Last Updated: February 2024</p>
                 </header>
 
-                <div className="prose prose-stone max-w-none space-y-8 text-midnight">
+                <div className="prose prose-stone max-w-none space-y-8 text-gray-900">
                     <section className="space-y-4">
                         <h2 className="text-2xl font-display font-black tracking-tight">1. Acceptance of Terms</h2>
                         <p className="font-medium leading-relaxed">By accessing or using BuyerHQ, you agree to be bound by these Terms of Service. If you do not agree, please do not use our directory.</p>

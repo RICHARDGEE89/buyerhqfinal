@@ -34,7 +34,7 @@ export function FAQSection() {
         <section className="py-24 bg-white">
             <div className="container mx-auto px-6 max-w-3xl">
                 <div className="text-center mb-16 space-y-4">
-                    <h2 className="text-3xl md:text-5xl font-display font-black text-midnight tracking-tight">
+                    <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
                         Frequently Asked Questions
                     </h2>
                     <p className="text-stone font-medium text-lg leading-relaxed">
@@ -49,7 +49,7 @@ export function FAQSection() {
                             value={`item-${i}`}
                             className="border border-stone/10 rounded-2xl px-6 bg-warm/20 overflow-hidden"
                         >
-                            <AccordionTrigger className="text-left font-bold text-midnight py-6 hover:no-underline hover:text-lime transition-colors">
+                            <AccordionTrigger className="text-left font-bold text-gray-900 py-6 hover:no-underline hover:text-primary transition-colors">
                                 {faq.q}
                             </AccordionTrigger>
                             <AccordionContent className="text-stone font-medium leading-relaxed pb-6">

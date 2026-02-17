@@ -25,11 +25,11 @@ export default function SignupPage() {
             <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-[3rem] shadow-2xl overflow-hidden">
 
                 {/* Left: Benefits recap */}
-                <div className="hidden lg:flex flex-col justify-center p-16 bg-midnight text-white space-y-10">
+                <div className="hidden lg:flex flex-col justify-center p-16 bg-gray-900 text-white space-y-10">
                     <div className="space-y-4">
                         <h2 className="text-4xl font-display font-black tracking-tight leading-tight">
                             Start your journey <br />
-                            <span className="text-lime">to the right home.</span>
+                            <span className="text-primary">to the right home.</span>
                         </h2>
                         <p className="text-white/40 font-medium leading-relaxed">
                             Join thousands of buyers who use BuyerHQ to find local property experts.
@@ -39,7 +39,7 @@ export default function SignupPage() {
                     <div className="space-y-6">
                         {benefits.map((b) => (
                             <div key={b.title} className="flex gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lime">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-primary">
                                     <b.icon className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -60,7 +60,7 @@ export default function SignupPage() {
                 {/* Right: Signup form */}
                 <CardContent className="p-10 md:p-16 space-y-8 flex flex-col justify-center">
                     <div className="text-center lg:text-left space-y-2">
-                        <h1 className="text-3xl font-display font-black text-midnight tracking-tight">Create your Account</h1>
+                        <h1 className="text-3xl font-display font-black text-gray-900 tracking-tight">Create your Account</h1>
                         <p className="text-stone font-medium text-sm">
                             Free to search, compare, and save agents.
                         </p>
@@ -89,14 +89,14 @@ export default function SignupPage() {
 
                     <Button
                         onClick={() => alert("Registration system active. Please complete the form.")}
-                        className="w-full h-16 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
+                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
                     >
                         Create Free Account
                     </Button>
 
                     <div className="text-center">
                         <p className="text-stone text-xs font-medium">
-                            Already have an account? <Link href="/login" className="text-lime font-bold hover:underline">Log in</Link>
+                            Already have an account? <Link href="/login" className="text-primary font-bold hover:underline">Log in</Link>
                         </p>
                     </div>
 

@@ -29,7 +29,7 @@ export const Footer = () => {
     };
 
     return (
-        <footer className="bg-midnight pt-24 pb-12 border-t border-white/5">
+        <footer className="bg-gray-900 pt-24 pb-12 border-t border-white/5">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
                     <div className="space-y-6">
@@ -38,10 +38,10 @@ export const Footer = () => {
                             Australia&apos;s leading marketplace for verified buyer&apos;s advocacy.
                         </p>
                         <div className="flex items-center gap-4">
-                            <Link href="#" className="text-white/60 hover:text-lime transition-colors"><Linkedin className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-white/60 hover:text-lime transition-colors"><Instagram className="w-5 h-5" /></Link>
-                            <Link href="#" className="text-white/60 hover:text-lime transition-colors"><Facebook className="w-5 h-5" /></Link>
-                            <Link href="mailto:hello@buyerhq.com.au" className="text-white/60 hover:text-lime transition-colors"><Mail className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-primary transition-colors"><Linkedin className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-primary transition-colors"><Instagram className="w-5 h-5" /></Link>
+                            <Link href="#" className="text-white/60 hover:text-primary transition-colors"><Facebook className="w-5 h-5" /></Link>
+                            <Link href="mailto:hello@buyerhq.com.au" className="text-white/60 hover:text-primary transition-colors"><Mail className="w-5 h-5" /></Link>
                         </div>
                     </div>
 
@@ -50,7 +50,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.directory.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-lime transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-primary transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -63,7 +63,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.professionals.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-lime transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-primary transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>
@@ -76,7 +76,7 @@ export const Footer = () => {
                         <ul className="space-y-4">
                             {footerLinks.company.map((link) => (
                                 <li key={link.name}>
-                                    <Link href={link.href} className="text-stone hover:text-lime transition-colors font-medium text-sm">
+                                    <Link href={link.href} className="text-stone hover:text-primary transition-colors font-medium text-sm">
                                         {link.name}
                                     </Link>
                                 </li>

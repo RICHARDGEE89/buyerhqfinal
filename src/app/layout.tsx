@@ -58,7 +58,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${dmSans.variable} font-sans antialiased bg-white text-midnight`}
+        className={`${dmSans.variable} font-sans antialiased bg-white text-gray-900`}
       >
         <Navbar />
         <main className="min-h-screen">

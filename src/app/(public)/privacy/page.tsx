@@ -10,11 +10,11 @@ export default function PrivacyPage() {
         <div className="bg-white min-h-screen pt-40 pb-24">
             <div className="container mx-auto px-6 max-w-3xl space-y-12">
                 <header className="space-y-4">
-                    <h1 className="text-5xl font-display font-black text-midnight">Privacy <span className="text-lime">Policy.</span></h1>
+                    <h1 className="text-5xl font-display font-black text-gray-900">Privacy <span className="text-primary">Policy.</span></h1>
                     <p className="text-stone font-mono font-bold uppercase tracking-widest text-xs">Last Updated: February 2024</p>
                 </header>
 
-                <div className="prose prose-stone max-w-none space-y-8 text-midnight">
+                <div className="prose prose-stone max-w-none space-y-8 text-gray-900">
                     <section className="space-y-4">
                         <h2 className="text-2xl font-display font-black tracking-tight">1. Introduction</h2>
                         <p className="font-medium leading-relaxed">BuyerHQ (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is committed to protecting your privacy. This policy explains how we collect, use, and protect your personal data when you use our property directory services.</p>

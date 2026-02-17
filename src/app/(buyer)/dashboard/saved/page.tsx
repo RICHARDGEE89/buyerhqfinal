@@ -44,13 +44,13 @@ export default function SavedAgentsPage() {
                             Dashboard
                         </Link>
                     </div>
-                    <h1 className="text-4xl font-display font-black text-midnight tracking-tight">
+                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
                         Saved <span className="text-ocean">Agents</span>
                     </h1>
                     <p className="text-stone font-medium">Your shortlist of verified property experts.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-midnight">
+                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900">
                         Export List
                     </Button>
                     <Button className="bg-ocean hover:bg-ocean/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-ocean/20">
@@ -85,12 +85,12 @@ export default function SavedAgentsPage() {
                     <div className="w-20 h-20 bg-warm/50 rounded-3xl flex items-center justify-center text-stone mx-auto mb-6">
                         <Heart className="w-10 h-10" />
                     </div>
-                    <h3 className="text-2xl font-display font-black text-midnight">No agents saved yet</h3>
+                    <h3 className="text-2xl font-display font-black text-gray-900">No agents saved yet</h3>
                     <p className="text-stone font-medium mt-2 max-w-sm mx-auto">
                         Browse the directory and click the heart icon to start building your professional shortlist.
                     </p>
                     <Link href="/agents">
-                        <Button className="mt-8 bg-midnight text-white font-black h-12 px-8 rounded-xl">
+                        <Button className="mt-8 bg-gray-900 text-white font-black h-12 px-8 rounded-xl">
                             Browse Directory
                         </Button>
                     </Link>

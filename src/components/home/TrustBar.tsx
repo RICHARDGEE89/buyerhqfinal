@@ -8,9 +8,9 @@ interface StatItemProps {
 
 const StatItem: React.FC<StatItemProps> = ({ label, value, suffix }) => (
     <div className="flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-3xl md:text-4xl font-mono font-black text-midnight flex items-baseline gap-1">
+        <div className="text-3xl md:text-4xl font-mono font-black text-gray-900 flex items-baseline gap-1">
             {value}
-            {suffix && <span className="text-lg text-lime">{suffix}</span>}
+            {suffix && <span className="text-lg text-primary">{suffix}</span>}
         </div>
         <div className="text-xs font-bold text-stone uppercase tracking-widest mt-1">
             {label}

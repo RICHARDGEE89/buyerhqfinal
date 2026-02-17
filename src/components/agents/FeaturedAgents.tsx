@@ -14,7 +14,7 @@ export const FeaturedAgents = () => {
             <div className="container mx-auto px-6">
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
                     <div className="space-y-4 max-w-2xl">
-                        <h2 className="text-3xl md:text-5xl font-display font-black text-midnight tracking-tight">
+                        <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
                             Meet Our Verified Agents
                         </h2>
                         <p className="text-stone font-medium text-lg leading-relaxed">
@@ -22,7 +22,7 @@ export const FeaturedAgents = () => {
                         </p>
                     </div>
                     <Link href="/agents">
-                        <Button variant="ghost" className="text-lime font-bold flex items-center gap-2 group">
+                        <Button variant="ghost" className="text-primary font-bold flex items-center gap-2 group">
                             Browse All Agents
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Button>

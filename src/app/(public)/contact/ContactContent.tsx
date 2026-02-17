@@ -15,7 +15,7 @@ export default function ContactContent() {
             <section className="pt-40 pb-24 bg-topo relative">
                 <div className="container mx-auto px-6 text-center space-y-6 max-w-4xl">
                     <h1 className="text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-tight">
-                        How can we <span className="text-lime">Help?</span>
+                        How can we <span className="text-primary">Help?</span>
                     </h1>
                     <p className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
                         Whether you&apos;re a buyer looking for advice or an agent wanting to join the directory, we&apos;d love to hear from you.
@@ -31,7 +31,7 @@ export default function ContactContent() {
                         {/* Contact Details */}
                         <div className="space-y-12">
                             <div className="space-y-6">
-                                <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Get in touch</h2>
+                                <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Get in touch</h2>
                                 <p className="text-lg text-stone font-medium leading-relaxed">
                                     Our team is available Monday to Friday, 9am - 5pm AEST.
                                     We aim to respond to all enquiries within 24 hours.
@@ -40,22 +40,22 @@ export default function ContactContent() {
 
                             <div className="space-y-8">
                                 <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-lime/10 flex items-center justify-center text-lime">
+                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                                         <Mail className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest">Email Support</div>
-                                        <div className="text-xl font-bold text-midnight">hello@buyerhq.com.au</div>
+                                        <div className="text-xl font-bold text-gray-900">hello@buyerhq.com.au</div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-lime/10 flex items-center justify-center text-lime">
+                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                                         <MessageSquare className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest">Business Enquiries</div>
-                                        <div className="text-xl font-bold text-midnight">partners@buyerhq.com.au</div>
+                                        <div className="text-xl font-bold text-gray-900">partners@buyerhq.com.au</div>
                                     </div>
                                 </div>
                             </div>
@@ -63,9 +63,9 @@ export default function ContactContent() {
                             <div className="space-y-6 pt-10 border-t border-stone/5">
                                 <h3 className="text-sm font-black text-stone uppercase tracking-widest">Connect with us</h3>
                                 <div className="flex items-center gap-4">
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-lime hover:text-white transition-all"><Linkedin className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-lime hover:text-white transition-all"><Instagram className="w-5 h-5" /></Link>
-                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-lime hover:text-white transition-all"><Facebook className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Linkedin className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Instagram className="w-5 h-5" /></Link>
+                                    <Link href="#" className="w-12 h-12 bg-warm rounded-xl flex items-center justify-center text-stone hover:bg-primary hover:text-white transition-all"><Facebook className="w-5 h-5" /></Link>
                                 </div>
                             </div>
                         </div>
@@ -98,7 +98,7 @@ export default function ContactContent() {
                                     </div>
                                 </div>
 
-                                <Button className="w-full h-16 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-teal/20">
+                                <Button className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-teal/20">
                                     Send Message
                                     <Send className="ml-2 w-5 h-5" />
                                 </Button>

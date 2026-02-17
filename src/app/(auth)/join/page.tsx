@@ -45,7 +45,7 @@ export default function AgentJoinPage() {
                         <div key={s.id} className="flex flex-col items-center gap-2 relative">
                             <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
-                                i <= currentStep ? "bg-lime text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
+                                i <= currentStep ? "bg-primary text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
                             )}>
                                 <s.icon className="w-5 h-5" />
                             </div>
@@ -73,7 +73,7 @@ export default function AgentJoinPage() {
                             {/* Render Step Content */}
                             {currentStep === 0 && (
                                 <div className="space-y-6 text-center">
-                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Create your Agent Account</h2>
+                                    <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Create your Agent Account</h2>
                                     <p className="text-stone font-medium text-sm">Join Australia&apos;s verified network of property experts.</p>
                                     <div className="space-y-4 pt-4">
                                         <Input placeholder="Email address" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
@@ -84,7 +84,7 @@ export default function AgentJoinPage() {
 
                             {currentStep === 1 && (
                                 <div className="space-y-6 text-center">
-                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Business Identity</h2>
+                                    <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Business Identity</h2>
                                     <p className="text-stone font-medium text-sm">Tell us about your agency brand.</p>
                                     <div className="space-y-4 pt-4">
                                         <Input placeholder="Agency / Trading Name" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
@@ -95,7 +95,7 @@ export default function AgentJoinPage() {
 
                             {currentStep === 2 && (
                                 <div className="space-y-6 text-center">
-                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Experience &amp; Stats</h2>
+                                    <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Experience &amp; Stats</h2>
                                     <p className="text-stone font-medium text-sm">Showcase your track record to potential buyers.</p>
                                     <div className="grid grid-cols-2 gap-4 pt-4">
                                         <Input placeholder="Years Exp" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
@@ -108,7 +108,7 @@ export default function AgentJoinPage() {
 
                             {currentStep === 3 && (
                                 <div className="space-y-6 text-center">
-                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Specialisations</h2>
+                                    <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Specialisations</h2>
                                     <p className="text-stone font-medium text-sm">List the suburbs and asset types you excel in.</p>
                                     <div className="space-y-4 pt-4">
                                         <Input placeholder="Key Suburbs (e.g. Bondi, Sydney CBD)" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
@@ -123,7 +123,7 @@ export default function AgentJoinPage() {
                         <button
                             onClick={handleBack}
                             disabled={currentStep === 0}
-                            className="flex items-center gap-2 text-stone font-bold hover:text-midnight transition-colors disabled:opacity-0"
+                            className="flex items-center gap-2 text-stone font-bold hover:text-gray-900 transition-colors disabled:opacity-0"
                         >
                             <ArrowLeft className="w-5 h-5" />
                             Back
@@ -131,7 +131,7 @@ export default function AgentJoinPage() {
 
                         <Button
                             onClick={() => currentStep === steps.length - 1 ? alert("Application Received! We will verify your credentials.") : handleNext()}
-                            className="h-16 px-12 bg-lime hover:bg-lime/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
+                            className="h-16 px-12 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
                         >
                             {currentStep === steps.length - 1 ? 'Finish Registry' : 'Continue'}
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

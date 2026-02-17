@@ -28,10 +28,10 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
     return (
         <div className="min-h-screen bg-warm/30 flex">
             {/* Sidebar */}
-            <aside className="hidden lg:flex w-72 bg-midnight flex-col p-6 sticky top-0 h-screen">
+            <aside className="hidden lg:flex w-72 bg-gray-900 flex-col p-6 sticky top-0 h-screen">
                 <div className="mb-12 px-2">
                     <Logo variant="white" />
-                    <div className="mt-2 text-[10px] font-mono font-bold text-lime uppercase tracking-[0.2em] px-1">
+                    <div className="mt-2 text-[10px] font-mono font-bold text-primary uppercase tracking-[0.2em] px-1">
                         Buyer Portal
                     </div>
                 </div>
@@ -51,17 +51,17 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                             <div className="flex items-center gap-3">
                                 <item.icon className={cn(
                                     "w-5 h-5",
-                                    pathname === item.href ? "text-lime" : "text-white/20 group-hover:text-white/40"
+                                    pathname === item.href ? "text-primary" : "text-white/20 group-hover:text-white/40"
                                 )} />
                                 <span className="font-bold text-sm tracking-tight">{item.name}</span>
                             </div>
-                            {pathname === item.href && <ChevronRight className="w-4 h-4 text-lime" />}
+                            {pathname === item.href && <ChevronRight className="w-4 h-4 text-primary" />}
                         </Link>
                     ))}
                 </nav>
 
                 <div className="pt-8 border-t border-white/5">
-                    <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-lime hover:bg-lime/5 rounded-2xl p-4 h-auto">
+                    <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-primary hover:bg-primary/5 rounded-2xl p-4 h-auto">
                         <LogOut className="w-5 h-5 mr-3" />
                         <span className="font-bold text-sm tracking-tight">Log Out</span>
                     </Button>
@@ -71,9 +71,9 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
                 {/* Mobile Nav Header */}
-                <header className="lg:hidden bg-midnight p-4 flex items-center justify-between">
+                <header className="lg:hidden bg-gray-900 p-4 flex items-center justify-between">
                     <Logo variant="white" iconOnly />
-                    <div className="text-[10px] font-mono font-bold text-lime uppercase tracking-widest">
+                    <div className="text-[10px] font-mono font-bold text-primary uppercase tracking-widest">
                         Dashboard
                     </div>
                     <button className="text-white p-2">

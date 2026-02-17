@@ -88,10 +88,10 @@ export default function MatchQuizContent() {
                 {/* Progress Bar */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-end">
-                        <div className="text-[10px] font-mono font-bold text-lime/40 uppercase tracking-[0.2em]">
+                        <div className="text-[10px] font-mono font-bold text-primary/40 uppercase tracking-[0.2em]">
                             Step {currentStep + 1} of {steps.length}
                         </div>
-                        <div className="text-[10px] font-mono font-black text-white uppercase tracking-widest bg-lime/20 px-3 py-1 rounded-full border border-white/10">
+                        <div className="text-[10px] font-mono font-black text-white uppercase tracking-widest bg-primary/20 px-3 py-1 rounded-full border border-white/10">
                             {Math.round(progress)}% Complete
                         </div>
                     </div>
@@ -106,10 +106,10 @@ export default function MatchQuizContent() {
                     className="bg-white rounded-[3rem] p-10 md:p-14 shadow-2xl border border-stone/5 space-y-10"
                 >
                     <div className="space-y-4 text-center">
-                        <div className="w-16 h-16 bg-lime/10 rounded-2xl flex items-center justify-center text-lime mx-auto mb-6">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-6">
                             <step.icon className="w-8 h-8" />
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-display font-black text-midnight tracking-tight">
+                        <h2 className="text-3xl md:text-4xl font-display font-black text-gray-900 tracking-tight">
                             {step.title}
                         </h2>
                         <p className="text-stone font-medium text-lg leading-relaxed max-w-sm mx-auto">
@@ -122,7 +122,7 @@ export default function MatchQuizContent() {
                             <div className="space-y-6">
                                 <Input
                                     placeholder="e.g. Bondi, Sydney"
-                                    className="h-16 rounded-2xl border-stone/10 bg-warm/20 text-lg font-bold px-6 focus:ring-teal focus:border-lime transition-all"
+                                    className="h-16 rounded-2xl border-stone/10 bg-warm/20 text-lg font-bold px-6 focus:ring-teal focus:border-primary transition-all"
                                     value={formData.location || ''}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                     onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleNext()}
@@ -130,7 +130,7 @@ export default function MatchQuizContent() {
                                 <Button
                                     onClick={handleNext}
                                     disabled={!formData.location}
-                                    className="w-full h-16 bg-midnight text-white text-xl font-black rounded-2xl shadow-xl shadow-midnight/20 disabled:opacity-50"
+                                    className="w-full h-16 bg-gray-900 text-white text-xl font-black rounded-2xl shadow-xl shadow-midnight/20 disabled:opacity-50"
                                 >
                                     Continue
                                 </Button>
@@ -144,20 +144,20 @@ export default function MatchQuizContent() {
                                         className={cn(
                                             "flex items-center justify-between p-6 rounded-2xl border-2 transition-all group hover:scale-[1.02] active:scale-[0.98]",
                                             formData[step.id] === opt
-                                                ? "border-lime bg-lime/5 shadow-lg shadow-teal/5"
-                                                : "border-stone/5 bg-warm/10 hover:border-lime/30 hover:bg-white"
+                                                ? "border-primary bg-primary/5 shadow-lg shadow-teal/5"
+                                                : "border-stone/5 bg-warm/10 hover:border-primary/30 hover:bg-white"
                                         )}
                                     >
                                         <span className={cn(
                                             "text-lg font-bold tracking-tight",
-                                            formData[step.id] === opt ? "text-lime" : "text-midnight"
+                                            formData[step.id] === opt ? "text-primary" : "text-gray-900"
                                         )}>
                                             {opt}
                                         </span>
                                         <div className={cn(
                                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
                                             formData[step.id] === opt
-                                                ? "border-lime bg-lime text-white"
+                                                ? "border-primary bg-primary text-white"
                                                 : "border-stone/20"
                                         )}>
                                             {formData[step.id] === opt && <CheckCircle2 className="w-4 h-4" />}
@@ -172,7 +172,7 @@ export default function MatchQuizContent() {
                         <button
                             onClick={handleBack}
                             disabled={currentStep === 0}
-                            className="flex items-center gap-2 text-stone font-bold hover:text-midnight transition-colors disabled:opacity-0"
+                            className="flex items-center gap-2 text-stone font-bold hover:text-gray-900 transition-colors disabled:opacity-0"
                         >
                             <ChevronLeft className="w-5 h-5" />
                             Back

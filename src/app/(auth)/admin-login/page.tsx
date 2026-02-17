@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-midnight flex flex-col items-center justify-center py-20 px-6">
+        <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center py-20 px-6">
             <Link href="/" className="mb-12">
                 <Logo variant="white" />
             </Link>
@@ -69,18 +69,18 @@ export default function AdminLoginPage() {
             >
                 <Card className="bg-white rounded-3xl p-12 shadow-2xl border border-border space-y-8">
                     <div className="text-center space-y-4">
-                        <div className="w-16 h-16 bg-lime/10 rounded-2xl flex items-center justify-center text-midnight mx-auto">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-gray-900 mx-auto">
                             <ShieldAlert className="w-8 h-8" />
                         </div>
                         <div className="space-y-1">
-                            <h1 className="text-3xl font-bold text-midnight tracking-tight">Admin Access</h1>
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Access</h1>
                             <p className="text-muted text-sm font-medium">Internal System Control</p>
                         </div>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-midnight uppercase tracking-wider ml-1">Email</label>
+                            <label className="text-xs font-semibold text-gray-900 uppercase tracking-wider ml-1">Email</label>
                             <Input
                                 type="email"
                                 value={email}
@@ -91,7 +91,7 @@ export default function AdminLoginPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-midnight uppercase tracking-wider ml-1">Password</label>
+                            <label className="text-xs font-semibold text-gray-900 uppercase tracking-wider ml-1">Password</label>
                             <Input
                                 type="password"
                                 value={password}
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-16 bg-midnight hover:bg-lime hover:text-midnight text-white font-bold rounded-2xl shadow-xl transition-all text-lg flex items-center justify-center gap-2 group"
+                            className="w-full h-16 bg-gray-900 hover:bg-primary hover:text-gray-900 text-white font-bold rounded-2xl shadow-xl transition-all text-lg flex items-center justify-center gap-2 group"
                         >
                             <Lock className="w-5 h-5" />
                             {loading ? 'Authorizing...' : 'Authorize Session'}
@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
                     </form>
 
                     <div className="text-center">
-                        <Link href="/login" className="text-xs font-semibold text-muted hover:text-midnight transition-colors">
+                        <Link href="/login" className="text-xs font-semibold text-muted hover:text-gray-900 transition-colors">
                             Return to standard login
                         </Link>
                     </div>

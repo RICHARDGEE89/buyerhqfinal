@@ -5,15 +5,15 @@ import { Sparkles } from 'lucide-react';
 
 export const MatchCTA = () => {
     return (
-        <section className="py-32 bg-midnight relative overflow-hidden">
+        <section className="py-32 bg-gray-900 relative overflow-hidden">
             {/* Animated background pulse */}
             <div className="absolute inset-0 bg-white/5 pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-lime/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
 
             <div className="container mx-auto px-6 text-center relative z-10 space-y-10">
                 <div className="max-w-3xl mx-auto space-y-6">
                     <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-white text-sm font-bold uppercase tracking-widest backdrop-blur-sm border border-white/20">
-                        <Sparkles className="w-4 h-4 text-lime fill-lime" />
+                        <Sparkles className="w-4 h-4 text-primary fill-lime" />
                         Personalized Matching
                     </div>
                     <h2 className="text-4xl md:text-7xl font-display font-black text-white leading-tight tracking-tight">
@@ -27,7 +27,7 @@ export const MatchCTA = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                     <Link href="/get-matched">
-                        <Button size="lg" className="h-20 px-16 bg-lime text-white hover:bg-lime/90 transition-all text-2xl font-black rounded-[2rem] shadow-2xl transform hover:scale-105 active:scale-95 border-0">
+                        <Button size="lg" className="h-20 px-16 bg-primary text-white hover:bg-primary/90 transition-all text-2xl font-black rounded-[2rem] shadow-2xl transform hover:scale-105 active:scale-95 border-0">
                             Get Matched Now
                         </Button>
                     </Link>
