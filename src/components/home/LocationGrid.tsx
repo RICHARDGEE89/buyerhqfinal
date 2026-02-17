@@ -17,16 +17,16 @@ const locations = [
 
 export const LocationGrid = () => {
     return (
-        <section className="py-24 bg-gray-900 relative overflow-hidden">
+        <section className="py-24 bg-white relative overflow-hidden">
             {/* Decorative background circle */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gray-100 rounded-full blur-[100px] -mr-64 -mt-64" />
 
             <div className="container mx-auto px-6 relative z-10">
                 <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-                    <h2 className="text-3xl md:text-5xl font-display font-black text-white tracking-tight">
+                    <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
                         Find Agents Across Australia
                     </h2>
-                    <p className="text-stone font-medium text-lg leading-relaxed">
+                    <p className="text-gray-600 font-medium text-lg leading-relaxed">
                         Connect with local experts who know your target market inside out.
                     </p>
                 </div>
@@ -36,24 +36,24 @@ export const LocationGrid = () => {
                         <Link
                             key={loc.name}
                             href={`/agents?state=${loc.state}&suburb=${loc.name}`}
-                            className="group p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white hover:border-white transition-all duration-500"
+                            className="group p-8 bg-gray-50 border border-gray-200 rounded-[2rem] hover:bg-white hover:border-primary hover:shadow-lg transition-all duration-500"
                         >
                             <div className="flex flex-col h-full">
-                                <div className="w-10 h-10 rounded-xl bg-white/10 group-hover:bg-primary flex items-center justify-center text-white transition-colors mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-white group-hover:bg-primary flex items-center justify-center text-gray-900 group-hover:text-white transition-colors mb-4 border border-gray-100">
                                     <MapPin className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-xl font-display font-black text-white group-hover:text-gray-900 transition-colors">
+                                <h3 className="text-xl font-display font-black text-gray-900 transition-colors">
                                     {loc.name}
                                 </h3>
-                                <p className="text-stone group-hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest mt-1">
+                                <p className="text-gray-500 group-hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest mt-1">
                                     {loc.state}
                                 </p>
 
-                                <div className="mt-6 pt-6 border-t border-white/10 group-hover:border-stone/10 flex items-center justify-between">
-                                    <span className="text-[10px] font-mono font-bold text-white/40 group-hover:text-stone uppercase tracking-widest">
+                                <div className="mt-6 pt-6 border-t border-gray-200 group-hover:border-gray-100 flex items-center justify-between">
+                                    <span className="text-[10px] font-mono font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-widest">
                                         {loc.count} Experts
                                     </span>
-                                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-primary transition-all transform group-hover:translate-x-1" />
+                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all transform group-hover:translate-x-1" />
                                 </div>
                             </div>
                         </Link>

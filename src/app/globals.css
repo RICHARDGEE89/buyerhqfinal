@@ -3,30 +3,25 @@
 @tailwind utilities;
 
 :root {
-  /* Universal Color System */
+  /* Universal Monochrome System */
   --background: #FFFFFF;
-  --foreground: #0F172A;
+  --foreground: #000000;
 
-  /* Primary Brand - Professional Blue */
-  --primary: #3B82F6;
+  /* Primary Button (Grey) */
+  --primary: #4B5563;
+  /* Gray-600 */
   --primary-foreground: #FFFFFF;
 
-  /* Secondary/Accent - Emerald */
-  --secondary: #10B981;
-  --secondary-foreground: #FFFFFF;
+  /* Secondary Button (Light Grey) */
+  --secondary: #E5E7EB;
+  --secondary-foreground: #000000;
 
-  /* Neutrals */
   --muted: #F3F4F6;
   --muted-foreground: #6B7280;
 
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: #3B82F6;
-
-  /* Status */
-  --success: #10B981;
-  --warning: #F59E0B;
-  --error: #EF4444;
+  --ring: #4B5563;
 }
 
 body {
@@ -43,21 +38,13 @@ body {
   }
 }
 
-/* Button Styles */
+/* Button Styles - Enforce Grey */
 .btn-primary {
   background-color: var(--primary);
   color: var(--primary-foreground);
 }
 
 .btn-primary:hover {
-  background-color: #2563EB;
-}
-
-.btn-secondary {
-  background-color: var(--secondary);
-  color: var(--secondary-foreground);
-}
-
-.btn-secondary:hover {
-  background-color: #059669;
+  background-color: #374151;
+  /* Darker Grey hover */
 }
