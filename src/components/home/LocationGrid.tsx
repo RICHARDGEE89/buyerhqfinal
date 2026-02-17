@@ -3,16 +3,16 @@ import { MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 const locations = [
-    { name: 'Sydney', state: 'NSW', count: 48 },
-    { name: 'Melbourne', state: 'VIC', count: 42 },
-    { name: 'Brisbane', state: 'QLD', count: 31 },
-    { name: 'Perth', state: 'WA', count: 18 },
-    { name: 'Adelaide', state: 'SA', count: 12 },
-    { name: 'Gold Coast', state: 'QLD', count: 14 },
-    { name: 'Canberra', state: 'ACT', count: 9 },
-    { name: 'Sunshine Coast', state: 'QLD', count: 11 },
-    { name: 'Hobart', state: 'TAS', count: 6 },
-    { name: 'Darwin', state: 'NT', count: 4 },
+    { name: 'Sydney', state: 'NSW', count: 0 },
+    { name: 'Melbourne', state: 'VIC', count: 0 },
+    { name: 'Brisbane', state: 'QLD', count: 0 },
+    { name: 'Perth', state: 'WA', count: 0 },
+    { name: 'Adelaide', state: 'SA', count: 0 },
+    { name: 'Gold Coast', state: 'QLD', count: 0 },
+    { name: 'Canberra', state: 'ACT', count: 0 },
+    { name: 'Sunshine Coast', state: 'QLD', count: 0 },
+    { name: 'Hobart', state: 'TAS', count: 0 },
+    { name: 'Darwin', state: 'NT', count: 0 },
 ];
 
 export const LocationGrid = () => {

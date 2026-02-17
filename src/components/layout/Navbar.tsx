@@ -60,7 +60,7 @@ export const Navbar = () => {
                     </Link>
                     <Link href="/join">
                         <Button size="sm" className="bg-teal hover:bg-teal/90 text-white rounded-full px-6 font-bold">
-                            List Your Profile
+                            list your agency
                         </Button>
                     </Link>
                 </div>
@@ -92,7 +92,7 @@ export const Navbar = () => {
                         <Link href="/login" className="text-lg font-bold text-midnight">Sign In</Link>
                         <Link href="/join">
                             <Button className="w-full bg-teal text-white rounded-full font-bold h-12">
-                                List Your Profile
+                                list your agency
                             </Button>
                         </Link>
                     </div>

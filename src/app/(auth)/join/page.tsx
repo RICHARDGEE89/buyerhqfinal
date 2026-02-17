@@ -6,8 +6,6 @@ import {
     ShieldCheck,
     Briefcase,
     MapPin,
-    BadgeCheck,
-    CreditCard,
     ArrowRight,
     ArrowLeft,
     FileText
@@ -22,10 +20,8 @@ import Link from 'next/link';
 const steps = [
     { id: 'account', title: 'Account Details', icon: ShieldCheck },
     { id: 'business', title: 'Business Info', icon: Briefcase },
-    { id: 'licence', title: 'Licence Verification', icon: BadgeCheck },
     { id: 'experience', title: 'Experience & Stats', icon: FileText },
-    { id: 'specialties', title: 'Specialisations', icon: MapPin },
-    { id: 'pricing', title: 'Select Your Plan', icon: CreditCard }
+    { id: 'specialties', title: 'Specialisations', icon: MapPin }
 ];
 
 export default function AgentJoinPage() {
@@ -76,12 +72,10 @@ export default function AgentJoinPage() {
                         >
                             {/* Render Step Content */}
                             {currentStep === 0 && (
-                                <div className="space-y-6">
-                                    <div className="text-center space-y-2 mb-4">
-                                        <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Create your Agent Account</h2>
-                                        <p className="text-stone font-medium text-sm">Join Australia&apos;s verified network of property experts.</p>
-                                    </div>
-                                    <div className="space-y-4">
+                                <div className="space-y-6 text-center">
+                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Create your Agent Account</h2>
+                                    <p className="text-stone font-medium text-sm">Join Australia&apos;s verified network of property experts.</p>
+                                    <div className="space-y-4 pt-4">
                                         <Input placeholder="Email address" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
                                         <Input type="password" placeholder="Create password" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
                                     </div>
@@ -89,29 +83,37 @@ export default function AgentJoinPage() {
                             )}
 
                             {currentStep === 1 && (
-                                <div className="space-y-6">
-                                    <div className="text-center space-y-2 mb-4">
-                                        <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Business Identity</h2>
-                                        <p className="text-stone font-medium text-sm">We&apos;ll use this to verify your agency registration.</p>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <Input placeholder="Trading / Business Name" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
-                                        <div className="relative">
-                                            <Input placeholder="ABN" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-teal/50 uppercase">Verify ABN</div>
-                                        </div>
+                                <div className="space-y-6 text-center">
+                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Business Identity</h2>
+                                    <p className="text-stone font-medium text-sm">Tell us about your agency brand.</p>
+                                    <div className="space-y-4 pt-4">
+                                        <Input placeholder="Agency / Trading Name" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                        <Input placeholder="Primary Office Location" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
                                     </div>
                                 </div>
                             )}
 
-                            {/* ... Other steps hidden for brevity in this tool call but would be fully implemented ... */}
-                            {currentStep > 1 && (
-                                <div className="flex flex-col items-center justify-center py-10 space-y-6 text-center">
-                                    <div className="w-16 h-16 bg-teal/10 rounded-2xl flex items-center justify-center text-teal">
-                                        {React.createElement(steps[currentStep].icon, { className: "w-8 h-8" })}
+                            {currentStep === 2 && (
+                                <div className="space-y-6 text-center">
+                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Experience &amp; Stats</h2>
+                                    <p className="text-stone font-medium text-sm">Showcase your track record to potential buyers.</p>
+                                    <div className="grid grid-cols-2 gap-4 pt-4">
+                                        <Input placeholder="Years Exp" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                        <Input placeholder="Properties Bought" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                        <Input placeholder="Avg Rating" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                        <Input placeholder="Avg Days to Buy" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
                                     </div>
-                                    <h2 className="text-2xl font-display font-black text-midnight">{steps[currentStep].title}</h2>
-                                    <p className="text-stone">Detailed {steps[currentStep].id} data capture would go here in the full implementation.</p>
+                                </div>
+                            )}
+
+                            {currentStep === 3 && (
+                                <div className="space-y-6 text-center">
+                                    <h2 className="text-3xl font-display font-black text-midnight tracking-tight">Specialisations</h2>
+                                    <p className="text-stone font-medium text-sm">List the suburbs and asset types you excel in.</p>
+                                    <div className="space-y-4 pt-4">
+                                        <Input placeholder="Key Suburbs (e.g. Bondi, Sydney CBD)" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                        <Input placeholder="Property Types (e.g. Luxury, Unit, Family Home)" className="h-14 rounded-xl border-stone/10 px-6 font-medium text-lg" />
+                                    </div>
                                 </div>
                             )}
                         </motion.div>
@@ -128,7 +130,7 @@ export default function AgentJoinPage() {
                         </button>
 
                         <Button
-                            onClick={handleNext}
+                            onClick={() => currentStep === steps.length - 1 ? alert("Application Received! We will verify your credentials.") : handleNext()}
                             className="h-16 px-12 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg group"
                         >
                             {currentStep === steps.length - 1 ? 'Finish Registry' : 'Continue'}
@@ -138,7 +140,7 @@ export default function AgentJoinPage() {
                 </CardContent>
 
                 <p className="text-center text-white/40 text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
-                    All applications undergo manual licence verification.
+                    All applications undergo manual expert verification.
                 </p>
             </div>
         </div>

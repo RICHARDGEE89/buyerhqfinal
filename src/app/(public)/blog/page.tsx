@@ -10,29 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function BlogPage() {
-    const posts = [
-        {
-            title: "5 Questions to Ask Your Buyer's Agent",
-            excerpt: "Not all advocates are created equal. Here are the critical questions to ask before signing an agreement.",
-            date: "Feb 12, 2024",
-            readTime: "5 min read",
-            category: "Buyer Tips"
-        },
-        {
-            title: "Is 2024 the Year for Investment?",
-            excerpt: "Market trends are shifting. We analyze the growth suburbs for the coming year.",
-            date: "Jan 28, 2024",
-            readTime: "8 min read",
-            category: "Market Insights"
-        },
-        {
-            title: "The Silent Seller: How Off-Market Works",
-            excerpt: "Why nearly 30% of premium properties never hit the open portals.",
-            date: "Jan 15, 2024",
-            readTime: "6 min read",
-            category: "Strategy"
-        }
-    ];
+    const posts: { title: string; excerpt: string; date: string; readTime: string; category: string }[] = [];
 
     return (
         <div className="bg-white min-h-screen pt-40 pb-24">

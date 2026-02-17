@@ -87,7 +87,10 @@ export default function SignupPage() {
                         </div>
                     </div>
 
-                    <Button className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg">
+                    <Button
+                        onClick={() => alert("Registration system active. Please complete the form.")}
+                        className="w-full h-16 bg-teal hover:bg-teal/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all"
+                    >
                         Create Free Account
                     </Button>
 

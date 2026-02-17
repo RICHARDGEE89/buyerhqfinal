@@ -9,9 +9,6 @@ import {
     ArrowRight,
     ShieldCheck,
     LayoutDashboard,
-    Mail,
-    Github,
-    Globe
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import Link from 'next/link';
@@ -52,23 +49,6 @@ export default function LoginPage() {
                         Sign In
                         <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone/5"></div></div>
-                        <div className="relative flex justify-center text-xs uppercase font-mono font-bold"><span className="bg-white px-4 text-stone/40">Or continue with</span></div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <Button variant="outline" size="icon" className="h-14 rounded-2xl border-stone/10 bg-warm/20 hover:bg-white transition-all">
-                            <Globe className="w-5 h-5 text-midnight" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-14 rounded-2xl border-stone/10 bg-warm/20 hover:bg-white transition-all">
-                            <Mail className="w-5 h-5 text-midnight" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-14 rounded-2xl border-stone/10 bg-warm/20 hover:bg-white transition-all">
-                            <Github className="w-5 h-5 text-midnight" />
-                        </Button>
-                    </div>
 
                     <div className="text-center pt-4">
                         <p className="text-stone text-xs font-medium">
