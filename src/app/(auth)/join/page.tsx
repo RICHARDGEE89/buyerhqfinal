@@ -33,25 +33,25 @@ export default function AgentJoinPage() {
     const handleBack = () => currentStep > 0 && setCurrentStep(currentStep - 1);
 
     return (
-        <div className="min-h-screen bg-topo flex flex-col items-center py-20 px-6">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center py-20 px-6">
             <Link href="/" className="mb-12">
-                <Logo variant="white" />
+                <Logo variant="default" />
             </Link>
 
             <div className="max-w-3xl w-full space-y-8">
                 {/* Step Indicator */}
-                <div className="flex justify-between items-center bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-md">
+                <div className="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-[2rem] shadow-sm">
                     {steps.map((s, i) => (
                         <div key={s.id} className="flex flex-col items-center gap-2 relative">
                             <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
-                                i <= currentStep ? "bg-primary text-white shadow-lg shadow-teal/20" : "bg-white/10 text-white/40"
+                                i <= currentStep ? "bg-primary text-white shadow-lg" : "bg-gray-100 text-gray-400"
                             )}>
                                 <s.icon className="w-5 h-5" />
                             </div>
                             <span className={cn(
                                 "hidden md:block text-[9px] font-mono font-bold uppercase tracking-widest",
-                                i <= currentStep ? "text-white" : "text-white/20"
+                                i <= currentStep ? "text-gray-900" : "text-gray-400"
                             )}>
                                 {s.title}
                             </span>
@@ -59,7 +59,7 @@ export default function AgentJoinPage() {
                     ))}
                 </div>
 
-                <Progress value={progress} className="h-1.5 bg-white/10" />
+                <Progress value={progress} className="h-1.5 bg-gray-200" />
 
                 <CardContent className="bg-white rounded-[3rem] p-12 md:p-16 shadow-2xl border border-stone/5 space-y-10 min-h-[500px] flex flex-col justify-center">
                     <AnimatePresence mode="wait">
@@ -139,7 +139,7 @@ export default function AgentJoinPage() {
                     </div>
                 </CardContent>
 
-                <p className="text-center text-white/40 text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
+                <p className="text-center text-gray-400 text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
                     All applications undergo manual expert verification.
                 </p>
             </div>

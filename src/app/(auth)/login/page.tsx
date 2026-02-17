@@ -15,9 +15,9 @@ import Link from 'next/link';
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen bg-topo flex flex-col items-center justify-center py-20 px-6">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-20 px-6">
             <Link href="/" className="mb-12">
-                <Logo variant="white" />
+                <Logo variant="default" />
             </Link>
 
             <motion.div
@@ -45,7 +45,7 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <Button className="w-full h-16 bg-gray-900 hover:bg-primary text-white font-black rounded-2xl shadow-xl transition-all text-lg group">
+                    <Button className="w-full h-16 bg-primary hover:bg-primary-700 text-white font-black rounded-2xl shadow-xl transition-all text-lg group">
                         Sign In
                         <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
@@ -59,12 +59,12 @@ export default function LoginPage() {
                 </Card>
 
                 <div className="mt-8 flex items-center justify-center gap-6">
-                    <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest">
+                    <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">
                         <ShieldCheck className="w-4 h-4 text-primary" />
                         Secure Session
                     </div>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
-                    <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest">
+                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                    <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">
                         <LayoutDashboard className="w-4 h-4 text-primary" />
                         Buyer Portal
                     </div>

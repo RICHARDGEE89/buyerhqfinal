@@ -34,13 +34,14 @@ export default function HowItWorksPage() {
     return (
         <div className="bg-white min-h-screen">
             {/* Hero */}
-            <section className="pt-40 pb-24 bg-topo relative overflow-hidden">
+            {/* Hero */}
+            <section className="pt-40 pb-24 bg-white relative overflow-hidden">
                 <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
-                    <h1 className="text-5xl md:text-7xl font-display font-black text-white tracking-tight mb-8">
+                    <h1 className="text-5xl md:text-7xl font-display font-black text-gray-900 tracking-tight mb-8">
                         The Smarter Way <br />
                         to Find an <span className="text-primary">Agent.</span>
                     </h1>
-                    <p className="text-xl text-white/60 leading-relaxed mb-12">
+                    <p className="text-xl text-gray-500 leading-relaxed mb-12">
                         BuyerHQ is Australia&apos;s first truly independent directory designed to put the power back in the hands of property buyers.
                     </p>
                 </div>
@@ -68,7 +69,7 @@ export default function HowItWorksPage() {
             </section>
 
             {/* Why Independent */}
-            <section className="py-24 bg-warm/50 border-y border-stone/5">
+            <section className="py-24 bg-gray-50 border-y border-stone/5">
                 <div className="container mx-auto px-6 max-w-4xl text-center space-y-8">
                     <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
                         Why Independence <span className="text-primary">Matters.</span>
