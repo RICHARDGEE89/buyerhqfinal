@@ -22,6 +22,9 @@ export const TrustBar = () => {
     // In a real app, these values would be fetched from Supabase
     const stats = [
         { label: "Verified Agents", value: 0 },
+        { label: "States Covered", value: 0 },
+        { label: "Enquiries MTD", value: 0 },
+        { label: "Avg Response", value: 0 }
     ];
 
     return (

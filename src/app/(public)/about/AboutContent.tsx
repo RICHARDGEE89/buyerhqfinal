@@ -131,6 +131,34 @@ export default function AboutContent() {
                     </div>
                 </div>
             </section>
+
+            {/* Our Story Section */}
+            <section className="py-24 bg-white border-t border-stone/5">
+                <div className="container mx-auto px-6">
+                    <div className="max-w-3xl mx-auto space-y-8 text-center">
+                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-gray-100 text-primary text-xs font-bold uppercase tracking-widest">
+                            Our Story
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-display font-black text-gray-900 tracking-tight">
+                            From Frustration to <span className="text-primary">Solution.</span>
+                        </h2>
+                        <div className="space-y-6 text-lg text-gray-500 leading-relaxed font-medium text-left">
+                            <p>
+                                The idea for BuyerHQ wasn&apos;t born in a boardroom. It started at a crowded open home in Sydney, watching frustrated families being outmaneuvered by professional selling agents.
+                            </p>
+                            <p>
+                                We realized that while sellers have expert representation, most buyers are left to navigate the most complex financial decision of their lives alone. We asked ourselves: <em>&quot;Where do buyers go to find someone on their side?&quot;</em>
+                            </p>
+                            <p>
+                                The answer was nowhere. The industry was fragmented, with no central directory of verified, independent advocates. So, we built one.
+                            </p>
+                            <p>
+                                Today, BuyerHQ is Australia&apos;s only dedicated marketplace for verified buyer&apos;s agents. We are obsessed with transparency, integrity, and leveling the playing field for property buyers across the nation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 }

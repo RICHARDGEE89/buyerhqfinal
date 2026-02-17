@@ -7,6 +7,7 @@ import { WhyBuyerHQ } from '@/components/home/WhyBuyerHQ';
 import { LocationGrid } from '@/components/home/LocationGrid';
 import { MatchCTA } from '@/components/home/MatchCTA';
 import { FAQSection } from '@/components/home/FAQSection';
+import { LatestInsights } from '@/components/home/LatestInsights';
 
 export default function HomePage() {
   return (
@@ -17,6 +18,7 @@ export default function HomePage() {
       <FeaturedAgents />
       <WhyBuyerHQ />
       <LocationGrid />
+      <LatestInsights />
       <MatchCTA />
       <FAQSection />
     </div>

@@ -84,6 +84,55 @@ export default function AgentsPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Educational Content: How to Choose */}
+            <section className="py-24 bg-gray-50 border-t border-stone/5">
+                <div className="container mx-auto px-6 max-w-4xl">
+                    <div className="text-center mb-16 space-y-4">
+                        <h2 className="text-3xl md:text-4xl font-display font-black text-gray-900 tracking-tight">
+                            How to Choose the Right <span className="text-primary">Advocate.</span>
+                        </h2>
+                        <p className="text-lg text-gray-500 font-medium">
+                            Not all buyer&apos;s agents are created equal. Here&apos;s what to look for.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div className="space-y-6">
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">1</div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Check for Independence</h3>
+                                    <p className="text-gray-500 leading-relaxed text-sm">Ensure they effectively work only for you. Avoid agents who accept referral fees from selling agents or developers.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">2</div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Verify Local Experience</h3>
+                                    <p className="text-gray-500 leading-relaxed text-sm">Property markets vary by suburb. Choose an agent who has bought recently in your target area.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">3</div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Ask About Strategy</h3>
+                                    <p className="text-gray-500 leading-relaxed text-sm">Good agents don&apos;t just find properties; they have a clear strategy to secure them at the best price.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">4</div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Review Past Results</h3>
+                                    <p className="text-gray-500 leading-relaxed text-sm">Look for case studies and testimonials from buyers with similar budgets and goals to yours.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 }

@@ -10,7 +10,50 @@ export const metadata: Metadata = {
 };
 
 export default function BlogPage() {
-    const posts: { title: string; excerpt: string; date: string; readTime: string; category: string }[] = [];
+    const posts = [
+        {
+            title: "Why 2026 is the Year of the Buyer's Agent",
+            excerpt: "As property markets become more complex and competitive, the value of professional representation has never been higher for Australian families.",
+            date: "Feb 12, 2026",
+            readTime: "5 min read",
+            category: "Market Trends"
+        },
+        {
+            title: "5 Signs You're Overpaying for a Property",
+            excerpt: "Learn the subtle red flags that selling agents don't want you to spot during your next open home inspection.",
+            date: "Feb 08, 2026",
+            readTime: "4 min read",
+            category: "Buying Strategy"
+        },
+        {
+            title: "Securing a Dream Home Under Budget in Bondi",
+            excerpt: "How one of our verified advocates saved a client $150k through strategic negotiation and off-market access.",
+            date: "Jan 29, 2026",
+            readTime: "6 min read",
+            category: "Case Study"
+        },
+        {
+            title: "The Hidden Costs of Buying Without Representation",
+            excerpt: "From emotional overbidding to missing serious building defects, the cost of 'saving' on an agent can be massive.",
+            date: "Jan 15, 2026",
+            readTime: "7 min read",
+            category: "Education"
+        },
+        {
+            title: "Auction Strategies That Actually Work",
+            excerpt: "Stop guessing. Here are the three proven bidding strategies that professional buyer's agents use to win auctions.",
+            date: "Jan 03, 2026",
+            readTime: "5 min read",
+            category: "Auctions"
+        },
+        {
+            title: "Off-Market Properties: The Truth",
+            excerpt: "What exactly is an off-market listing, and how do you get access to them before they hit RealEstate.com.au?",
+            date: "Dec 20, 2025",
+            readTime: "4 min read",
+            category: "Market Insights"
+        }
+    ];
 
     return (
         <div className="bg-white min-h-screen pt-40 pb-24">

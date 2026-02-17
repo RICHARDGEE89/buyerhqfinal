@@ -11,8 +11,20 @@ export const metadata: Metadata = {
 export default function FAQPage() {
     const faqs = [
         {
+            q: "What does a Buyer's Agent actually do?",
+            a: "A buyer's agent represents you, the purchaser, throughout the property buying journey. They search for properties (including off-market listings), evaluate value, negotiate with selling agents, and bid at auction on your behalf."
+        },
+        {
+            q: "Why should I use a Buyer's Agent instead of doing it myself?",
+            a: "Buying property is complex and high-stakes. Professional advocates save you time by filtering 90% of unsuitable homes, save you money through expert negotiation, and protect you from emotional overpaying."
+        },
+        {
             q: "Is BuyerHQ free for property buyers?",
             a: "Yes! BuyerHQ is 100% free for buyers. You can search, compare, and message verified agents without ever paying a fee to our platform."
+        },
+        {
+            q: "How much do Buyer's Agents charge?",
+            a: "Fees vary by agent and service level. Some charge a fixed fee (e.g., $10k - $20k), while others charge a percentage of the purchase price (typically 1.5% - 2.5%). Most offer a free initial consultation to discuss their pricing structure."
         },
         {
             q: "How do you verify agents?",
@@ -23,8 +35,16 @@ export default function FAQPage() {
             a: "No. Unlike some referral sites, we do not take a percentage of the agent's fee. This ensures that the agents you find on our platform remain independent and focused solely on your best interests."
         },
         {
+            q: "Is BuyerHQ a real estate agency?",
+            a: "No. We are an independent directory and verification platform. We do not buy or sell property ourselves; we connect you with the professionals who do."
+        },
+        {
             q: "Can I use BuyerHQ for investment properties?",
             a: "Absolutely. Many of our listed agents specialise in investment strategy, portfolio building, and commercial property acquisition."
+        },
+        {
+            q: "How do I list my business on BuyerHQ?",
+            a: "If you are a licensed buyer's agent, you can apply to join our network by clicking 'List Your Agency' in the menu. You will need to provide proof of licensure and pass our verification checks."
         },
         {
             q: "What if I can't find an agent in my specific suburb?",
