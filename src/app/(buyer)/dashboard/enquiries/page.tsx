@@ -33,9 +33,9 @@ export default function MyEnquiriesPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-primary/10 text-primary border-primary/20';
-            case 'replied': return 'bg-verified/10 text-verified border-verified/20';
-            default: return 'bg-stone/10 text-stone border-stone/20';
+            case 'pending': return 'bg-gray-100 text-gray-600 border-gray-200';
+            case 'replied': return 'bg-gray-900 text-white border-gray-900';
+            default: return 'bg-gray-50 text-gray-400 border-gray-100';
         }
     };
 
@@ -63,7 +63,7 @@ export default function MyEnquiriesPage() {
                             <CardContent className="p-0">
                                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center text-primary flex-shrink-0">
+                                        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center text-primary flex-shrink-0">
                                             <MessageSquare className="w-8 h-8" />
                                         </div>
                                         <div className="space-y-1">
@@ -91,7 +91,7 @@ export default function MyEnquiriesPage() {
                                         <Button variant="outline" className="flex-1 md:flex-none h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900">
                                             View Thread
                                         </Button>
-                                        <Button className="flex-1 md:flex-none bg-gray-900 hover:bg-primary text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
+                                        <Button className="flex-1 md:flex-none bg-primary hover:bg-primary-700 text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
                                             Follow Up
                                         </Button>
                                     </div>
@@ -101,7 +101,7 @@ export default function MyEnquiriesPage() {
                     ))
                 ) : (
                     <div className="py-32 text-center bg-white rounded-[3rem] border border-dashed border-stone/20">
-                        <div className="w-20 h-20 bg-warm/50 rounded-3xl flex items-center justify-center text-stone mx-auto mb-6">
+                        <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-gray-500 mx-auto mb-6">
                             <MessageSquare className="w-10 h-10" />
                         </div>
                         <h3 className="text-2xl font-display font-black text-gray-900">No enquiries yet</h3>
@@ -109,7 +109,7 @@ export default function MyEnquiriesPage() {
                             Ready to find your dream property? Start by reaching out to our verified agents.
                         </p>
                         <Link href="/agents">
-                            <Button className="mt-8 bg-gray-900 text-white font-black h-12 px-8 rounded-xl">
+                            <Button className="mt-8 bg-primary text-white font-black h-12 px-8 rounded-xl">
                                 Browse Directory
                             </Button>
                         </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,7 +9,9 @@ import {
     MessageSquare,
     UserCircle,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    Menu,
+    X
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { cn } from '@/lib/utils';
@@ -24,66 +26,51 @@ const navItems = [
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-warm/30 flex">
-            {/* Sidebar */}
-            <aside className="hidden lg:flex w-72 bg-gray-900 flex-col p-6 sticky top-0 h-screen">
-                <div className="mb-12 px-2">
-                    <Logo variant="white" />
-                    <div className="mt-2 text-[10px] font-mono font-bold text-primary uppercase tracking-[0.2em] px-1">
-                        Buyer Portal
-                    </div>
+        <div className="min-h-screen bg-white flex">
+            {/* Desktop Sidebar */}
+            <aside className="hidden lg:flex w-72 bg-white border-r border-gray-200 flex-col p-6 sticky top-0 h-screen">
+                <div className="mb-10 px-2">
+                    <Logo variant="default" />
                 </div>
 
-                <nav className="flex-1 space-y-2">
+                <nav className="space-y-2 flex-1">
                     {navItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center justify-between p-4 rounded-2xl transition-all group",
+                                "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group",
                                 pathname === item.href
-                                    ? "bg-white/10 text-white"
-                                    : "text-white/40 hover:text-white hover:bg-white/5"
+                                    ? "bg-gray-100 text-gray-900"
+                                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                             )}
                         >
-                            <div className="flex items-center gap-3">
-                                <item.icon className={cn(
-                                    "w-5 h-5",
-                                    pathname === item.href ? "text-primary" : "text-white/20 group-hover:text-white/40"
-                                )} />
-                                <span className="font-bold text-sm tracking-tight">{item.name}</span>
-                            </div>
-                            {pathname === item.href && <ChevronRight className="w-4 h-4 text-primary" />}
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-colors",
+                                pathname === item.href ? "text-primary" : "text-gray-400 group-hover:text-primary"
+                            )} />
+                            {item.name}
                         </Link>
                     ))}
                 </nav>
 
-                <div className="pt-8 border-t border-white/5">
-                    <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-primary hover:bg-primary/5 rounded-2xl p-4 h-auto">
-                        <LogOut className="w-5 h-5 mr-3" />
-                        <span className="font-bold text-sm tracking-tight">Log Out</span>
+                <div className="mt-auto pt-6 border-t border-gray-100">
+                    <Button variant="ghost" className="w-full justify-start text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-2xl p-4 h-auto">
+                        <LogOut className="w-5 h-5 mr-3 text-gray-400" />
+                        <span className="font-bold">Sign Out</span>
                     </Button>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col">
-                {/* Mobile Nav Header */}
-                <header className="lg:hidden bg-gray-900 p-4 flex items-center justify-between">
-                    <Logo variant="white" iconOnly />
-                    <div className="text-[10px] font-mono font-bold text-primary uppercase tracking-widest">
-                        Dashboard
-                    </div>
-                    <button className="text-white p-2">
-                        <UserCircle className="w-6 h-6" />
-                    </button>
-                </header>
-
-                <main className="flex-1 p-6 md:p-12 max-w-7xl mx-auto w-full">
-                    {children}
-                </main>
+            {/* Mobile Header */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                <Logo variant="default" className="scale-75 origin-left" />
+                <button className="text-gray-900 p-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                    {isMobileMenuOpen ? <X /> : <Menu />}
+                </button>
             </div>
         </div>
     );

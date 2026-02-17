@@ -87,32 +87,32 @@ export default function BuyerDashboardOverview() {
                 {/* Next Steps / Checklist */}
                 <div className="space-y-6">
                     <h2 className="text-2xl font-display font-black text-gray-900 tracking-tight">Your Action Plan</h2>
-                    <div className="p-8 rounded-[2.5rem] bg-gray-900 text-white space-y-6">
+                    <div className="p-8 rounded-[2.5rem] bg-gray-50 border border-gray-100 space-y-6">
                         <div className="flex items-start gap-4">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-verified rounded-full flex items-center justify-center border-2 border-white/20">
-                                <CheckCircle2 className="w-3 h-3 text-white" />
+                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center border-2 border-gray-200 text-white">
+                                <CheckCircle2 className="w-3 h-3" />
                             </div>
                             <div>
-                                <div className="font-bold text-sm">Perfect your Match Quiz profile</div>
-                                <p className="text-xs text-white/40 mt-1">Complete your preferences to get 5/5 matched agents.</p>
+                                <div className="font-bold text-sm text-gray-900">Perfect your Match Quiz profile</div>
+                                <p className="text-xs text-gray-500 mt-1">Complete your preferences to get 5/5 matched agents.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4 opacity-50">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white/10 rounded-full flex items-center justify-center border-2 border-white/20">
-                                <Clock className="w-3 h-3 text-white" />
+                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
+                                <Clock className="w-3 h-3 text-gray-400" />
                             </div>
                             <div>
-                                <div className="font-bold text-sm">Send your first enquiry</div>
-                                <p className="text-xs text-white/40 mt-1">Connect with an agent to discuss your budget.</p>
+                                <div className="font-bold text-sm text-gray-900">Send your first enquiry</div>
+                                <p className="text-xs text-gray-500 mt-1">Connect with an agent to discuss your budget.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4 opacity-50">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white/10 rounded-full flex items-center justify-center border-2 border-white/20">
-                                <Clock className="w-3 h-3 text-white" />
+                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
+                                <Clock className="w-3 h-3 text-gray-400" />
                             </div>
                             <div>
-                                <div className="font-bold text-sm">Verify your buyer status</div>
-                                <p className="text-xs text-white/40 mt-1">Upload proof of funds to get responses faster.</p>
+                                <div className="font-bold text-sm text-gray-900">Verify your buyer status</div>
+                                <p className="text-xs text-gray-500 mt-1">Upload proof of funds to get responses faster.</p>
                             </div>
                         </div>
                     </div>
