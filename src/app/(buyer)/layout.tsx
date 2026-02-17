@@ -9,7 +9,6 @@ import {
     MessageSquare,
     UserCircle,
     LogOut,
-    ChevronRight,
     Menu,
     X
 } from 'lucide-react';
@@ -72,6 +71,11 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                     {isMobileMenuOpen ? <X /> : <Menu />}
                 </button>
             </div>
+
+            {/* Main Content */}
+            <main className="flex-1 w-full lg:w-auto pt-20 lg:pt-0">
+                {children}
+            </main>
         </div>
     );
 }
