@@ -10,31 +10,16 @@ const config: Config = {
 	theme: {
 		extend: {
 			colors: {
-				background: 'var(--background)',
-				foreground: 'var(--foreground)',
-				midnight: '#0D1B2A',
-				teal: '#00B4D8',
-				sky: '#F0F9FF',
-				verified: '#0D9488',
-				warm: '#FAFAFA',
-				amber: '#F59E0B',
-				coral: '#EF4444',
-				stone: '#64748B',
-				border: '#E2E8F0'
+				background: '#FFFFFF',
+				foreground: '#1C1040',
+				midnight: '#1C1040',
+				lime: '#CDFF4F',
+				muted: '#6B7280',
+				border: '#E5E7EB',
+				secondary: '#F7F7F7',
 			},
 			fontFamily: {
-				display: [
-					'var(--font-fraunces)',
-					'serif'
-				],
-				sans: [
-					'var(--font-jakarta)',
-					'sans-serif'
-				],
-				mono: [
-					'var(--font-jetbrains)',
-					'monospace'
-				]
+				sans: ['var(--font-dm-sans)', 'sans-serif'],
 			},
 			borderRadius: {
 				xl: '12px',
