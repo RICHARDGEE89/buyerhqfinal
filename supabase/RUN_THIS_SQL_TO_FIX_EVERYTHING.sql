@@ -144,12 +144,27 @@ create table if not exists public.users (
 -- ----------------------------------------------------------
 -- Column compatibility (live environments)
 -- ----------------------------------------------------------
-alter table public.agents add column if not exists is_verified boolean not null default true;
-alter table public.agents add column if not exists is_active boolean not null default true;
-alter table public.agents add column if not exists licence_verified_at timestamptz;
-alter table public.agents add column if not exists fee_structure text;
+alter table public.agents add column if not exists created_at timestamptz not null default timezone('utc'::text, now());
+alter table public.agents add column if not exists name text;
+alter table public.agents add column if not exists email text;
+alter table public.agents add column if not exists phone text;
+alter table public.agents add column if not exists agency_name text;
+alter table public.agents add column if not exists bio text;
+alter table public.agents add column if not exists avatar_url text;
+alter table public.agents add column if not exists state text;
 alter table public.agents add column if not exists suburbs text[] default '{}';
 alter table public.agents add column if not exists specializations text[] default '{}';
+alter table public.agents add column if not exists years_experience integer;
+alter table public.agents add column if not exists properties_purchased integer;
+alter table public.agents add column if not exists avg_rating numeric(2,1);
+alter table public.agents add column if not exists review_count integer default 0;
+alter table public.agents add column if not exists is_verified boolean not null default true;
+alter table public.agents add column if not exists is_active boolean not null default true;
+alter table public.agents add column if not exists licence_number text;
+alter table public.agents add column if not exists licence_verified_at timestamptz;
+alter table public.agents add column if not exists website_url text;
+alter table public.agents add column if not exists linkedin_url text;
+alter table public.agents add column if not exists fee_structure text;
 
 alter table public.agent_profiles add column if not exists subscription_plan text not null default 'starter';
 alter table public.agent_profiles add column if not exists billing_cycle text not null default 'monthly';

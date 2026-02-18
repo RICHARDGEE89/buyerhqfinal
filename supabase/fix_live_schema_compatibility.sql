@@ -11,10 +11,53 @@ create extension if not exists pgcrypto;
 -- Core compatibility columns
 -- ----------------------------------------------------------
 alter table if exists public.agents
+  add column if not exists created_at timestamptz not null default timezone('utc'::text, now());
+alter table if exists public.agents
+  add column if not exists name text;
+alter table if exists public.agents
+  add column if not exists email text;
+alter table if exists public.agents
+  add column if not exists phone text;
+alter table if exists public.agents
+  add column if not exists agency_name text;
+alter table if exists public.agents
+  add column if not exists bio text;
+alter table if exists public.agents
+  add column if not exists avatar_url text;
+alter table if exists public.agents
+  add column if not exists state text;
+alter table if exists public.agents
+  add column if not exists suburbs text[] default '{}';
+alter table if exists public.agents
+  add column if not exists specializations text[] default '{}';
+alter table if exists public.agents
+  add column if not exists years_experience integer;
+alter table if exists public.agents
+  add column if not exists properties_purchased integer;
+alter table if exists public.agents
+  add column if not exists avg_rating numeric(2,1);
+alter table if exists public.agents
+  add column if not exists review_count integer default 0;
+alter table if exists public.agents
   add column if not exists is_verified boolean not null default true;
 
 alter table if exists public.agents
   add column if not exists is_active boolean not null default true;
+
+alter table if exists public.agents
+  add column if not exists licence_number text;
+
+alter table if exists public.agents
+  add column if not exists licence_verified_at timestamptz;
+
+alter table if exists public.agents
+  add column if not exists website_url text;
+
+alter table if exists public.agents
+  add column if not exists linkedin_url text;
+
+alter table if exists public.agents
+  add column if not exists fee_structure text;
 
 update public.agents
 set
