@@ -126,7 +126,7 @@ async function fetchAdminAccountRow(
   user: { id: string; email?: string | null },
   warnings: string[]
 ) {
-  let { data, error } = await client.from("admin_accounts").select("*").eq("id", user.id).maybeSingle();
+  const { data, error } = await client.from("admin_accounts").select("*").eq("id", user.id).maybeSingle();
 
   if (!error) {
     return data;
