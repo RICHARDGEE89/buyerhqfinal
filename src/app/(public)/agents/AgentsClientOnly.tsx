@@ -12,27 +12,34 @@ import { createClient } from '@/lib/supabase/client';
 export default function AgentsClientOnly() {
     const [agents, setAgents] = React.useState<Partial<Agent>[]>([]);
     const [loading, setLoading] = React.useState(true);
-    const supabase = createClient();
+    const supabase = React.useMemo(() => createClient(), []);
 
     React.useEffect(() => {
         const fetchAgents = async () => {
             const { data, error } = await supabase
                 .from('agents')
                 .select('*')
-                .eq('subscription_status', 'active') // Only show active agents
+                .eq('subscription_status', 'active'); // Only show active agents
+
+            if (error) {
+                console.error('Error loading active agents', error);
+            }
 
             if (data) {
                 setAgents(data);
             }
             // Fallback for demo: if no active agents, show all for now so the user sees SOMETHING
             if (!data || data.length === 0) {
-                const { data: allAgents } = await supabase.from('agents').select('*');
+                const { data: allAgents, error: allAgentsError } = await supabase.from('agents').select('*');
+                if (allAgentsError) {
+                    console.error('Error loading all agents', allAgentsError);
+                }
                 if (allAgents) setAgents(allAgents);
             }
             setLoading(false);
-        }
+        };
         fetchAgents();
-    }, []);
+    }, [supabase]);
 
     return (
         <div className="flex flex-col min-h-screen bg-white">

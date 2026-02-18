@@ -11,8 +11,6 @@ import {
     PlayCircle,
     MapPin,
     Calendar,
-    ExternalLink,
-    MessageSquare,
     BadgeCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

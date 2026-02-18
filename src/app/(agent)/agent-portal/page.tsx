@@ -18,19 +18,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+type AgentProfile = {
+    id: string;
+    business_name: string | null;
+};
+
+type EnquiryLead = {
+    id: string;
+    buyer_name: string | null;
+    subject: string | null;
+    status: string;
+    created_at: string;
+};
+
 export default function AgentDashboardOverview() {
-    const [agent, setAgent] = React.useState<any>(null)
-    const [leads, setLeads] = React.useState<any[]>([])
+    const [agent, setAgent] = React.useState<AgentProfile | null>(null);
+    const [leads, setLeads] = React.useState<EnquiryLead[]>([]);
     const [loading, setLoading] = React.useState(true)
-    const supabase = createClient()
-    const router = useRouter()
+    const supabase = React.useMemo(() => createClient(), []);
+    const router = useRouter();
 
     React.useEffect(() => {
         const fetchDashboard = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                router.push('/login')
-                return
+                router.push('/login');
+                return;
             }
 
             // Fetch Agent Profile
@@ -38,27 +51,48 @@ export default function AgentDashboardOverview() {
                 .from('agents')
                 .select('*')
                 .eq('id', user.id)
-                .single()
+                .single();
+
+            if (agentError) {
+                console.error('Error loading agent profile', agentError);
+            }
 
             if (agentData) {
-                setAgent(agentData)
+                setAgent({
+                    id: agentData.id,
+                    business_name: agentData.business_name ?? null,
+                });
 
                 // Fetch Leads
-                const { data: leadsData } = await supabase
+                const { data: leadsData, error: leadsError } = await supabase
                     .from('enquiries')
                     .select('*')
                     .eq('agent_id', user.id)
                     .order('created_at', { ascending: false })
-                    .limit(5)
+                    .limit(5);
 
-                if (leadsData) setLeads(leadsData)
+                if (leadsError) {
+                    console.error('Error loading leads', leadsError);
+                }
+
+                if (leadsData) {
+                    setLeads(
+                        leadsData.map((lead) => ({
+                            id: lead.id,
+                            buyer_name: lead.buyer_name ?? null,
+                            subject: lead.subject ?? null,
+                            status: lead.status,
+                            created_at: lead.created_at,
+                        })) as EnquiryLead[]
+                    );
+                }
             }
-            setLoading(false)
-        }
-        fetchDashboard()
-    }, [router, supabase])
+            setLoading(false);
+        };
+        fetchDashboard();
+    }, [router, supabase]);
 
-    if (loading) return <div className="p-12 text-center text-gray-500 font-bold">Loading dashboard...</div>
+    if (loading) return <div className="p-12 text-center text-gray-500 font-bold">Loading dashboard...</div>;
 
     const metrics = [
         { label: 'Total Leads', value: leads.length.toString(), icon: Users, trend: '+12%', trendUp: true, color: 'text-primary bg-primary/10' },

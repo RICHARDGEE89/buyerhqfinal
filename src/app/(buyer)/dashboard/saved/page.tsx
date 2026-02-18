@@ -9,21 +9,28 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
+type SavedAgent = {
+    saved_id: string;
+} & Partial<Agent>;
+
 export default function SavedAgentsPage() {
-    const [savedAgents, setSavedAgents] = React.useState<any[]>([])
-    const [loading, setLoading] = React.useState(true)
-    const supabase = createClient()
-    const router = useRouter()
+    const [savedAgents, setSavedAgents] = React.useState<SavedAgent[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const supabase = React.useMemo(() => createClient(), []);
+    const router = useRouter();
 
     React.useEffect(() => {
         const fetchSaved = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                router.push('/login')
-                return
+                router.push('/login');
+                return;
             }
 
-            const { data, error } = await supabase
+            const {
+                data,
+                error,
+            } = await supabase
                 .from('saved_agents')
                 .select(`
                     id,
@@ -39,30 +46,42 @@ export default function SavedAgentsPage() {
                         bio
                     )
                 `)
-                .order('created_at', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading saved agents', error);
+            }
 
             if (data) {
-                // Flatten structure
-                const flattened = data.map((item: any) => ({
-                    saved_id: item.id,
-                    ...item.agent
-                })).filter(a => a) // Remove nulls if any
-                setSavedAgents(flattened)
+                const flattened: SavedAgent[] = data
+                    .map((item) =>
+                        item.agent
+                            ? ({
+                                  saved_id: item.id,
+                                  ...(item.agent as unknown as Partial<Agent>),
+                              } as SavedAgent)
+                            : null
+                    )
+                    .filter((a): a is SavedAgent => a !== null);
+
+                setSavedAgents(flattened);
             }
-            setLoading(false)
-        }
-        fetchSaved()
-    }, [router, supabase])
+            setLoading(false);
+        };
+        fetchSaved();
+    }, [router, supabase]);
 
     const handleRemove = async (savedId: string) => {
-        const { error } = await supabase.from('saved_agents').delete().eq('id', savedId)
-        if (!error) {
-            setSavedAgents(prev => prev.filter(a => a.saved_id !== savedId))
+        const { error } = await supabase.from('saved_agents').delete().eq('id', savedId);
+        if (error) {
+            console.error('Error removing saved agent', error);
+            return;
         }
-    }
+        setSavedAgents((prev) => prev.filter((a) => a.saved_id !== savedId));
+    };
 
     if (loading) {
-        return <div className="py-20 text-center font-bold text-gray-500">Loading saved agents...</div>
+        return <div className="py-20 text-center font-bold text-gray-500">Loading saved agents...</div>;
     }
 
     return (
