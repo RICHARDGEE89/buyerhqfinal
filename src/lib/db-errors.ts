@@ -50,3 +50,19 @@ export function extractMissingColumnName(message: string, tableName?: string) {
 
   return null;
 }
+
+export function extractNotNullColumnName(message: string) {
+  const patterns = [
+    /null value in column\s+"?([a-zA-Z0-9_]+)"?\s+of relation/i,
+    /violates not-null constraint.*column\s+"?([a-zA-Z0-9_]+)"?/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}

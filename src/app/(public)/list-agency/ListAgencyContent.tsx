@@ -12,7 +12,8 @@ import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
 import type { Database } from "@/lib/database.types";
-import { isMissingColumnError, isOnConflictConstraintError } from "@/lib/db-errors";
+import { extractMissingColumnName, isOnConflictConstraintError } from "@/lib/db-errors";
+import { buildAgentSlug } from "@/lib/slug";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Account", "Personal", "Agency", "Profile", "Review"];
@@ -170,8 +171,11 @@ export default function ListAgencyContent() {
       delete withoutActive.is_active;
       const minimalPayload: AgentInsert = { ...withoutActive };
       delete minimalPayload.is_verified;
-
-      const payloadVariants: AgentInsert[] = [baseAgentPayload, withoutActive, minimalPayload];
+      const withSlugPayload = {
+        ...baseAgentPayload,
+        slug: buildAgentSlug(baseAgentPayload.name, baseAgentPayload.email),
+      } as AgentInsert;
+      const payloadVariants: AgentInsert[] = [withSlugPayload, baseAgentPayload, withoutActive, minimalPayload];
 
       const upsertAgent = async (payload: AgentInsert) => {
         const { data, error } = await supabase
@@ -228,11 +232,8 @@ export default function ListAgencyContent() {
             }
 
             agentInsertErrorMessage = fallbackResult.errorMessage ?? "Unable to save agent profile.";
-
-            if (
-              !isMissingColumnError(agentInsertErrorMessage, "is_active", "agents") &&
-              !isMissingColumnError(agentInsertErrorMessage, "is_verified", "agents")
-            ) {
+            const missingColumn = extractMissingColumnName(agentInsertErrorMessage, "agents");
+            if (!missingColumn) {
               break;
             }
           }
@@ -240,11 +241,8 @@ export default function ListAgencyContent() {
         }
 
         agentInsertErrorMessage = upsertResult.errorMessage ?? "Unable to save agent profile.";
-
-        if (
-          !isMissingColumnError(agentInsertErrorMessage, "is_active", "agents") &&
-          !isMissingColumnError(agentInsertErrorMessage, "is_verified", "agents")
-        ) {
+        const missingColumn = extractMissingColumnName(agentInsertErrorMessage, "agents");
+        if (!missingColumn) {
           break;
         }
       }

@@ -6,11 +6,13 @@ import { normalizeAgents } from "@/lib/agent-compat";
 import type { Database, Json } from "@/lib/database.types";
 import {
   extractMissingColumnName,
+  extractNotNullColumnName,
   isMissingColumnError,
   isMissingRelationError,
   isOnConflictConstraintError,
   isPolicyRecursionError,
 } from "@/lib/db-errors";
+import { buildAgentSlug } from "@/lib/slug";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -167,6 +169,66 @@ function stripColumnFromAgentRows(
   });
 }
 
+function addSlugToAgentRows(rows: Database["public"]["Tables"]["agents"]["Insert"][]) {
+  return rows.map((row, index) => {
+    const next = { ...row } as Record<string, unknown>;
+    const existingSlug = typeof next.slug === "string" ? next.slug.trim() : "";
+    if (!existingSlug) {
+      const name = typeof next.name === "string" ? next.name : "";
+      const email = typeof next.email === "string" ? next.email : "";
+      next.slug = buildAgentSlug(name, email, index);
+    }
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
+  });
+}
+
+function applyAgentNotNullFallback(
+  rows: Database["public"]["Tables"]["agents"]["Insert"][],
+  column: string
+) {
+  const normalized = column.toLowerCase();
+
+  if (normalized === "slug") {
+    return {
+      rows: addSlugToAgentRows(rows),
+      changed: true,
+    };
+  }
+
+  const mutated = rows.map((row) => {
+    const next = { ...row } as Record<string, unknown>;
+    switch (normalized) {
+      case "created_at":
+        if (!next.created_at) next.created_at = new Date().toISOString();
+        break;
+      case "is_active":
+        if (typeof next.is_active !== "boolean") next.is_active = true;
+        break;
+      case "is_verified":
+        if (typeof next.is_verified !== "boolean") next.is_verified = false;
+        break;
+      case "suburbs":
+        if (!Array.isArray(next.suburbs)) next.suburbs = [];
+        break;
+      case "specializations":
+        if (!Array.isArray(next.specializations)) next.specializations = [];
+        break;
+      default:
+        break;
+    }
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
+  });
+
+  const changed =
+    normalized === "created_at" ||
+    normalized === "is_active" ||
+    normalized === "is_verified" ||
+    normalized === "suburbs" ||
+    normalized === "specializations";
+
+  return { rows: mutated, changed };
+}
+
 async function manualUpsertAgentsWithoutConflict(
   client: SupabaseClient<Database>,
   rows: Database["public"]["Tables"]["agents"]["Insert"][]
@@ -201,6 +263,15 @@ async function manualUpsertAgentsWithoutConflict(
       if (missingColumn) {
         row = stripColumnFromAgentRows([row], missingColumn)[0];
         continue;
+      }
+
+      const notNullColumn = extractNotNullColumnName(writeError.message);
+      if (notNullColumn) {
+        const applied = applyAgentNotNullFallback([row], notNullColumn);
+        if (applied.changed) {
+          row = applied.rows[0];
+          continue;
+        }
       }
 
       return { error: writeError };
@@ -415,7 +486,7 @@ export async function POST(request: Request) {
           return fail("No rows provided for bulk upload.");
         }
 
-        let effectiveRows = payload.rows.map((row) => ({ ...row }));
+        let effectiveRows = addSlugToAgentRows(payload.rows.map((row) => ({ ...row })));
         let error: { message: string } | null = null;
 
         for (let attempt = 0; attempt < 15; attempt += 1) {
@@ -433,11 +504,21 @@ export async function POST(request: Request) {
           }
 
           const missingColumn = extractMissingColumnName(error.message, "agents");
-          if (!missingColumn) {
-            break;
+          if (missingColumn) {
+            effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+            continue;
           }
 
-          effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+          const notNullColumn = extractNotNullColumnName(error.message);
+          if (notNullColumn) {
+            const applied = applyAgentNotNullFallback(effectiveRows, notNullColumn);
+            if (applied.changed) {
+              effectiveRows = applied.rows;
+              continue;
+            }
+          }
+
+          break;
         }
 
         if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
