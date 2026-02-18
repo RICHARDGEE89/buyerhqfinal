@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeAgents } from "@/lib/agent-compat";
 import type { Database, Json } from "@/lib/database.types";
 import {
+  extractMissingColumnName,
   isMissingColumnError,
   isMissingRelationError,
   isOnConflictConstraintError,
@@ -155,49 +156,111 @@ async function fetchAdminAccountRow(
   };
 }
 
-export async function GET() {
-  const privileged = await getPrivilegedClient();
-  if (privileged.error || !privileged.client) {
-    return NextResponse.json({ error: privileged.error }, { status: privileged.status });
-  }
-
-  const client = privileged.client;
-  const publicClient = createPublicClient();
-  const warnings: string[] = [];
-
-  const [agents, enquiries, reviews, posts, contacts, adminAccount] = await Promise.all([
-    fetchTableRows(client, "agents", warnings, { fallbackClient: publicClient }),
-    fetchTableRows(client, "enquiries", warnings, { fallbackClient: publicClient }),
-    fetchTableRows(client, "reviews", warnings, { fallbackClient: publicClient }),
-    fetchTableRows(client, "blog_posts", warnings, { fallbackClient: publicClient }),
-    fetchTableRows(client, "contact_submissions", warnings, { fallbackClient: publicClient }),
-    fetchAdminAccountRow(client, privileged.user, warnings),
-  ]);
-
-  const warningMessage = warnings.length > 0 ? Array.from(new Set(warnings)).join(" | ") : undefined;
-  const policyFallback = warnings.some((item) => item.includes("policy recursion"));
-
-  return NextResponse.json({
-    agents: normalizeAgents(agents as Database["public"]["Tables"]["agents"]["Row"][]),
-    enquiries,
-    reviews,
-    posts,
-    contacts,
-    adminAccount,
-    schemaFallback: warnings.length > 0,
-    policyFallback,
-    warning: warningMessage,
+function stripColumnFromAgentRows(
+  rows: Database["public"]["Tables"]["agents"]["Insert"][],
+  column: string
+) {
+  return rows.map((row) => {
+    const next = { ...row } as Record<string, unknown>;
+    delete next[column];
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
   });
 }
 
-export async function POST(request: Request) {
-  const privileged = await getPrivilegedClient();
-  if (privileged.error || !privileged.client) {
-    return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+async function manualUpsertAgentsWithoutConflict(
+  client: SupabaseClient<Database>,
+  rows: Database["public"]["Tables"]["agents"]["Insert"][]
+) {
+  for (const rawRow of rows) {
+    let row = { ...rawRow } as Database["public"]["Tables"]["agents"]["Insert"];
+
+    if (!row.email) {
+      return { error: { message: "Each uploaded row requires email." } as { message: string } };
+    }
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const { data: existing, error: existingError } = await client
+        .from("agents")
+        .select("id")
+        .eq("email", row.email)
+        .limit(1);
+      if (existingError) {
+        return { error: existingError };
+      }
+
+      const existingId = existing?.[0]?.id;
+      const { error: writeError } = existingId
+        ? await client.from("agents").update(row).eq("id", existingId)
+        : await client.from("agents").insert(row);
+
+      if (!writeError) {
+        break;
+      }
+
+      const missingColumn = extractMissingColumnName(writeError.message, "agents");
+      if (missingColumn) {
+        row = stripColumnFromAgentRows([row], missingColumn)[0];
+        continue;
+      }
+
+      return { error: writeError };
+    }
   }
 
-  const client = privileged.client;
-  const payload = (await request.json()) as
+  return { error: null };
+}
+
+export async function GET() {
+  try {
+    const privileged = await getPrivilegedClient();
+    if (privileged.error || !privileged.client) {
+      return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+    }
+
+    const client = privileged.client;
+    const publicClient = createPublicClient();
+    const warnings: string[] = [];
+
+    const [agents, enquiries, reviews, posts, contacts, adminAccount] = await Promise.all([
+      fetchTableRows(client, "agents", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "enquiries", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "reviews", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "blog_posts", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "contact_submissions", warnings, { fallbackClient: publicClient }),
+      fetchAdminAccountRow(client, privileged.user, warnings),
+    ]);
+
+    const warningMessage = warnings.length > 0 ? Array.from(new Set(warnings)).join(" | ") : undefined;
+    const policyFallback = warnings.some((item) => item.includes("policy recursion"));
+
+    return NextResponse.json({
+      agents: normalizeAgents(agents as Database["public"]["Tables"]["agents"]["Row"][]),
+      enquiries,
+      reviews,
+      posts,
+      contacts,
+      adminAccount,
+      schemaFallback: warnings.length > 0,
+      policyFallback,
+      warning: warningMessage,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to load admin panel." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const privileged = await getPrivilegedClient();
+    if (privileged.error || !privileged.client) {
+      return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+    }
+
+    const client = privileged.client;
+    const payload = (await request.json()) as
     | { type: "update_agent"; id: string; patch: Record<string, unknown> }
     | { type: "delete_agent"; id: string }
     | { type: "approve_review"; id: string }
@@ -209,9 +272,9 @@ export async function POST(request: Request) {
     | { type: "update_admin_preferences"; preferences: Json }
     | { type: "bulk_upsert_agents"; rows: Database["public"]["Tables"]["agents"]["Insert"][] };
 
-  const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
+    const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
 
-  switch (payload.type) {
+    switch (payload.type) {
     case "update_agent": {
       const allowedFields = new Set([
         "is_verified",
@@ -347,66 +410,48 @@ export async function POST(request: Request) {
       return fail(error.message, 500);
     }
 
-    case "bulk_upsert_agents": {
-      if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
-        return fail("No rows provided for bulk upload.");
-      }
+      case "bulk_upsert_agents": {
+        if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
+          return fail("No rows provided for bulk upload.");
+        }
 
-      let effectiveRows = payload.rows.map((row) => ({ ...row }));
-      let { error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
-      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
-        effectiveRows = effectiveRows.map((row) => {
-          const next = { ...row } as Record<string, unknown>;
-          delete next.is_active;
-          return next as Database["public"]["Tables"]["agents"]["Insert"];
-        });
-        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
-      }
-      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
-        effectiveRows = effectiveRows.map((row) => {
-          const next = { ...row } as Record<string, unknown>;
-          delete next.is_verified;
-          delete next.is_active;
-          return next as Database["public"]["Tables"]["agents"]["Insert"];
-        });
-        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
-      }
+        let effectiveRows = payload.rows.map((row) => ({ ...row }));
+        let error: { message: string } | null = null;
 
-      if (error && isOnConflictConstraintError(error.message)) {
-        for (const row of effectiveRows) {
-          const { data: existing, error: existingError } = await client
-            .from("agents")
-            .select("id")
-            .eq("email", row.email)
-            .limit(1);
-          if (existingError) {
-            error = existingError;
+        for (let attempt = 0; attempt < 15; attempt += 1) {
+          const upsertResult = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
+          error = upsertResult.error;
+
+          if (!error) {
             break;
           }
 
-          const existingId = existing?.[0]?.id;
-          if (existingId) {
-            const { error: updateError } = await client.from("agents").update(row).eq("id", existingId);
-            if (updateError) {
-              error = updateError;
-              break;
-            }
-          } else {
-            const { error: insertError } = await client.from("agents").insert(row);
-            if (insertError) {
-              error = insertError;
-              break;
-            }
+          if (isOnConflictConstraintError(error.message)) {
+            const manual = await manualUpsertAgentsWithoutConflict(client, effectiveRows);
+            error = manual.error;
+            break;
           }
-          error = null;
-        }
-      }
-      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
-      if (error) return fail(error.message, 500);
-      return NextResponse.json({ success: true, inserted: effectiveRows.length });
-    }
 
-    default:
-      return fail("Unsupported admin action.");
+          const missingColumn = extractMissingColumnName(error.message, "agents");
+          if (!missingColumn) {
+            break;
+          }
+
+          effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+        }
+
+        if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
+        if (error) return fail(error.message, 500);
+        return NextResponse.json({ success: true, inserted: effectiveRows.length });
+      }
+
+      default:
+        return fail("Unsupported admin action.");
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected admin action failure." },
+      { status: 500 }
+    );
   }
 }

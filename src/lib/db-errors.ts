@@ -31,3 +31,22 @@ export function isOnConflictConstraintError(message: string) {
     lower.includes("42p10")
   );
 }
+
+export function extractMissingColumnName(message: string, tableName?: string) {
+  const tableToken = tableName ? tableName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "[a-zA-Z0-9_]+";
+  const patterns = [
+    new RegExp(`${tableToken}\\.([a-zA-Z0-9_]+)`, "i"),
+    /column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/i,
+    /could not find the '([a-zA-Z0-9_]+)' column of/i,
+    /column\s+([a-zA-Z0-9_]+)\s+of relation/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
