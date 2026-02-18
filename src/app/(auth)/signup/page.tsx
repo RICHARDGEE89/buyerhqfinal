@@ -8,6 +8,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 
@@ -61,6 +62,7 @@ export default function SignupPage() {
       email: email.trim().toLowerCase(),
       password,
       options: {
+        emailRedirectTo: buildAuthCallbackUrl("/dashboard"),
         data: {
           role: "buyer",
           first_name: firstName.trim(),

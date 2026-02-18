@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
 import type { Database } from "@/lib/database.types";
@@ -106,6 +107,7 @@ export default function ListAgencyContent() {
         email: normalizedEmail,
         password,
         options: {
+          emailRedirectTo: buildAuthCallbackUrl("/agent-portal"),
           data: {
             role: "agent",
             first_name: firstName,
