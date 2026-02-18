@@ -58,7 +58,7 @@ export async function updateSession(request: NextRequest) {
   if (isAdminPath && !isAdminLoginPath) {
     if (!user) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/agent-portal/login";
+      redirectUrl.pathname = "/login";
       redirectUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(redirectUrl);
     }
@@ -66,7 +66,7 @@ export async function updateSession(request: NextRequest) {
     const email = user.email?.toLowerCase() ?? "";
     if (!adminAllowList.has(email)) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/agent-portal";
+      redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
     }
   }

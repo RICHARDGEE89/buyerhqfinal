@@ -22,13 +22,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <ProtectedRoute requireAdmin>
       <div className="container py-8">
-        <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-4">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <aside className="h-fit rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-24">
+            <p className="font-mono text-label uppercase text-text-secondary">BuyerHQ Ops</p>
+            <h2 className="mt-2 text-subheading">Admin Console</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Moderation, user controls, and platform operations.
+            </p>
+
+            <nav className="mt-4 grid gap-2">
+              {adminLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-body-sm text-text-secondary transition-colors",
+                    pathname === link.href
+                      ? "border-border-light bg-surface-2 text-text-primary"
+                      : "border-border hover:text-text-primary"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </aside>
+
+          <div>{children}</div>
+        </div>
+      </div>
+      <div className="container pb-2 lg:hidden">
+        <div className="flex flex-wrap gap-2">
           {adminLinks.map((link) => (
             <Link
-              key={link.href}
+              key={`mobile-${link.href}`}
               href={link.href}
               className={cn(
-                "rounded-md border px-3 py-2 text-body-sm text-text-secondary transition-colors",
+                "rounded-md border px-3 py-2 text-caption text-text-secondary transition-colors",
                 pathname === link.href
                   ? "border-border-light bg-surface-2 text-text-primary"
                   : "border-border hover:text-text-primary"
@@ -38,7 +68,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </div>
-        {children}
       </div>
     </ProtectedRoute>
   );

@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { fetchAdminPanelData } from "@/lib/admin-api";
 import type {
   AgentRow,
   BlogPostRow,
@@ -15,7 +16,6 @@ import type {
   EnquiryRow,
   ReviewRow,
 } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
 
 type LogType = "all" | "agent" | "enquiry" | "review" | "contact" | "blog";
 
@@ -29,7 +29,6 @@ type ActivityLog = {
 };
 
 export default function AdminLogsContent() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<LogType>("all");
@@ -43,39 +42,24 @@ export default function AdminLogsContent() {
     setLoading(true);
     setError(null);
 
-    const [agentsRes, enquiriesRes, reviewsRes, contactsRes, postsRes] = await Promise.all([
-      supabase.from("agents").select("*").order("created_at", { ascending: false }).limit(60),
-      supabase.from("enquiries").select("*").order("created_at", { ascending: false }).limit(60),
-      supabase.from("reviews").select("*").order("created_at", { ascending: false }).limit(60),
-      supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }).limit(60),
-      supabase.from("blog_posts").select("*").order("created_at", { ascending: false }).limit(60),
-    ]);
-
-    if (agentsRes.error || enquiriesRes.error || reviewsRes.error || contactsRes.error || postsRes.error) {
-      setError(
-        agentsRes.error?.message ||
-          enquiriesRes.error?.message ||
-          reviewsRes.error?.message ||
-          contactsRes.error?.message ||
-          postsRes.error?.message ||
-          "Failed to load logs."
-      );
+    try {
+      const payload = await fetchAdminPanelData();
+      setAgents(payload.agents.slice(0, 60));
+      setEnquiries(payload.enquiries.slice(0, 60));
+      setReviews(payload.reviews.slice(0, 60));
+      setContacts(payload.contacts.slice(0, 60));
+      setPosts(payload.posts.slice(0, 60));
+      setLoading(false);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Failed to load logs.");
       setAgents([]);
       setEnquiries([]);
       setReviews([]);
       setContacts([]);
       setPosts([]);
       setLoading(false);
-      return;
     }
-
-    setAgents(agentsRes.data ?? []);
-    setEnquiries(enquiriesRes.data ?? []);
-    setReviews(reviewsRes.data ?? []);
-    setContacts(contactsRes.data ?? []);
-    setPosts(postsRes.data ?? []);
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     void loadLogs();

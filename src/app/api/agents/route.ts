@@ -36,42 +36,45 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid state filter provided." }, { status: 400 });
     }
 
-    const from = (Math.max(page, 1) - 1) * limit;
-    const to = from + limit - 1;
+    const currentPage = Math.max(page, 1);
+    const from = (currentPage - 1) * limit;
+    const to = from + limit;
 
     const supabase = createClient();
     let query = supabase
       .from("agents")
-      .select("*", { count: "exact" })
+      .select("*")
       .eq("is_active", true)
-      .order("avg_rating", { ascending: false, nullsFirst: false })
-      .range(from, to);
+      .order("avg_rating", { ascending: false, nullsFirst: false });
 
     if (state) query = query.eq("state", state);
     if (verifiedOnly === true) query = query.eq("is_verified", true);
     if (minRating !== null && !Number.isNaN(minRating)) query = query.gte("avg_rating", minRating);
     if (specializations.length > 0) query = query.overlaps("specializations", specializations);
 
-    if (search) {
-      const term = search.trim();
-      if (term) {
-        const safeTerm = term.replace(/[%]/g, "");
-        query = query.or(
-          `name.ilike.%${safeTerm}%,agency_name.ilike.%${safeTerm}%,suburbs.cs.{${safeTerm}}`
-        );
-      }
-    }
-
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const searchTerm = search?.trim().toLowerCase() ?? "";
+    const filtered =
+      searchTerm.length > 0
+        ? (data ?? []).filter((agent) => {
+            const byName = agent.name.toLowerCase().includes(searchTerm);
+            const byAgency = (agent.agency_name ?? "").toLowerCase().includes(searchTerm);
+            const bySuburb = (agent.suburbs ?? []).some((suburb) =>
+              suburb.toLowerCase().includes(searchTerm)
+            );
+            return byName || byAgency || bySuburb;
+          })
+        : (data ?? []);
+
     return NextResponse.json({
-      agents: data ?? [],
-      total: count ?? 0,
-      page: Math.max(page, 1),
+      agents: filtered.slice(from, to),
+      total: filtered.length,
+      page: currentPage,
     });
   } catch {
     return NextResponse.json({ error: "Unable to fetch agents" }, { status: 500 });

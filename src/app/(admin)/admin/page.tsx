@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { StatCard } from "@/components/ui/StatCard";
 import type { AgentRow, BlogPostRow, EnquiryRow, ReviewRow } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
+import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 
 type ContactSubmission = {
   id: string;
@@ -22,7 +22,6 @@ type ContactSubmission = {
 };
 
 export default function AdminDashboardOverview() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -30,49 +29,35 @@ export default function AdminDashboardOverview() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [posts, setPosts] = useState<BlogPostRow[]>([]);
   const [contacts, setContacts] = useState<ContactSubmission[]>([]);
+  const [schemaFallback, setSchemaFallback] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError(null);
-
-      const [agentsRes, enquiriesRes, reviewsRes, postsRes, contactsRes] = await Promise.all([
-        supabase.from("agents").select("*").order("created_at", { ascending: false }),
-        supabase.from("enquiries").select("*").order("created_at", { ascending: false }),
-        supabase
-          .from("reviews")
-          .select("*")
-          .eq("is_approved", false)
-          .order("created_at", { ascending: false }),
-        supabase.from("blog_posts").select("*").order("created_at", { ascending: false }),
-        supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }).limit(10),
-      ]);
-
-      if (cancelled) return;
-      if (agentsRes.error || enquiriesRes.error || reviewsRes.error || postsRes.error || contactsRes.error) {
-        setError(
-          agentsRes.error?.message ||
-            enquiriesRes.error?.message ||
-            reviewsRes.error?.message ||
-            postsRes.error?.message ||
-            contactsRes.error?.message ||
-            "Failed to load admin data"
-        );
+      try {
+        const payload = await fetchAdminPanelData();
+        if (cancelled) return;
+        setAgents(payload.agents);
+        setEnquiries(payload.enquiries);
+        setReviews(payload.reviews.filter((item) => !item.is_approved));
+        setPosts(payload.posts);
+        setContacts(payload.contacts.slice(0, 10) as ContactSubmission[]);
+        setSchemaFallback(Boolean(payload.schemaFallback));
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Failed to load admin data");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setAgents(agentsRes.data ?? []);
-      setEnquiries(enquiriesRes.data ?? []);
-      setReviews(reviewsRes.data ?? []);
-      setPosts(postsRes.data ?? []);
-      setContacts((contactsRes.data as ContactSubmission[]) ?? []);
-      setLoading(false);
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, []);
 
   const monthStart = new Date();
   monthStart.setUTCDate(1);
@@ -80,33 +65,59 @@ export default function AdminDashboardOverview() {
   const newThisMonth = enquiries.filter((item) => new Date(item.created_at) >= monthStart).length;
 
   const updateAgent = async (id: string, field: "is_verified" | "is_active", value: boolean) => {
-    await supabase.from("agents").update({ [field]: value }).eq("id", id);
-    setAgents((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+    try {
+      await runAdminAction({ type: "update_agent", id, patch: { [field]: value } });
+      setAgents((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to update agent.");
+    }
   };
 
   const deleteAgent = async (id: string) => {
-    await supabase.from("agents").delete().eq("id", id);
-    setAgents((current) => current.filter((item) => item.id !== id));
+    try {
+      await runAdminAction({ type: "delete_agent", id });
+      setAgents((current) => current.filter((item) => item.id !== id));
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to delete agent.");
+    }
   };
 
   const approveReview = async (id: string) => {
-    await supabase.from("reviews").update({ is_approved: true }).eq("id", id);
-    setReviews((current) => current.filter((item) => item.id !== id));
+    try {
+      await runAdminAction({ type: "approve_review", id });
+      setReviews((current) => current.filter((item) => item.id !== id));
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to approve review.");
+    }
   };
 
   const rejectReview = async (id: string) => {
-    await supabase.from("reviews").delete().eq("id", id);
-    setReviews((current) => current.filter((item) => item.id !== id));
+    try {
+      await runAdminAction({ type: "reject_review", id });
+      setReviews((current) => current.filter((item) => item.id !== id));
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to reject review.");
+    }
   };
 
   const togglePublished = async (id: string, value: boolean) => {
-    await supabase.from("blog_posts").update({ is_published: value }).eq("id", id);
-    setPosts((current) => current.map((item) => (item.id === id ? { ...item, is_published: value } : item)));
+    try {
+      await runAdminAction({ type: "toggle_post_published", id, value });
+      setPosts((current) =>
+        current.map((item) => (item.id === id ? { ...item, is_published: value } : item))
+      );
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to update blog post.");
+    }
   };
 
   const deletePost = async (id: string) => {
-    await supabase.from("blog_posts").delete().eq("id", id);
-    setPosts((current) => current.filter((item) => item.id !== id));
+    try {
+      await runAdminAction({ type: "delete_post", id });
+      setPosts((current) => current.filter((item) => item.id !== id));
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to delete blog post.");
+    }
   };
 
   if (loading) return <div className="text-body text-text-secondary">Loading admin dashboard...</div>;
@@ -117,6 +128,11 @@ export default function AdminDashboardOverview() {
       <section className="rounded-xl border border-border bg-surface p-6">
         <h1 className="text-heading">Admin Console</h1>
         <p className="mt-2 text-body-sm text-text-secondary">Platform moderation and operational controls.</p>
+        {schemaFallback ? (
+          <p className="mt-2 text-caption text-text-muted">
+            Running in compatibility mode. Some advanced settings are using fallback storage.
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

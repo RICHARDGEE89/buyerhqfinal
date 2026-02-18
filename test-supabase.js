@@ -25,38 +25,39 @@ console.log('Key:', supabaseKey.substring(0, 20) + '...\n');
 // Create client
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Test connection by querying the users table
+// Test connection by querying production tables
 async function testConnection() {
     try {
         console.log('🔌 Testing connection to Supabase...\n');
 
         // Simple query to test connection
-        const { data, error } = await supabase
-            .from('users')
-            .select('count')
-            .limit(1);
+        const { error } = await supabase
+            .from('agents')
+            .select('id', { head: true, count: 'exact' });
 
         if (error) {
             console.error('❌ Connection failed:', error.message);
             console.log('\nPossible issues:');
             console.log('1. Invalid credentials');
-            console.log('2. Table "users" does not exist');
+            console.log('2. Required tables are missing');
             console.log('3. RLS policies blocking access');
             return;
         }
 
         console.log('✅ Successfully connected to Supabase!');
         console.log('✓ Database is accessible');
-        console.log('✓ "users" table exists\n');
+        console.log('✓ "agents" table exists\n');
 
-        // Test agents table
-        const { data: agentsData, error: agentsError } = await supabase
-            .from('agents')
-            .select('count')
-            .limit(1);
-
-        if (!agentsError) {
-            console.log('✓ "agents" table exists');
+        const tableChecks = ['reviews', 'enquiries', 'agent_profiles', 'contact_submissions', 'blog_posts'];
+        for (const tableName of tableChecks) {
+            const { error: tableError } = await supabase
+                .from(tableName)
+                .select('id', { head: true, count: 'exact' });
+            if (tableError) {
+                console.log(`⚠ "${tableName}" check failed: ${tableError.message}`);
+            } else {
+                console.log(`✓ "${tableName}" table exists`);
+            }
         }
 
         console.log('\n🎉 Supabase connection is working perfectly!');

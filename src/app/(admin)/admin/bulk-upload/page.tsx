@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, CircleAlert, FileJson, Upload } from "lucide-react";
 
+import { runAdminAction } from "@/lib/admin-api";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import type { Database } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
 
 type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
 type ParseResult = {
@@ -32,7 +32,6 @@ const starterJson = `[
 ]`;
 
 export default function BulkUploadPage() {
-  const supabase = useMemo(() => createClient(), []);
   const [jsonData, setJsonData] = useState(starterJson);
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -149,18 +148,11 @@ export default function BulkUploadPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("agents")
-        .upsert(parsed.rows, { onConflict: "email" })
-        .select("id");
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      await runAdminAction({ type: "bulk_upsert_agents", rows: parsed.rows });
 
       setResult({
         success: true,
-        message: `Upload complete. ${data?.length ?? parsed.rows.length} profile(s) upserted.`,
+        message: `Upload complete. ${parsed.rows.length} profile(s) upserted.`,
       });
       setJsonData(starterJson);
       setPreview(null);

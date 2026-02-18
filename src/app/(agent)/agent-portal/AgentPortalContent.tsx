@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { StatCard } from "@/components/ui/StatCard";
+import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import type { AgentRow, EnquiryRow } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -34,13 +35,15 @@ export default function AgentPortalContent() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("agent_profiles")
-        .select("agent_id")
-        .eq("id", user.id)
-        .single();
+      const { agentId, error: profileError } = await resolveAgentProfileForUser(supabase, user);
+      if (profileError) {
+        if (!cancelled) {
+          setLoading(false);
+          setError(profileError);
+        }
+        return;
+      }
 
-      const agentId = profile?.agent_id;
       if (!agentId) {
         if (!cancelled) {
           setLoading(false);

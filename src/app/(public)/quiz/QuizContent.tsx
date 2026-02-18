@@ -84,7 +84,24 @@ export default function QuizContent() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "Unable to load matches");
 
-        setMatches((data.agents ?? []).slice(0, 6));
+        let nextMatches = (data.agents ?? []).slice(0, 6);
+
+        // Fallback: if constraints are too strict, retry with broader filters.
+        if (nextMatches.length === 0) {
+          const fallbackParams = new URLSearchParams({
+            state,
+            verified: "true",
+            limit: "6",
+            page: "1",
+          });
+          const fallbackResponse = await fetch(`/api/agents?${fallbackParams.toString()}`);
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackResponse.ok) {
+            nextMatches = (fallbackData.agents ?? []).slice(0, 6);
+          }
+        }
+
+        setMatches(nextMatches);
       } catch (error) {
         setMatchError(error instanceof Error ? error.message : "Unable to load matches");
       } finally {

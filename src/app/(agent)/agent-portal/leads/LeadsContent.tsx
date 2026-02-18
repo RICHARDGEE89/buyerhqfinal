@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Select } from "@/components/ui/Select";
+import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import type { EnquiryRow } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -32,13 +33,17 @@ export default function LeadsContent() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("agent_profiles")
-        .select("agent_id")
-        .eq("id", user.id)
-        .single();
+      const { agentId, error: profileError } = await resolveAgentProfileForUser(supabase, user);
 
-      if (!profile?.agent_id) {
+      if (profileError) {
+        if (!cancelled) {
+          setError(profileError);
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (!agentId) {
         if (!cancelled) {
           setError("No linked agent profile found.");
           setLoading(false);
@@ -49,7 +54,7 @@ export default function LeadsContent() {
       const { data, error: loadError } = await supabase
         .from("enquiries")
         .select("*")
-        .eq("agent_id", profile.agent_id)
+        .eq("agent_id", agentId)
         .order("created_at", { ascending: false });
 
       if (!cancelled) {

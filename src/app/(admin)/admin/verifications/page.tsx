@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck, Ban, CircleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
@@ -10,12 +10,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { AgentRow } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
+import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 
 type ActionState = "approving" | "rejecting" | null;
 
 export default function AdminVerificationsPage() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingAgents, setPendingAgents] = useState<AgentRow[]>([]);
@@ -25,22 +24,16 @@ export default function AdminVerificationsPage() {
     setLoading(true);
     setError(null);
 
-    const { data, error: fetchError } = await supabase
-      .from("agents")
-      .select("*")
-      .eq("is_verified", false)
-      .order("created_at", { ascending: false });
-
-    if (fetchError) {
-      setError(fetchError.message);
+    try {
+      const payload = await fetchAdminPanelData();
+      setPendingAgents(payload.agents.filter((agent) => !agent.is_verified));
+      setLoading(false);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "Unable to load pending agents.");
       setPendingAgents([]);
       setLoading(false);
-      return;
     }
-
-    setPendingAgents(data ?? []);
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     void loadPendingAgents();
@@ -52,7 +45,7 @@ export default function AdminVerificationsPage() {
       [agent.id]: action === "approve" ? "approving" : "rejecting",
     }));
 
-    const updatePayload =
+    const patch =
       action === "approve"
         ? {
             is_verified: true,
@@ -64,12 +57,11 @@ export default function AdminVerificationsPage() {
             is_active: false,
           };
 
-    const { error: updateError } = await supabase.from("agents").update(updatePayload).eq("id", agent.id);
-
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "update_agent", id: agent.id, patch });
       setPendingAgents((current) => current.filter((item) => item.id !== agent.id));
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to update verification state.");
     }
 
     setActiveAction((current) => ({ ...current, [agent.id]: null }));

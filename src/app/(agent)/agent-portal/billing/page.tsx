@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatCard } from "@/components/ui/StatCard";
+import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import type { AgentProfileRow, AgentRow, EnquiryRow } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -55,21 +56,23 @@ export default function AgentBillingPage() {
       return;
     }
 
-    const { data: profileData, error: profileError } = await supabase
-      .from("agent_profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profileData?.agent_id) {
-      setError(profileError?.message ?? "No linked billing profile found.");
+    const { agentId, error: profileResolveError } = await resolveAgentProfileForUser(supabase, user);
+    if (profileResolveError) {
+      setError(profileResolveError);
+      setLoading(false);
+      return;
+    }
+    if (!agentId) {
+      setError("No linked billing profile found.");
       setLoading(false);
       return;
     }
 
+    const { data: profileData } = await supabase.from("agent_profiles").select("*").eq("id", user.id).maybeSingle();
+
     const [agentRes, enquiryRes] = await Promise.all([
-      supabase.from("agents").select("*").eq("id", profileData.agent_id).single(),
-      supabase.from("enquiries").select("*").eq("agent_id", profileData.agent_id).order("created_at", { ascending: false }),
+      supabase.from("agents").select("*").eq("id", agentId).single(),
+      supabase.from("enquiries").select("*").eq("agent_id", agentId).order("created_at", { ascending: false }),
     ]);
 
     if (agentRes.error || !agentRes.data) {
@@ -85,10 +88,10 @@ export default function AgentBillingPage() {
     }
 
     setAgent(agentRes.data);
-    setProfile(profileData);
+    setProfile((profileData as AgentProfileRow | null) ?? null);
     setEnquiries(enquiryRes.data ?? []);
-    setCardBrand(profileData.card_brand ?? "Visa");
-    setCardLast4(profileData.card_last4 ?? "4242");
+    setCardBrand((profileData as AgentProfileRow | null)?.card_brand ?? "Visa");
+    setCardLast4((profileData as AgentProfileRow | null)?.card_last4 ?? "4242");
     setLoading(false);
   }, [supabase]);
 

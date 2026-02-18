@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
+import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import type { AgentProfileRow, AgentRow, Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -67,22 +68,28 @@ export default function ProfileContent() {
       return;
     }
 
-    const { data: profileData, error: profileError } = await supabase
-      .from("agent_profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const { agentId: resolvedAgentId, error: profileResolveError } = await resolveAgentProfileForUser(
+      supabase,
+      user
+    );
 
-    if (profileError || !profileData?.agent_id) {
-      setError(profileError?.message ?? "No linked agent profile found.");
+    if (profileResolveError) {
+      setError(profileResolveError);
+      setLoading(false);
+      return;
+    }
+    if (!resolvedAgentId) {
+      setError("No linked agent profile found.");
       setLoading(false);
       return;
     }
 
+    const { data: profileData } = await supabase.from("agent_profiles").select("*").eq("id", user.id).maybeSingle();
+
     const { data: agentData, error: agentError } = await supabase
       .from("agents")
       .select("*")
-      .eq("id", profileData.agent_id)
+      .eq("id", resolvedAgentId)
       .single();
 
     if (agentError || !agentData) {
@@ -93,7 +100,7 @@ export default function ProfileContent() {
 
     setAgentId(agentData.id);
     setAgent(agentData);
-    setProfile(profileData);
+    setProfile((profileData as AgentProfileRow | null) ?? null);
     setForm({
       name: agentData.name,
       agency_name: agentData.agency_name ?? "",

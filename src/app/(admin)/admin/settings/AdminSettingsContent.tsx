@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { Json } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
+import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 
 type AdminPreferences = {
   notification_email: string;
@@ -28,13 +28,12 @@ const defaultPreferences: AdminPreferences = {
 };
 
 export default function AdminSettingsContent() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [adminId, setAdminId] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
+  const [schemaFallback, setSchemaFallback] = useState(false);
   const [preferences, setPreferences] = useState<AdminPreferences>(defaultPreferences);
 
   const loadSettings = useCallback(async () => {
@@ -42,74 +41,37 @@ export default function AdminSettingsContent() {
     setError(null);
     setSuccess(null);
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user?.id || !user.email) {
-      setError(userError?.message ?? "Unable to load current user session.");
+    try {
+      const payload = await fetchAdminPanelData();
+      const fallbackEmail = payload.adminAccount?.email ?? "ops@buyerhq.com.au";
+      setAdminEmail(fallbackEmail);
+      setSchemaFallback(Boolean(payload.schemaFallback));
+      setPreferences(parsePreferences(payload.adminAccount?.preferences ?? null, fallbackEmail));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load admin settings.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setAdminId(user.id);
-    setAdminEmail(user.email);
-
-    const { data, error: fetchError } = await supabase
-      .from("admin_accounts")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (fetchError) {
-      setError(fetchError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (!data) {
-      const initialPreferences = { ...defaultPreferences, notification_email: user.email };
-      const { error: insertError } = await supabase.from("admin_accounts").upsert({
-        id: user.id,
-        email: user.email,
-        preferences: initialPreferences as Json,
-      });
-
-      if (insertError) {
-        setError(insertError.message);
-      } else {
-        setPreferences(initialPreferences);
-      }
-      setLoading(false);
-      return;
-    }
-
-    const saved = parsePreferences(data.preferences, user.email);
-    setPreferences(saved);
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
 
   const saveSettings = async () => {
-    if (!adminId || !adminEmail) return;
+    if (!adminEmail) return;
     setSaving(true);
     setError(null);
     setSuccess(null);
 
-    const { error: upsertError } = await supabase.from("admin_accounts").upsert({
-      id: adminId,
-      email: adminEmail,
-      preferences: preferences as Json,
-    });
-
-    if (upsertError) {
-      setError(upsertError.message);
-    } else {
+    try {
+      await runAdminAction({
+        type: "update_admin_preferences",
+        preferences: preferences as Json,
+      });
       setSuccess("Settings saved.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save settings.");
     }
     setSaving(false);
   };
@@ -118,14 +80,11 @@ export default function AdminSettingsContent() {
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const { error: updateError } = await supabase
-      .from("contact_submissions")
-      .update({ is_resolved: true })
-      .eq("is_resolved", false);
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "resolve_all_contacts" });
       setSuccess("All contact submissions marked as resolved.");
+    } catch (resolveError) {
+      setError(resolveError instanceof Error ? resolveError.message : "Unable to resolve contacts.");
     }
     setSaving(false);
   };
@@ -141,6 +100,11 @@ export default function AdminSettingsContent() {
         <p className="mt-2 text-body-sm text-text-secondary">
           Configure moderation defaults and operational preferences for your admin account.
         </p>
+        {schemaFallback ? (
+          <p className="mt-2 text-caption text-text-muted">
+            Preferences column not available in current schema. Using compatibility mode.
+          </p>
+        ) : null}
       </section>
 
       {error ? <ErrorState description={error} onRetry={loadSettings} /> : null}

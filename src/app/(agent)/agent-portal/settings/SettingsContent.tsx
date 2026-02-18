@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import type { AgentProfileRow, Json } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -56,11 +57,23 @@ export default function SettingsContent() {
 
     setEmail(user.email);
 
+    const { agentId, error: profileResolveError } = await resolveAgentProfileForUser(supabase, user);
+    if (profileResolveError) {
+      setError(profileResolveError);
+      setLoading(false);
+      return;
+    }
+    if (!agentId) {
+      setError("Unable to load agent settings.");
+      setLoading(false);
+      return;
+    }
+
     const { data: profileData, error: profileError } = await supabase
       .from("agent_profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError || !profileData) {
       setError(profileError?.message ?? "Unable to load agent settings.");

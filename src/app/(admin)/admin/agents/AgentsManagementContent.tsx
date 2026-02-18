@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -11,14 +11,13 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatCard } from "@/components/ui/StatCard";
+import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 import type { AgentRow } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
 
 type FilterValue = "all" | "verified" | "pending" | "inactive";
 type ActionValue = "verify" | "active" | "delete" | null;
 
 export default function AgentsManagementContent() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -30,21 +29,16 @@ export default function AgentsManagementContent() {
     setLoading(true);
     setError(null);
 
-    const { data, error: fetchError } = await supabase
-      .from("agents")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (fetchError) {
-      setError(fetchError.message);
+    try {
+      const payload = await fetchAdminPanelData();
+      setAgents(payload.agents);
+      setLoading(false);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "Unable to load agents.");
       setAgents([]);
       setLoading(false);
-      return;
     }
-
-    setAgents(data ?? []);
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     void loadAgents();
@@ -75,29 +69,30 @@ export default function AgentsManagementContent() {
       is_verified: !agent.is_verified,
       licence_verified_at: !agent.is_verified ? new Date().toISOString() : null,
     };
-    const { error: updateError } = await supabase.from("agents").update(payload).eq("id", agent.id);
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "update_agent", id: agent.id, patch: payload });
       setAgents((current) =>
         current.map((item) => (item.id === agent.id ? { ...item, ...payload } : item))
       );
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to update verification.");
     }
     setAction(agent.id, null);
   };
 
   const toggleActive = async (agent: AgentRow) => {
     setAction(agent.id, "active");
-    const { error: updateError } = await supabase
-      .from("agents")
-      .update({ is_active: !agent.is_active })
-      .eq("id", agent.id);
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({
+        type: "update_agent",
+        id: agent.id,
+        patch: { is_active: !agent.is_active },
+      });
       setAgents((current) =>
         current.map((item) => (item.id === agent.id ? { ...item, is_active: !agent.is_active } : item))
       );
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to update agent status.");
     }
     setAction(agent.id, null);
   };
@@ -109,11 +104,11 @@ export default function AgentsManagementContent() {
     if (!confirmed) return;
 
     setAction(agent.id, "delete");
-    const { error: deleteError } = await supabase.from("agents").delete().eq("id", agent.id);
-    if (deleteError) {
-      setError(deleteError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "delete_agent", id: agent.id });
       setAgents((current) => current.filter((item) => item.id !== agent.id));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete agent.");
     }
     setAction(agent.id, null);
   };

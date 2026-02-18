@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { mapAuthErrorMessage } from "@/lib/auth-errors";
+import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Account", "Personal", "Agency", "Profile", "Review"];
@@ -20,13 +22,14 @@ const specializationOptions = [
   "Off-Market Access",
   "Negotiation",
 ];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ListAgencyContent() {
   const supabase = useMemo(() => createClient(), []);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,6 +52,7 @@ export default function ListAgencyContent() {
   const validateCurrentStep = () => {
     if (step === 0) {
       if (!email.trim() || !password || !confirmPassword) return "Complete all account fields.";
+      if (!emailPattern.test(email.trim().toLowerCase())) return "Enter a valid email address.";
       if (password !== confirmPassword) return "Passwords do not match.";
       if (password.length < 8) return "Password should be at least 8 characters.";
     }
@@ -91,8 +95,12 @@ export default function ListAgencyContent() {
     setLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      let resolvedUserId: string | null = null;
+      let hasSession = false;
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           data: {
@@ -103,17 +111,47 @@ export default function ListAgencyContent() {
         },
       });
 
-      if (signUpError) throw new Error(signUpError.message);
+      if (signUpError) {
+        const isExistingUser = /already registered/i.test(signUpError.message);
+        if (!isExistingUser) throw new Error(mapAuthErrorMessage(signUpError.message));
+
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        if (signInError || !signInData.user) {
+          throw new Error(
+            "An account with this email already exists. Sign in first, then complete your agency profile."
+          );
+        }
+        resolvedUserId = signInData.user.id;
+        hasSession = true;
+      } else {
+        resolvedUserId = signUpData.user?.id ?? null;
+        hasSession = Boolean(signUpData.session);
+      }
+
+      if (!hasSession) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        if (!signInError && signInData.user) {
+          resolvedUserId = signInData.user.id;
+          hasSession = true;
+        }
+      }
 
       const { data: insertedAgent, error: agentInsertError } = await supabase
         .from("agents")
-        .insert({
+        .upsert(
+          {
           name: `${firstName} ${lastName}`.trim(),
-          email,
+          email: normalizedEmail,
           phone: phone || null,
           agency_name: agencyName,
           bio,
-          state: state as "NSW" | "VIC" | "QLD" | "WA" | "SA" | "TAS" | "ACT" | "NT",
+            state: toStateCode(state),
           suburbs: targetSuburbs
             .split(",")
             .map((suburb) => suburb.trim())
@@ -124,20 +162,41 @@ export default function ListAgencyContent() {
           website_url: website || null,
           is_verified: false,
           is_active: true,
-        })
+          },
+          { onConflict: "email" }
+        )
         .select("id")
         .single();
 
       if (agentInsertError) throw new Error(agentInsertError.message);
 
-      if (signUpData.user?.id && insertedAgent?.id) {
-        await supabase.from("agent_profiles").upsert({
-          id: signUpData.user.id,
-          agent_id: insertedAgent.id,
-        });
+      let profileLinked = false;
+      if (resolvedUserId && insertedAgent?.id) {
+        if (hasSession) {
+          const { error: profileError } = await supabase.from("agent_profiles").upsert({
+            id: resolvedUserId,
+            agent_id: insertedAgent.id,
+          });
+          profileLinked = !profileError;
+        }
+
+        if (!profileLinked) {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            const resolved = await resolveAgentProfileForUser(supabase, user);
+            profileLinked = Boolean(resolved.agentId) && !resolved.error;
+          }
+        }
       }
 
-      setSuccess(true);
+      setSuccess(
+        profileLinked
+          ? "Application received. Your agent profile has been linked and is pending verification."
+          : "Application received. Verify your email, then sign in once to complete profile linking."
+      );
+      setError(null);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to submit application.");
     } finally {
@@ -299,7 +358,7 @@ export default function ListAgencyContent() {
         {error ? <p className="mt-4 text-caption text-destructive">{error}</p> : null}
         {success ? (
           <p className="mt-4 text-caption text-success">
-            Application received. Our team will verify your licence within 2 business days.
+            {success}
           </p>
         ) : null}
 
@@ -320,7 +379,7 @@ export default function ListAgencyContent() {
               Next
             </Button>
           ) : (
-            <Button loading={loading} onClick={onSubmit} disabled={loading || success}>
+            <Button loading={loading} onClick={onSubmit} disabled={loading || Boolean(success)}>
               Submit Application
             </Button>
           )}

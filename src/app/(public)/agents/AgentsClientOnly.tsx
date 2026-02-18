@@ -99,6 +99,26 @@ export default function AgentsClientOnly() {
   };
 
   const hasMore = agents.length < total;
+  const stateBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    agents.forEach((agent) => {
+      const key = agent.state ?? "Unknown";
+      map.set(key, (map.get(key) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [agents]);
+
+  const topSuburbs = useMemo(() => {
+    const suburbCounts = new Map<string, number>();
+    agents.forEach((agent) => {
+      (agent.suburbs ?? []).forEach((suburb) => {
+        const key = suburb.trim();
+        if (!key) return;
+        suburbCounts.set(key, (suburbCounts.get(key) ?? 0) + 1);
+      });
+    });
+    return Array.from(suburbCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [agents]);
 
   return (
     <div className="container space-y-6 pb-16 pt-10">
@@ -240,7 +260,40 @@ export default function AgentsClientOnly() {
       </section>
 
       <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)} title="Map View">
-        <p className="text-body-sm text-text-secondary">Map view is coming soon.</p>
+        <div className="space-y-4">
+          <p className="text-body-sm text-text-secondary">
+            Live location coverage from current results. Use state and suburb filters to narrow this footprint.
+          </p>
+
+          <div className="space-y-2">
+            <p className="font-mono text-label uppercase text-text-secondary">State coverage</p>
+            <div className="flex flex-wrap gap-2">
+              {stateBreakdown.map(([stateName, count]) => (
+                <span
+                  key={stateName}
+                  className="rounded-full border border-border-light bg-surface-2 px-3 py-1 text-caption text-text-secondary"
+                >
+                  {stateName}: {count}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-mono text-label uppercase text-text-secondary">Top suburbs in results</p>
+            {topSuburbs.length === 0 ? (
+              <p className="text-caption text-text-muted">No suburb data available for these filters.</p>
+            ) : (
+              <div className="grid gap-1">
+                {topSuburbs.map(([suburb, count]) => (
+                  <p key={suburb} className="text-body-sm text-text-secondary">
+                    <span className="text-text-primary">{suburb}</span> ({count})
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

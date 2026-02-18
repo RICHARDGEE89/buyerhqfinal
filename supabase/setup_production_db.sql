@@ -181,6 +181,7 @@ alter table public.admin_accounts enable row level security;
 drop policy if exists "Public read active verified agents" on public.agents;
 drop policy if exists "Agent owners can update own row" on public.agents;
 drop policy if exists "Authenticated users can create agents" on public.agents;
+drop policy if exists "Anyone can submit agent applications" on public.agents;
 drop policy if exists "Admins manage agents" on public.agents;
 create policy "Public read active verified agents"
   on public.agents for select
@@ -203,9 +204,9 @@ create policy "Agent owners can update own row"
         and ap.agent_id = agents.id
     )
   );
-create policy "Authenticated users can create agents"
+create policy "Anyone can submit agent applications"
   on public.agents for insert
-  with check (auth.role() = 'authenticated');
+  with check (coalesce(is_verified, false) = false);
 create policy "Admins manage agents"
   on public.agents for all
   using (public.is_admin_email())

@@ -11,8 +11,8 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatCard } from "@/components/ui/StatCard";
+import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 import type { AgentRow, ContactSubmissionRow, EnquiryRow } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/client";
 
 type UserRoleFilter = "all" | "agent" | "buyer";
 
@@ -38,7 +38,6 @@ type UserListItem = {
 };
 
 export default function UsersManagementContent() {
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -52,31 +51,20 @@ export default function UsersManagementContent() {
     setLoading(true);
     setError(null);
 
-    const [agentsRes, enquiriesRes, contactsRes] = await Promise.all([
-      supabase.from("agents").select("*").order("created_at", { ascending: false }),
-      supabase.from("enquiries").select("*").order("created_at", { ascending: false }),
-      supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }),
-    ]);
-
-    if (agentsRes.error || enquiriesRes.error || contactsRes.error) {
-      setError(
-        agentsRes.error?.message ||
-          enquiriesRes.error?.message ||
-          contactsRes.error?.message ||
-          "Failed to load user data."
-      );
+    try {
+      const payload = await fetchAdminPanelData();
+      setAgents(payload.agents);
+      setEnquiries(payload.enquiries);
+      setContacts(payload.contacts);
+      setLoading(false);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Failed to load user data.");
       setAgents([]);
       setEnquiries([]);
       setContacts([]);
       setLoading(false);
-      return;
     }
-
-    setAgents(agentsRes.data ?? []);
-    setEnquiries(enquiriesRes.data ?? []);
-    setContacts(contactsRes.data ?? []);
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     void loadData();
@@ -187,11 +175,11 @@ export default function UsersManagementContent() {
   const deactivateAgent = async (agentId: string) => {
     const rowId = `agent-${agentId}`;
     setRowBusy(rowId, true);
-    const { error: updateError } = await supabase.from("agents").update({ is_active: false }).eq("id", agentId);
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "update_agent", id: agentId, patch: { is_active: false } });
       setAgents((current) => current.map((agent) => (agent.id === agentId ? { ...agent, is_active: false } : agent)));
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to deactivate agent.");
     }
     setRowBusy(rowId, false);
   };
@@ -199,15 +187,8 @@ export default function UsersManagementContent() {
   const closeBuyerEnquiries = async (buyerEmail: string) => {
     const rowId = `buyer-${buyerEmail}`;
     setRowBusy(rowId, true);
-    const { error: updateError } = await supabase
-      .from("enquiries")
-      .update({ status: "closed" })
-      .eq("buyer_email", buyerEmail)
-      .neq("status", "closed");
-
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await runAdminAction({ type: "close_buyer_enquiries", buyer_email: buyerEmail });
       setEnquiries((current) =>
         current.map((enquiry) =>
           enquiry.buyer_email.toLowerCase() === buyerEmail && enquiry.status !== "closed"
@@ -215,6 +196,8 @@ export default function UsersManagementContent() {
             : enquiry
         )
       );
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to close buyer enquiries.");
     }
     setRowBusy(rowId, false);
   };
