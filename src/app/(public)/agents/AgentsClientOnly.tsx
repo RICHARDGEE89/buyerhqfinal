@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Grid2X2, List, Map as MapIcon } from "lucide-react";
+import { Grid2X2, List, MapPinned, Search } from "lucide-react";
 
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { AgentCardSkeleton } from "@/components/ui/Skeleton";
 import type { AgentRow } from "@/lib/database.types";
@@ -25,6 +24,27 @@ const specializations = [
 ];
 
 type ViewMode = "grid" | "list" | "map";
+type SortValue = "rating_desc" | "experience_desc" | "reviews_desc" | "newest_desc" | "name_asc";
+
+type LocationSuggestion = {
+  suburb: string;
+  state: string;
+  postcode: string;
+};
+
+type LocationHint = {
+  suburb: string;
+  state: string | null;
+  postcode: string | null;
+  count: number;
+};
+
+type AgentsResponse = {
+  agents?: AgentRow[];
+  total?: number;
+  warning?: string;
+  locationHints?: LocationHint[];
+};
 
 export default function AgentsClientOnly() {
   const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -32,14 +52,22 @@ export default function AgentsClientOnly() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [locationHints, setLocationHints] = useState<LocationHint[]>([]);
 
   const [search, setSearch] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [stateFilter, setStateFilter] = useState("");
   const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
   const [verifiedOnly, setVerifiedOnly] = useState(true);
-  const [topRatedOnly, setTopRatedOnly] = useState(false);
+  const [hasFeeOnly, setHasFeeOnly] = useState(false);
+  const [hasReviewsOnly, setHasReviewsOnly] = useState(false);
+  const [minRating, setMinRating] = useState("");
+  const [minExperience, setMinExperience] = useState("0");
+  const [sortBy, setSortBy] = useState<SortValue>("rating_desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [showMapModal, setShowMapModal] = useState(false);
 
   const [page, setPage] = useState(1);
   const limit = 12;
@@ -48,15 +76,36 @@ export default function AgentsClientOnly() {
     const params = new URLSearchParams();
     if (stateFilter) params.set("state", stateFilter);
     if (verifiedOnly) params.set("verified", "true");
-    if (topRatedOnly) params.set("minRating", "4.5");
+    if (hasFeeOnly) params.set("hasFee", "true");
+    if (hasReviewsOnly) params.set("minReviews", "1");
+    if (minRating) params.set("minRating", minRating);
+    if (minExperience !== "0") params.set("minExperience", minExperience);
+    params.set("sort", sortBy);
     if (search.trim()) params.set("search", search.trim());
+    if (selectedLocation?.suburb) params.set("suburb", selectedLocation.suburb);
+    if (selectedLocation?.postcode) params.set("postcode", selectedLocation.postcode);
+    if (!selectedLocation && locationInput.trim()) params.set("location", locationInput.trim());
     if (selectedSpecializations.length) {
       params.set("specializations", selectedSpecializations.join(","));
     }
     params.set("page", String(page));
     params.set("limit", String(limit));
     return params.toString();
-  }, [limit, page, search, selectedSpecializations, stateFilter, topRatedOnly, verifiedOnly]);
+  }, [
+    hasFeeOnly,
+    hasReviewsOnly,
+    limit,
+    locationInput,
+    minExperience,
+    minRating,
+    page,
+    search,
+    selectedLocation,
+    selectedSpecializations,
+    sortBy,
+    stateFilter,
+    verifiedOnly,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,12 +116,13 @@ export default function AgentsClientOnly() {
         setError(null);
 
         const response = await fetch(`/api/agents?${queryString}`);
-        const data = (await response.json()) as { agents?: AgentRow[]; total?: number; error?: string; warning?: string };
+        const data = (await response.json()) as AgentsResponse & { error?: string };
         if (!response.ok) throw new Error(data.error ?? "Unable to fetch agents");
 
         if (cancelled) return;
         setTotal(data.total ?? 0);
         setWarning(data.warning ?? null);
+        setLocationHints(data.locationHints ?? []);
         setAgents((prev) => (page === 1 ? data.agents ?? [] : [...prev, ...(data.agents ?? [])]));
       } catch (fetchError) {
         if (!cancelled) {
@@ -89,6 +139,40 @@ export default function AgentsClientOnly() {
     };
   }, [page, queryString]);
 
+  useEffect(() => {
+    const query = locationInput.trim();
+    const selectedLocationLabel = selectedLocation
+      ? `${selectedLocation.suburb} ${selectedLocation.postcode}`.trim().toLowerCase()
+      : "";
+    if (!query || query.toLowerCase() === selectedLocationLabel) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const params = new URLSearchParams({ q: query, limit: "12" });
+        if (stateFilter) params.set("state", stateFilter);
+        const response = await fetch(`/api/suburbs?${params.toString()}`);
+        const data = (await response.json()) as { suggestions?: LocationSuggestion[] };
+        if (!cancelled) {
+          setLocationSuggestions(data.suggestions ?? []);
+        }
+      } catch {
+        if (!cancelled) setLocationSuggestions([]);
+      } finally {
+        if (!cancelled) setLoadingSuggestions(false);
+      }
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [locationInput, selectedLocation, stateFilter]);
+
   const resetPagination = () => {
     setPage(1);
   };
@@ -103,24 +187,21 @@ export default function AgentsClientOnly() {
   const hasMore = agents.length < total;
   const stateBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    agents.forEach((agent) => {
-      const key = agent.state ?? "Unknown";
-      map.set(key, (map.get(key) ?? 0) + 1);
+    states.forEach((state) => map.set(state, 0));
+    locationHints.forEach((hint) => {
+      const key = hint.state ?? "Unknown";
+      map.set(key, (map.get(key) ?? 0) + hint.count);
     });
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [agents]);
-
-  const topSuburbs = useMemo(() => {
-    const suburbCounts = new Map<string, number>();
-    agents.forEach((agent) => {
-      (agent.suburbs ?? []).forEach((suburb) => {
-        const key = suburb.trim();
-        if (!key) return;
-        suburbCounts.set(key, (suburbCounts.get(key) ?? 0) + 1);
+    if (locationHints.length === 0) {
+      agents.forEach((agent) => {
+        const key = agent.state ?? "Unknown";
+        map.set(key, (map.get(key) ?? 0) + 1);
       });
-    });
-    return Array.from(suburbCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [agents]);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [agents, locationHints]);
+
+  const topSuburbs = useMemo(() => locationHints.slice(0, 20), [locationHints]);
 
   return (
     <div className="container space-y-6 pb-16 pt-10">
@@ -131,17 +212,73 @@ export default function AgentsClientOnly() {
         </p>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-[320px,1fr]">
+      <section className="grid gap-3 lg:grid-cols-[360px,1fr]">
         <aside className="space-y-3 rounded-lg border border-border bg-surface p-4">
           <Input
-            label="Search"
-            placeholder="Name, agency, suburb, or postcode"
+            label="Search agents"
+            placeholder="Name, agency, email"
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
               resetPagination();
             }}
           />
+          <div className="space-y-2">
+            <Input
+              label="Suburb or postcode"
+              placeholder="Type suburb or postcode"
+              value={locationInput}
+              onChange={(event) => {
+                setLocationInput(event.target.value);
+                setSelectedLocation(null);
+                resetPagination();
+              }}
+              helperText="Autocomplete supports both postcode and suburb name."
+            />
+            {selectedLocation ? (
+              <div className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+                <span>
+                  Selected: {selectedLocation.suburb}, {selectedLocation.state} ({selectedLocation.postcode})
+                </span>
+                <button
+                  type="button"
+                  className="text-text-primary underline"
+                  onClick={() => {
+                    setSelectedLocation(null);
+                    setLocationInput("");
+                    resetPagination();
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : null}
+            {loadingSuggestions ? (
+              <p className="text-caption text-text-muted">Loading suburb suggestions...</p>
+            ) : null}
+            {locationSuggestions.length > 0 ? (
+              <div className="max-h-52 overflow-auto rounded-md border border-border bg-surface-2">
+                {locationSuggestions.map((suggestion) => (
+                  <button
+                    key={`${suggestion.suburb}-${suggestion.state}-${suggestion.postcode}`}
+                    type="button"
+                    className="flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-body-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary last:border-b-0"
+                    onClick={() => {
+                      setSelectedLocation(suggestion);
+                      setLocationInput(`${suggestion.suburb} ${suggestion.postcode}`);
+                      setLocationSuggestions([]);
+                      resetPagination();
+                    }}
+                  >
+                    <span>
+                      {suggestion.suburb}, {suggestion.state}
+                    </span>
+                    <span className="font-mono text-caption text-text-muted">{suggestion.postcode}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <Select
             label="State"
             value={stateFilter}
@@ -152,6 +289,51 @@ export default function AgentsClientOnly() {
             placeholder="All states"
             options={states.map((item) => ({ value: item, label: item }))}
           />
+          <Select
+            label="Sort by"
+            value={sortBy}
+            onChange={(event) => {
+              setSortBy(event.target.value as SortValue);
+              resetPagination();
+            }}
+            options={[
+              { value: "rating_desc", label: "Top rated" },
+              { value: "experience_desc", label: "Most experience" },
+              { value: "reviews_desc", label: "Most reviews" },
+              { value: "newest_desc", label: "Newest profiles" },
+              { value: "name_asc", label: "Name A-Z" },
+            ]}
+          />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Select
+              label="Min rating"
+              value={minRating}
+              onChange={(event) => {
+                setMinRating(event.target.value);
+                resetPagination();
+              }}
+              placeholder="Any rating"
+              options={[
+                { value: "4", label: "4.0+" },
+                { value: "4.5", label: "4.5+" },
+              ]}
+            />
+            <Select
+              label="Min experience"
+              value={minExperience}
+              onChange={(event) => {
+                setMinExperience(event.target.value);
+                resetPagination();
+              }}
+              options={[
+                { value: "0", label: "Any" },
+                { value: "1", label: "1+ years" },
+                { value: "3", label: "3+ years" },
+                { value: "5", label: "5+ years" },
+                { value: "10", label: "10+ years" },
+              ]}
+            />
+          </div>
 
           <div className="space-y-2">
             <p className="font-mono text-label uppercase text-text-secondary">Specialization</p>
@@ -168,6 +350,35 @@ export default function AgentsClientOnly() {
           </div>
 
           <div className="space-y-2 border-t border-border pt-3">
+            <p className="font-mono text-label uppercase text-text-secondary">Popular suburbs</p>
+            {topSuburbs.length === 0 ? (
+              <p className="text-caption text-text-muted">Suburb hotspots will appear after a search.</p>
+            ) : (
+              <div className="flex max-h-36 flex-wrap gap-2 overflow-auto">
+                {topSuburbs.slice(0, 12).map((hint) => (
+                  <button
+                    key={`sidebar-${hint.suburb}-${hint.state ?? "NA"}-${hint.postcode ?? "NA"}`}
+                    type="button"
+                    className="rounded-full border border-border-light bg-surface-2 px-3 py-1 text-caption text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+                    onClick={() => {
+                      setSelectedLocation({
+                        suburb: hint.suburb,
+                        state: hint.state ?? "",
+                        postcode: hint.postcode ?? "",
+                      });
+                      setLocationInput(`${hint.suburb}${hint.postcode ? ` ${hint.postcode}` : ""}`.trim());
+                      resetPagination();
+                    }}
+                  >
+                    {hint.suburb}
+                    {hint.postcode ? ` (${hint.postcode})` : ""}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-border pt-3">
             <Checkbox
               checked={verifiedOnly}
               onChange={(checked) => {
@@ -177,13 +388,43 @@ export default function AgentsClientOnly() {
               label="Verified only"
             />
             <Checkbox
-              checked={topRatedOnly}
+              checked={hasFeeOnly}
               onChange={(checked) => {
-                setTopRatedOnly(checked);
+                setHasFeeOnly(checked);
                 resetPagination();
               }}
-              label="Top rated (4.5+)"
+              label="Fee structure available"
             />
+            <Checkbox
+              checked={hasReviewsOnly}
+              onChange={(checked) => {
+                setHasReviewsOnly(checked);
+                resetPagination();
+              }}
+              label="Has review history"
+            />
+          </div>
+          <div className="border-t border-border pt-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setSearch("");
+                setLocationInput("");
+                setSelectedLocation(null);
+                setStateFilter("");
+                setSelectedSpecializations([]);
+                setVerifiedOnly(true);
+                setHasFeeOnly(false);
+                setHasReviewsOnly(false);
+                setMinRating("");
+                setMinExperience("0");
+                setSortBy("rating_desc");
+                setPage(1);
+              }}
+            >
+              Reset all filters
+            </Button>
           </div>
         </aside>
 
@@ -203,12 +444,9 @@ export default function AgentsClientOnly() {
               </Button>
               <Button
                 variant={viewMode === "map" ? "primary" : "secondary"}
-                onClick={() => {
-                  setViewMode("map");
-                  setShowMapModal(true);
-                }}
+                onClick={() => setViewMode("map")}
               >
-                <MapIcon size={14} />
+                <MapPinned size={14} />
                 Map
               </Button>
             </div>
@@ -226,6 +464,85 @@ export default function AgentsClientOnly() {
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
               {warning}
             </p>
+          ) : null}
+
+          {viewMode === "map" ? (
+            <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr]">
+              <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
+                <div className="flex items-center gap-2">
+                  <MapPinned size={16} className="text-text-secondary" />
+                  <h2 className="text-subheading">Australia coverage map</h2>
+                </div>
+                <p className="text-body-sm text-text-secondary">
+                  Click a state to instantly filter results. Coverage updates as filters change.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {stateBreakdown
+                    .filter(([state]) => state !== "Unknown")
+                    .map(([stateName, count]) => {
+                      const intensity =
+                        count >= 20
+                          ? "bg-accent text-text-inverse border-accent"
+                          : count >= 8
+                            ? "bg-surface-3 text-text-primary border-border-light"
+                            : count >= 1
+                              ? "bg-surface-2 text-text-secondary border-border"
+                              : "bg-surface text-text-muted border-border";
+                      return (
+                        <button
+                          key={stateName}
+                          type="button"
+                          className={`rounded-md border px-3 py-3 text-left transition-colors ${intensity}`}
+                          onClick={() => {
+                            setStateFilter((current) => (current === stateName ? "" : stateName));
+                            resetPagination();
+                          }}
+                        >
+                          <p className="font-mono text-caption uppercase">{stateName}</p>
+                          <p className="text-body-sm">{count} agents</p>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
+                <div className="flex items-center gap-2">
+                  <Search size={16} className="text-text-secondary" />
+                  <h2 className="text-subheading">Suburb + postcode quick picks</h2>
+                </div>
+                <p className="text-body-sm text-text-secondary">
+                  Tap any suburb chip to prefill search with both suburb and postcode.
+                </p>
+                {topSuburbs.length === 0 ? (
+                  <p className="text-caption text-text-muted">No suburb coverage available yet for these filters.</p>
+                ) : (
+                  <div className="flex max-h-[360px] flex-wrap gap-2 overflow-auto">
+                    {topSuburbs.map((hint) => (
+                      <button
+                        key={`${hint.suburb}-${hint.state ?? "NA"}-${hint.postcode ?? "NA"}`}
+                        type="button"
+                        className="rounded-full border border-border-light bg-surface-2 px-3 py-1 text-caption text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+                        onClick={() => {
+                          setSelectedLocation({
+                            suburb: hint.suburb,
+                            state: hint.state ?? "",
+                            postcode: hint.postcode ?? "",
+                          });
+                          setLocationInput(
+                            `${hint.suburb}${hint.postcode ? ` ${hint.postcode}` : ""}`.trim()
+                          );
+                          resetPagination();
+                        }}
+                      >
+                        {hint.suburb}
+                        {hint.postcode ? ` (${hint.postcode})` : ""} · {hint.count}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           ) : null}
 
           {!loading && error ? (
@@ -246,7 +563,11 @@ export default function AgentsClientOnly() {
           ) : null}
 
           {!error && agents.length > 0 ? (
-            <div className={viewMode === "list" ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
+            <div
+              className={
+                viewMode === "list" ? "grid gap-3" : "grid gap-3 md:grid-cols-2"
+              }
+            >
               {agents.map((agent) => (
                 <AgentCard key={agent.id} agent={agent} compact={viewMode === "list"} />
               ))}
@@ -266,43 +587,6 @@ export default function AgentsClientOnly() {
           ) : null}
         </div>
       </section>
-
-      <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)} title="Map View">
-        <div className="space-y-4">
-          <p className="text-body-sm text-text-secondary">
-            Live location coverage from current results. Use state and suburb filters to narrow this footprint.
-          </p>
-
-          <div className="space-y-2">
-            <p className="font-mono text-label uppercase text-text-secondary">State coverage</p>
-            <div className="flex flex-wrap gap-2">
-              {stateBreakdown.map(([stateName, count]) => (
-                <span
-                  key={stateName}
-                  className="rounded-full border border-border-light bg-surface-2 px-3 py-1 text-caption text-text-secondary"
-                >
-                  {stateName}: {count}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="font-mono text-label uppercase text-text-secondary">Top suburbs in results</p>
-            {topSuburbs.length === 0 ? (
-              <p className="text-caption text-text-muted">No suburb data available for these filters.</p>
-            ) : (
-              <div className="grid gap-1">
-                {topSuburbs.map(([suburb, count]) => (
-                  <p key={suburb} className="text-body-sm text-text-secondary">
-                    <span className="text-text-primary">{suburb}</span> ({count})
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }
