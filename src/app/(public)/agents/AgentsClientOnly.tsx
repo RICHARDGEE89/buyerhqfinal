@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Grid2X2, List, Map } from "lucide-react";
+import { Grid2X2, List, Map as MapIcon } from "lucide-react";
 
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/Button";
@@ -206,7 +206,7 @@ export default function AgentsClientOnly() {
                   setShowMapModal(true);
                 }}
               >
-                <Map size={14} />
+                <MapIcon size={14} />
                 Map
               </Button>
             </div>
