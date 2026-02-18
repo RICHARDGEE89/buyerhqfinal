@@ -2,49 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Universal Monochrome System */
-  --background: #FFFFFF;
-  --foreground: #000000;
+/* Base */
+* {
+  box-sizing: border-box;
+}
 
-  /* Primary Button (Grey) */
-  --primary: #4B5563;
-  /* Gray-600 */
-  --primary-foreground: #FFFFFF;
-
-  /* Secondary Button (Light Grey) */
-  --secondary: #E5E7EB;
-  --secondary-foreground: #000000;
-
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
-
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #4B5563;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  background: #080808;
+  color: #f2f2f2;
+  font-family: var(--font-primary), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+
+/* Selection */
+::selection {
+  background: #ffffff20;
+}
+
+/* Focus */
+:focus-visible {
+  outline: 1px solid #555555;
+  outline-offset: 2px;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #f2f2f2;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-}
-
-/* Button Styles - Enforce Grey */
-.btn-primary {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.btn-primary:hover {
-  background-color: #374151;
-  /* Darker Grey hover */
 }

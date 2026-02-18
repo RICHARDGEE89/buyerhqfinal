@@ -1,91 +1,92 @@
-import React from 'react';
-import { Metadata } from 'next';
-import { ArrowRight, HelpCircle } from 'lucide-react';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import type { Metadata } from "next";
+import Link from "next/link";
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 export const metadata: Metadata = {
-    title: "FAQ | Frequently Asked Questions | BuyerHQ",
-    description: "Find answers to common questions about using BuyerHQ to find a buyer's agent, our verification process, and how we help Australian property buyers.",
+  title: "FAQ | BuyerHQ",
+  description: "Frequently asked questions about BuyerHQ and buyer's agent engagement.",
 };
 
+const faqs = [
+  {
+    q: "1. What does a Buyer's Agent do?",
+    a: "A buyer's agent represents the purchaser only. They help you define buying criteria, source both on-market and off-market opportunities, assess fair value, negotiate terms and price, and can bid at auction on your behalf. Their role is to advocate for your interests from strategy through settlement.",
+  },
+  {
+    q: "2. Why use one instead of DIY?",
+    a: "A professional buyer's agent brings suburb-level expertise, deeper stock access, and disciplined negotiation. Most buyers simply do not have the time to inspect every listing, triage risk, and negotiate effectively while the market is moving. The right advisor can compress timelines and reduce expensive decision errors.",
+  },
+  {
+    q: "3. Is BuyerHQ free for buyers?",
+    a: "Yes. BuyerHQ is always free for buyers. Agents pay to list and maintain their profile. Buyer access to search, compare, and enquire is free.",
+  },
+  {
+    q: "4. How much do Buyer's Agents charge?",
+    a: "Fee models vary by service scope. Many charge a fixed engagement fee (commonly from around $8,000 to $20,000), while some charge a percentage of purchase price. You should always confirm inclusions, exclusions, and milestone payments before engaging.",
+  },
+  {
+    q: "5. How do you verify agents?",
+    a: "BuyerHQ manually verifies each profile using licence records and supporting business details. We reference state-level licensing information, review profile completeness and history, and only mark a profile as verified once checks are complete.",
+  },
+  {
+    q: "6. Do you take commission?",
+    a: "No. BuyerHQ does not take property transaction commissions. The platform operates as an independent directory and does not participate in sales commissions.",
+  },
+  {
+    q: "7. Is BuyerHQ a real estate agency?",
+    a: "No. BuyerHQ is not a selling agency. It is a directory and discovery platform connecting buyers to verified buyer-side professionals.",
+  },
+  {
+    q: "8. Can I use BuyerHQ for investment properties?",
+    a: "Yes. Many listed professionals specialise in investment strategy. In the directory, select specialisations such as 'Investment Strategy' to narrow your shortlist.",
+  },
+  {
+    q: "9. How do I list my business?",
+    a: "Use the 'List Your Agency' link in the header. Complete the onboarding flow with your licence and profile details. Applications are reviewed before verification.",
+  },
+  {
+    q: "10. Can't find an agent in my suburb?",
+    a: "Coverage is expanding continuously. Start by filtering your state and adjacent growth corridors, then contact us and we can prioritise verification efforts for your target suburb.",
+  },
+];
+
 export default function FAQPage() {
-    const faqs = [
-        {
-            q: "What does a Buyer's Agent actually do?",
-            a: "A buyer's agent represents you, the purchaser, throughout the property buying journey. They search for properties (including off-market listings), evaluate value, negotiate with selling agents, and bid at auction on your behalf."
-        },
-        {
-            q: "Why should I use a Buyer's Agent instead of doing it myself?",
-            a: "Buying property is complex and high-stakes. Professional advocates save you time by filtering 90% of unsuitable homes, save you money through expert negotiation, and protect you from emotional overpaying."
-        },
-        {
-            q: "Is BuyerHQ free for property buyers?",
-            a: "Yes! BuyerHQ is 100% free for buyers. You can search, compare, and message verified agents without ever paying a fee to our platform."
-        },
-        {
-            q: "How much do Buyer's Agents charge?",
-            a: "Fees vary by agent and service level. Some charge a fixed fee (e.g., $10k - $20k), while others charge a percentage of the purchase price (typically 1.5% - 2.5%). Most offer a free initial consultation to discuss their pricing structure."
-        },
-        {
-            q: "How do you verify agents?",
-            a: "We manually verify every agent profile. This includes checking their current real estate/advocacy licence in their specific state, verifying their ABN, and auditing their professional history."
-        },
-        {
-            q: "Do you take a commission from the agents?",
-            a: "No. Unlike some referral sites, we do not take a percentage of the agent's fee. This ensures that the agents you find on our platform remain independent and focused solely on your best interests."
-        },
-        {
-            q: "Is BuyerHQ a real estate agency?",
-            a: "No. We are an independent directory and verification platform. We do not buy or sell property ourselves; we connect you with the professionals who do."
-        },
-        {
-            q: "Can I use BuyerHQ for investment properties?",
-            a: "Absolutely. Many of our listed agents specialise in investment strategy, portfolio building, and commercial property acquisition."
-        },
-        {
-            q: "How do I list my business on BuyerHQ?",
-            a: "If you are a licensed buyer's agent, you can apply to join our network by clicking 'List Your Agency' in the menu. You will need to provide proof of licensure and pass our verification checks."
-        },
-        {
-            q: "What if I can't find an agent in my specific suburb?",
-            a: "Our network is growing daily. If you can't find a local expert in a specific pocket, try searching by major city or region, as many top buyer's agents operate across broad metropolitan areas."
-        }
-    ];
+  return (
+    <div className="container space-y-8 pb-16 pt-10">
+      <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
+        <h1 className="text-display text-text-primary md:text-display-lg">Frequently asked questions</h1>
+        <p className="mt-3 max-w-2xl text-body text-text-secondary">
+          Answers to common questions about using BuyerHQ and working with buyer&apos;s agents.
+        </p>
+      </section>
 
-    return (
-        <div className="bg-white min-h-screen pt-40 pb-24">
-            <div className="container mx-auto px-6 max-w-3xl">
-                <div className="text-center space-y-4 mb-20">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest border border-primary/10">
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        Common Questions
-                    </div>
-                    <h1 className="text-5xl font-display font-black text-gray-900 tracking-tight">
-                        Support <span className="text-primary">&amp; FAQ.</span>
-                    </h1>
-                </div>
+      <Card className="p-4 md:p-5">
+        <Accordion type="single" collapsible className="space-y-2">
+          {faqs.map((faq, index) => (
+            <AccordionItem key={faq.q} value={`faq-${index}`} className="rounded-md border border-border px-3">
+              <AccordionTrigger className="text-left text-body text-text-primary hover:no-underline">
+                {faq.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-body-sm text-text-secondary">{faq.a}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </Card>
 
-                <Accordion type="single" collapsible className="space-y-6">
-                    {faqs.map((faq, i) => (
-                        <AccordionItem key={i} value={`item-${i}`} className="border-stone/10 rounded-2xl overflow-hidden px-6 bg-warm/30">
-                            <AccordionTrigger className="text-lg font-bold text-gray-900 text-left hover:no-underline py-6">
-                                {faq.q}
-                            </AccordionTrigger>
-                            <AccordionContent className="text-stone font-medium leading-relaxed pb-8">
-                                {faq.a}
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-
-                <div className="mt-20 p-10 bg-gray-900 rounded-[2.5rem] text-center space-y-6">
-                    <h3 className="text-white text-2xl font-display font-black">Still have a question?</h3>
-                    <p className="text-stone font-medium italic">&quot;Our team is here to help you navigate the agent selection process.&quot;</p>
-                    <a href="/contact" className="inline-flex items-center text-primary font-black text-lg hover:underline gap-2">
-                        Contact Support <ArrowRight className="w-5 h-5" />
-                    </a>
-                </div>
-            </div>
+      <Card className="p-6">
+        <h2 className="text-subheading text-text-primary">Still need help?</h2>
+        <p className="mt-2 text-body-sm text-text-secondary">
+          Contact the BuyerHQ team and we&apos;ll reply within one business day.
+        </p>
+        <div className="mt-4">
+          <Button asChild>
+            <Link href="/contact">Contact Support</Link>
+          </Button>
         </div>
-    );
+      </Card>
+    </div>
+  );
 }

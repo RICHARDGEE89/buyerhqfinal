@@ -1,179 +1,247 @@
 "use client";
 
-import React from 'react';
-import { AgentSearchHeader } from '@/components/agents/AgentSearchHeader';
-import { FilterSidebar } from '@/components/agents/FilterSidebar';
-import { AgentCard } from '@/components/agents/AgentCard';
-import { Agent } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Grid, List, Map as MapIcon, Search } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect, useMemo, useState } from "react";
+import { Grid2X2, List, Map } from "lucide-react";
+
+import { AgentCard } from "@/components/AgentCard";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
+import { AgentCardSkeleton } from "@/components/ui/Skeleton";
+import type { AgentRow } from "@/lib/database.types";
+
+const states = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
+const specializations = [
+  "First Home Buyers",
+  "Luxury",
+  "Investment Strategy",
+  "Auction Bidding",
+  "Off-Market Access",
+  "Negotiation",
+];
+
+type ViewMode = "grid" | "list" | "map";
 
 export default function AgentsClientOnly() {
-    const [agents, setAgents] = React.useState<Partial<Agent>[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const supabase = React.useMemo(() => createClient(), []);
-    const [loadMoreMessage, setLoadMoreMessage] = React.useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const fetchAgents = React.useCallback(
-        async () => {
-            const { data, error } = await supabase
-                .from('agents')
-                .select('*')
-                .eq('subscription_status', 'active'); // Only show active agents
+  const [search, setSearch] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+  const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [topRatedOnly, setTopRatedOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [showMapModal, setShowMapModal] = useState(false);
 
-            if (error) {
-                console.error('Error loading active agents', error);
-            }
+  const [page, setPage] = useState(1);
+  const limit = 12;
 
-            if (data) {
-                setAgents(data);
-            }
-            // Fallback for demo: if no active agents, show all for now so the user sees SOMETHING
-            if (!data || data.length === 0) {
-                const { data: allAgents, error: allAgentsError } = await supabase.from('agents').select('*');
-                if (allAgentsError) {
-                    console.error('Error loading all agents', allAgentsError);
-                }
-                if (allAgents) setAgents(allAgents);
-            }
-            setLoading(false);
-        },
-        [supabase]
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (stateFilter) params.set("state", stateFilter);
+    if (verifiedOnly) params.set("verified", "true");
+    if (topRatedOnly) params.set("minRating", "4.5");
+    if (search.trim()) params.set("search", search.trim());
+    if (selectedSpecializations.length) {
+      params.set("specializations", selectedSpecializations.join(","));
+    }
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    return params.toString();
+  }, [limit, page, search, selectedSpecializations, stateFilter, topRatedOnly, verifiedOnly]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAgents = async () => {
+      try {
+        if (page === 1) setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/agents?${queryString}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Unable to fetch agents");
+
+        if (cancelled) return;
+        setTotal(data.total ?? 0);
+        setAgents((prev) => (page === 1 ? data.agents ?? [] : [...prev, ...(data.agents ?? [])]));
+      } catch (fetchError) {
+        if (!cancelled) {
+          setError(fetchError instanceof Error ? fetchError.message : "Unable to load agents");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchAgents();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, queryString]);
+
+  const resetPagination = () => {
+    setPage(1);
+  };
+
+  const onToggleSpecialization = (specialization: string, checked: boolean) => {
+    setSelectedSpecializations((current) =>
+      checked ? [...current, specialization] : current.filter((item) => item !== specialization)
     );
+    resetPagination();
+  };
 
-    React.useEffect(() => {
-        fetchAgents();
-    }, [fetchAgents]);
+  const hasMore = agents.length < total;
 
-    return (
-        <div className="flex flex-col min-h-screen bg-white">
-            <AgentSearchHeader />
+  return (
+    <div className="container space-y-6 pb-16 pt-10">
+      <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
+        <h1 className="text-display text-text-primary md:text-display-lg">Find buyer&apos;s agents</h1>
+        <p className="mt-3 max-w-2xl text-body text-text-secondary">
+          Filter by state, specialisation, and performance to build your shortlist.
+        </p>
+      </section>
 
-            <section className="py-12 bg-white">
-                <div className="container mx-auto px-6">
-                    <div className="flex flex-col lg:flex-row gap-12">
+      <section className="grid gap-3 lg:grid-cols-[320px,1fr]">
+        <aside className="space-y-3 rounded-lg border border-border bg-surface p-4">
+          <Input
+            label="Search"
+            placeholder="Name, agency, suburb"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              resetPagination();
+            }}
+          />
+          <Select
+            label="State"
+            value={stateFilter}
+            onChange={(event) => {
+              setStateFilter(event.target.value);
+              resetPagination();
+            }}
+            placeholder="All states"
+            options={states.map((item) => ({ value: item, label: item }))}
+          />
 
-                        {/* Sidebar (Filters) */}
-                        <div className="w-full lg:w-80 shrink-0">
-                            <FilterSidebar />
-                        </div>
+          <div className="space-y-2">
+            <p className="font-mono text-label uppercase text-text-secondary">Specialization</p>
+            <div className="grid gap-2">
+              {specializations.map((item) => (
+                <Checkbox
+                  key={item}
+                  checked={selectedSpecializations.includes(item)}
+                  onChange={(checked) => onToggleSpecialization(item, checked)}
+                  label={item}
+                />
+              ))}
+            </div>
+          </div>
 
-                        {/* Main Content (Results) */}
-                        <div className="flex-1 space-y-8">
+          <div className="space-y-2 border-t border-border pt-3">
+            <Checkbox
+              checked={verifiedOnly}
+              onChange={(checked) => {
+                setVerifiedOnly(checked);
+                resetPagination();
+              }}
+              label="Verified only"
+            />
+            <Checkbox
+              checked={topRatedOnly}
+              onChange={(checked) => {
+                setTopRatedOnly(checked);
+                resetPagination();
+              }}
+              label="Top rated (4.5+)"
+            />
+          </div>
+        </aside>
 
-                            {/* Directory Controls */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-8 border-b border-stone/5">
-                                <div className="text-stone font-bold text-sm uppercase tracking-widest">
-                                    Showing <span className="text-gray-900">{agents.length}</span> Verified Agents
-                                </div>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-body-sm text-text-secondary">
+              Showing <span className="text-text-primary">{total}</span> verified agents
+            </p>
+            <div className="flex gap-2">
+              <Button variant={viewMode === "grid" ? "primary" : "secondary"} onClick={() => setViewMode("grid")}>
+                <Grid2X2 size={14} />
+                Grid
+              </Button>
+              <Button variant={viewMode === "list" ? "primary" : "secondary"} onClick={() => setViewMode("list")}>
+                <List size={14} />
+                List
+              </Button>
+              <Button
+                variant={viewMode === "map" ? "primary" : "secondary"}
+                onClick={() => {
+                  setViewMode("map");
+                  setShowMapModal(true);
+                }}
+              >
+                <Map size={14} />
+                Map
+              </Button>
+            </div>
+          </div>
 
-                                <div className="flex items-center gap-2 bg-warm/30 p-1.5 rounded-2xl border border-stone/5">
-                                    <Button variant="ghost" size="sm" className="bg-white shadow-sm rounded-xl h-9 px-4 text-gray-900 font-bold">
-                                        <Grid className="w-4 h-4 mr-2" />
-                                        Grid
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-stone hover:text-gray-900 rounded-xl h-9 px-4 font-bold">
-                                        <List className="w-4 h-4 mr-2" />
-                                        List
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-stone hover:text-gray-900 rounded-xl h-9 px-4 font-bold">
-                                        <MapIcon className="w-4 h-4 mr-2" />
-                                        Map
-                                    </Button>
-                                </div>
-                            </div>
+          {loading && page === 1 ? (
+            <div className={viewMode === "list" ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
+              {Array.from({ length: 6 }, (_, i) => (
+                <AgentCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : null}
 
-                            {/* Agent Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {loading ? (
-                                    <div className="col-span-full py-20 text-center text-stone font-bold">Loading directory...</div>
-                                ) : agents.length > 0 ? (
-                                    agents.map((agent) => (
-                                        <AgentCard key={agent.id} agent={agent as Partial<Agent>} />
-                                    ))
-                                ) : (
-                                    <div className="col-span-full py-32 text-center bg-warm/30 rounded-[3rem] border-2 border-dashed border-stone/10">
-                                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 text-primary">
-                                            <Search className="w-10 h-10" />
-                                        </div>
-                                        <h3 className="text-xl font-display font-black text-gray-900 mb-2">Expanding Our Network</h3>
-                                        <p className="text-stone font-medium max-w-sm mx-auto">
-                                            We&apos;re currently verifying property experts in this area. Check back soon for the best professional representation.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+          {!loading && error ? (
+            <ErrorState
+              description={error}
+              onRetry={() => {
+                setPage(1);
+                setAgents([]);
+              }}
+            />
+          ) : null}
 
-                            {/* Pagination / Load More */}
-                            <div className="pt-12 flex flex-col items-center gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-primary transition-all"
-                                    onClick={() => setLoadMoreMessage('All available agents are already shown. New profiles appear here as they are verified.')}
-                                >
-                                    Load More Agents
-                                </Button>
-                                {loadMoreMessage && (
-                                    <p className="text-xs font-medium text-stone text-center max-w-md">
-                                        {loadMoreMessage}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
+          {!loading && !error && agents.length === 0 ? (
+            <EmptyState
+              title="No agents found"
+              description="No agents found in this state yet. Try expanding your search."
+            />
+          ) : null}
 
-                    </div>
-                </div>
-            </section>
+          {!error && agents.length > 0 ? (
+            <div className={viewMode === "list" ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
+              {agents.map((agent) => (
+                <AgentCard key={agent.id} agent={agent} compact={viewMode === "list"} />
+              ))}
+            </div>
+          ) : null}
 
-            {/* Educational Content: How to Choose */}
-            <section className="py-24 bg-gray-50 border-t border-stone/5">
-                <div className="container mx-auto px-6 max-w-4xl">
-                    <div className="text-center mb-16 space-y-4">
-                        <h2 className="text-3xl md:text-4xl font-display font-black text-gray-900 tracking-tight">
-                            How to Choose the Right <span className="text-primary">Advocate.</span>
-                        </h2>
-                        <p className="text-lg text-gray-500 font-medium">
-                            Not all buyer&apos;s agents are created equal. Here&apos;s what to look for.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="space-y-6">
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">1</div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Check for Independence</h3>
-                                    <p className="text-gray-500 leading-relaxed text-sm">Ensure they effectively work only for you. Avoid agents who accept referral fees from selling agents or developers.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">2</div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Verify Local Experience</h3>
-                                    <p className="text-gray-500 leading-relaxed text-sm">Property markets vary by suburb. Choose an agent who has bought recently in your target area.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-6">
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">3</div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Ask About Strategy</h3>
-                                    <p className="text-gray-500 leading-relaxed text-sm">Good agents don&apos;t just find properties; they have a clear strategy to secure them at the best price.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-primary shrink-0">4</div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-2">Review Past Results</h3>
-                                    <p className="text-gray-500 leading-relaxed text-sm">Look for case studies and testimonials from buyers with similar budgets and goals to yours.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+          {hasMore && !error ? (
+            <div>
+              <Button
+                variant="secondary"
+                loading={loading && page > 1}
+                onClick={() => setPage((prev) => prev + 1)}
+              >
+                Load More
+              </Button>
+            </div>
+          ) : null}
         </div>
-    );
+      </section>
+
+      <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)} title="Map View">
+        <p className="text-body-sm text-text-secondary">Map view is coming soon.</p>
+      </Modal>
+    </div>
+  );
 }

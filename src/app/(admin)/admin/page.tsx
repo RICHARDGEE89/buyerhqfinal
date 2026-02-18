@@ -1,169 +1,256 @@
 "use client";
 
-import React from 'react';
-import {
-    MessageSquare,
-    TrendingUp,
-    ShieldAlert,
-    FileText,
-    CheckCircle2,
-    Clock,
-    ArrowRight,
-    UserPlus
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { StatCard } from "@/components/ui/StatCard";
+import type { AgentRow, BlogPostRow, EnquiryRow, ReviewRow } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+
+type ContactSubmission = {
+  id: string;
+  created_at: string;
+  name: string | null;
+  email: string | null;
+  subject: string | null;
+  message: string | null;
+  is_resolved: boolean;
+};
 
 export default function AdminDashboardOverview() {
-    const metrics = [
-        { label: 'Total Enquiries', value: '0', icon: MessageSquare, color: 'text-primary bg-primary/10' },
-        { label: 'Verified Agents', value: '0', icon: CheckCircle2, color: 'text-verified bg-verified/10' },
-        { label: 'Pending Apps', value: '0', icon: ShieldAlert, color: 'text-primary bg-primary/10' },
-        { label: 'Platform Revenue', value: '$0', icon: TrendingUp, color: 'text-gray-900 bg-gray-900/10' },
-    ];
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentRow[]>([]);
+  const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [posts, setPosts] = useState<BlogPostRow[]>([]);
+  const [contacts, setContacts] = useState<ContactSubmission[]>([]);
 
-    const pendingVerifications = [
-        { id: '1', agency: 'Elite Buyers Agency', name: 'Marcus Aurelius', date: '6 hours ago', type: 'Platinum' },
-        { id: '2', agency: 'Harbour City Property', name: 'Julia Roberts', date: '1 day ago', type: 'Standard' },
-        { id: '3', agency: 'QLD Experts', name: 'Steve Smith', date: '2 days ago', type: 'Verified' },
-    ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
 
-    return (
-        <div className="space-y-12">
-            {/* Platform Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        System <span className="text-primary">Overview</span>
-                    </h1>
-                    <p className="text-stone font-medium">Global platform health and operational status.</p>
+      const [agentsRes, enquiriesRes, reviewsRes, postsRes, contactsRes] = await Promise.all([
+        supabase.from("agents").select("*").order("created_at", { ascending: false }),
+        supabase.from("enquiries").select("*").order("created_at", { ascending: false }),
+        supabase
+          .from("reviews")
+          .select("*")
+          .eq("is_approved", false)
+          .order("created_at", { ascending: false }),
+        supabase.from("blog_posts").select("*").order("created_at", { ascending: false }),
+        supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }).limit(10),
+      ]);
+
+      if (cancelled) return;
+      if (agentsRes.error || enquiriesRes.error || reviewsRes.error || postsRes.error || contactsRes.error) {
+        setError(
+          agentsRes.error?.message ||
+            enquiriesRes.error?.message ||
+            reviewsRes.error?.message ||
+            postsRes.error?.message ||
+            contactsRes.error?.message ||
+            "Failed to load admin data"
+        );
+      }
+
+      setAgents(agentsRes.data ?? []);
+      setEnquiries(enquiriesRes.data ?? []);
+      setReviews(reviewsRes.data ?? []);
+      setPosts(postsRes.data ?? []);
+      setContacts((contactsRes.data as ContactSubmission[]) ?? []);
+      setLoading(false);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const newThisMonth = enquiries.filter((item) => new Date(item.created_at) >= monthStart).length;
+
+  const updateAgent = async (id: string, field: "is_verified" | "is_active", value: boolean) => {
+    await supabase.from("agents").update({ [field]: value }).eq("id", id);
+    setAgents((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  };
+
+  const deleteAgent = async (id: string) => {
+    await supabase.from("agents").delete().eq("id", id);
+    setAgents((current) => current.filter((item) => item.id !== id));
+  };
+
+  const approveReview = async (id: string) => {
+    await supabase.from("reviews").update({ is_approved: true }).eq("id", id);
+    setReviews((current) => current.filter((item) => item.id !== id));
+  };
+
+  const rejectReview = async (id: string) => {
+    await supabase.from("reviews").delete().eq("id", id);
+    setReviews((current) => current.filter((item) => item.id !== id));
+  };
+
+  const togglePublished = async (id: string, value: boolean) => {
+    await supabase.from("blog_posts").update({ is_published: value }).eq("id", id);
+    setPosts((current) => current.map((item) => (item.id === id ? { ...item, is_published: value } : item)));
+  };
+
+  const deletePost = async (id: string) => {
+    await supabase.from("blog_posts").delete().eq("id", id);
+    setPosts((current) => current.filter((item) => item.id !== id));
+  };
+
+  if (loading) return <div className="text-body text-text-secondary">Loading admin dashboard...</div>;
+  if (error) return <ErrorState description={error} />;
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h1 className="text-heading">Admin Console</h1>
+        <p className="mt-2 text-body-sm text-text-secondary">Platform moderation and operational controls.</p>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Total Agents" value={agents.length} />
+        <StatCard label="Verified Agents" value={agents.filter((item) => item.is_verified).length} />
+        <StatCard label="Pending Verification" value={agents.filter((item) => !item.is_verified).length} />
+        <StatCard label="Total Enquiries" value={enquiries.length} />
+        <StatCard label="New This Month" value={newThisMonth} />
+      </section>
+
+      <section className="flex flex-wrap gap-2">
+        <Button variant="secondary" asChild>
+          <Link href="/admin/verifications">Open verifications</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/agents">Manage agents</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/users">Manage users</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/logs">View logs</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/settings">Admin settings</Link>
+        </Button>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-2">
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Recent contact submissions</h2>
+          {contacts.length === 0 ? (
+            <EmptyState title="No contact submissions" />
+          ) : (
+            <div className="space-y-2">
+              {contacts.map((submission) => (
+                <div key={submission.id} className="rounded-md border border-border p-3">
+                  <p className="text-body-sm text-text-primary">
+                    {submission.name || "Unknown"} · {submission.email || "No email"}
+                  </p>
+                  <p className="text-caption text-text-secondary">{submission.subject || "No subject"}</p>
                 </div>
-                <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white">
-                        System Health
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Pending review moderation</h2>
+          {reviews.length === 0 ? (
+            <EmptyState title="No pending reviews" />
+          ) : (
+            <div className="space-y-2">
+              {reviews.map((review) => (
+                <div key={review.id} className="rounded-md border border-border p-3">
+                  <p className="text-body-sm text-text-primary">
+                    {review.buyer_name || "Buyer"} · Rating {review.rating}/5
+                  </p>
+                  <p className="text-caption text-text-secondary">{review.comment || "No comment"}</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button variant="secondary" onClick={() => approveReview(review.id)}>
+                      Approve
                     </Button>
-                    <Link href="/admin/bulk-upload">
-                        <Button className="bg-primary text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
-                            Bulk Upload
-                        </Button>
-                    </Link>
+                    <Button variant="destructive" onClick={() => rejectReview(review.id)}>
+                      Reject
+                    </Button>
+                  </div>
                 </div>
+              ))}
             </div>
+          )}
+        </Card>
+      </section>
 
-            {/* Admin Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {metrics.map((m) => (
-                    <Card key={m.label} className="border-stone/5 rounded-[2.5rem] bg-white shadow-soft transition-all hover:border-primary/20">
-                        <CardContent className="p-8 space-y-4">
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", m.color)}>
-                                <m.icon className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-mono font-black text-gray-900">{m.value}</div>
-                                <div className="text-[10px] font-bold text-stone uppercase tracking-widest mt-1">{m.label}</div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-
-                {/* Verification Queue */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-display font-black text-gray-900 tracking-tight">Verification Queue</h2>
-                        <Link href="/admin/verifications" className="text-primary font-bold text-sm hover:underline flex items-center gap-2">
-                            View all applications <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-                    <div className="space-y-4">
-                        {pendingVerifications.map((app) => (
-                            <Card key={app.id} className="border-stone/5 rounded-[2.5rem] bg-white shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
-                                <CardContent className="p-8 flex items-center justify-between">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center text-gray-900 font-display font-black">
-                                            {app.agency.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="font-bold text-gray-900 text-lg">{app.agency}</h4>
-                                                <Badge className="bg-primary/10 text-primary border-primary/20 px-3 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-widest">
-                                                    {app.type}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-sm text-stone font-medium">{app.name} • Applied {app.date}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Button variant="ghost" className="h-12 w-12 rounded-2xl bg-warm/50 hover:bg-verified hover:text-white transition-all">
-                                            <CheckCircle2 className="w-5 h-5" />
-                                        </Button>
-                                        <Button className="h-12 px-6 bg-gray-900 text-white font-black rounded-xl text-sm">
-                                            Review Docs
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+      <section className="grid gap-3 lg:grid-cols-2">
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Agent management</h2>
+          <div className="space-y-2">
+            {agents.map((agent) => (
+              <div key={agent.id} className="rounded-md border border-border p-3">
+                <p className="text-body-sm text-text-primary">
+                  {agent.name} · {agent.agency_name || "No agency"}
+                </p>
+                <p className="text-caption text-text-secondary">{agent.email}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => updateAgent(agent.id, "is_verified", !agent.is_verified)}
+                  >
+                    {agent.is_verified ? "Unverify" : "Verify"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => updateAgent(agent.id, "is_active", !agent.is_active)}
+                  >
+                    {agent.is_active ? "Deactivate" : "Activate"}
+                  </Button>
+                  <Button variant="destructive" onClick={() => deleteAgent(agent.id)}>
+                    Delete
+                  </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        </Card>
 
-                {/* Global Activity Feed / Quick Actions */}
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-display font-black text-gray-900 tracking-tight">Quick Actions</h2>
-                    <div className="space-y-4">
-                        <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 space-y-6 shadow-soft">
-                            <div className="space-y-4">
-                                <Link href="/join">
-                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                        <UserPlus className="w-5 h-5 mr-4" />
-                                        Invite New Agency
-                                    </Button>
-                                </Link>
-                                <Link href="/admin/verifications">
-                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                        <FileText className="w-5 h-5 mr-4" />
-                                        Generate Verification Report
-                                    </Button>
-                                </Link>
-                                <Link href="/admin/verifications">
-                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                        <ShieldAlert className="w-5 h-5 mr-4" />
-                                        Review Flagged Content
-                                    </Button>
-                                </Link>
-                            </div>
-                        </Card>
-
-                        <Card className="border-stone/10 rounded-[2.5rem] bg-gray-900 text-white p-8 space-y-4 shadow-xl">
-                            <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-primary" />
-                                <h4 className="text-xs font-black text-primary uppercase tracking-widest">System Health</h4>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center text-xs font-bold">
-                                    <span className="text-white/40">DB Connection</span>
-                                    <span className="text-verified">Stable</span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs font-bold">
-                                    <span className="text-white/40">API Response</span>
-                                    <span className="text-verified">42ms</span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs font-bold">
-                                    <span className="text-white/40">Auth Service</span>
-                                    <span className="text-verified">Online</span>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Blog post management</h2>
+          {posts.length === 0 ? (
+            <EmptyState title="No blog posts" />
+          ) : (
+            <div className="space-y-2">
+              {posts.map((post) => (
+                <div key={post.id} className="rounded-md border border-border p-3">
+                  <p className="text-body-sm text-text-primary">{post.title}</p>
+                  <p className="text-caption text-text-secondary">{post.slug}</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => togglePublished(post.id, !post.is_published)}
+                    >
+                      {post.is_published ? "Unpublish" : "Publish"}
+                    </Button>
+                    <Button variant="destructive" onClick={() => deletePost(post.id)}>
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-
+              ))}
             </div>
-        </div>
-    );
+          )}
+        </Card>
+      </section>
+    </div>
+  );
 }
 

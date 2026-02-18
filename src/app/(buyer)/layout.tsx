@@ -1,83 +1,56 @@
 "use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-    LayoutDashboard,
-    Heart,
-    MessageSquare,
-    UserCircle,
-    LogOut,
-    Menu,
-    X
-} from 'lucide-react';
-import { Logo } from '@/components/brand/Logo';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const navItems = [
-    { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Saved Agents', href: '/dashboard/saved', icon: Heart },
-    { name: 'My Enquiries', href: '/dashboard/enquiries', icon: MessageSquare },
-    { name: 'Profile', href: '/dashboard/profile', icon: UserCircle },
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+
+const links = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/profile", label: "Profile" },
+  { href: "/dashboard/saved", label: "Saved Agents" },
+  { href: "/dashboard/enquiries", label: "Enquiries" },
 ];
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const { signOut } = useAuth();
 
-    return (
-        <div className="min-h-screen bg-white flex">
-            {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex w-72 bg-white border-r border-gray-200 flex-col p-6 sticky top-0 h-screen">
-                <div className="mb-10 px-2">
-                    <Logo variant="default" />
-                </div>
-
-                <nav className="space-y-2 flex-1">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all group",
-                                pathname === item.href
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                            )}
-                        >
-                            <item.icon className={cn(
-                                "w-5 h-5 transition-colors",
-                                pathname === item.href ? "text-primary" : "text-gray-400 group-hover:text-primary"
-                            )} />
-                            {item.name}
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="mt-auto pt-6 border-t border-gray-100">
-                    <Button variant="ghost" className="w-full justify-start text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-2xl p-4 h-auto">
-                        <LogOut className="w-5 h-5 mr-3 text-gray-400" />
-                        <span className="font-bold">Sign Out</span>
-                    </Button>
-                </div>
-            </aside>
-
-            {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                <Logo variant="default" className="scale-75 origin-left" />
-                <button className="text-gray-900 p-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                    {isMobileMenuOpen ? <X /> : <Menu />}
-                </button>
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col">
-                <main className="flex-1 p-6 md:p-12 max-w-7xl mx-auto w-full pt-20 lg:pt-0">
-                    {children}
-                </main>
-            </div>
+  return (
+    <ProtectedRoute redirectTo="/login">
+      <div className="container py-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap gap-2">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "rounded-md border px-3 py-2 text-body-sm text-text-secondary transition-colors",
+                  pathname === link.href
+                    ? "border-border-light bg-surface-2 text-text-primary"
+                    : "border-border hover:text-text-primary"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              await signOut();
+              window.location.href = "/";
+            }}
+          >
+            Sign Out
+          </Button>
         </div>
-    );
+        {children}
+      </div>
+    </ProtectedRoute>
+  );
 }

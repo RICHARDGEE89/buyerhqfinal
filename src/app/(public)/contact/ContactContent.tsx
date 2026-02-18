@@ -1,203 +1,113 @@
 "use client";
 
-import React from 'react';
-import { Mail, MessageSquare, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState } from "react";
+
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactContent() {
-    const [firstName, setFirstName] = React.useState('');
-    const [lastName, setLastName] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [subject, setSubject] = React.useState('');
-    const [message, setMessage] = React.useState('');
-    const [submitting, setSubmitting] = React.useState(false);
-    const [error, setError] = React.useState<string | null>(null);
-    const [success, setSuccess] = React.useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(false);
+  const onSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(false);
 
-        if (!firstName || !lastName || !email || !subject || !message) {
-            setError('Please complete all fields before sending your message.');
-            return;
-        }
+    if (!name.trim() || !email.trim() || !subject || !message.trim()) {
+      setError("Please complete all fields.");
+      return;
+    }
 
-        setSubmitting(true);
-        try {
-            const res = await fetch('/api/contact', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ firstName, lastName, email, subject, message }),
-            });
+    if (!emailPattern.test(email)) {
+      setError("Please provide a valid email address.");
+      return;
+    }
 
-            const data = await res.json();
+    setLoading(true);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "Unable to send message.");
+      } else {
+        setSuccess(true);
+        setName("");
+        setEmail("");
+        setSubject("");
+        setMessage("");
+      }
+    } catch {
+      setError("Unable to send message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            if (!res.ok) {
-                setError(data.error ?? 'Something went wrong. Please try again.');
-                return;
-            }
+  return (
+    <div className="container space-y-8 pb-16 pt-10">
+      <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
+        <h1 className="text-display text-text-primary md:text-display-lg">Contact BuyerHQ</h1>
+        <p className="mt-3 max-w-2xl text-body text-text-secondary">
+          Send us a message and we&apos;ll get back to you as soon as possible.
+        </p>
+      </section>
 
-            setSuccess(true);
-            setFirstName('');
-            setLastName('');
-            setEmail('');
-            setSubject('');
-            setMessage('');
-        } catch {
-            setError('Unable to send your message right now. Please try again shortly.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
+      <Card className="p-5 md:p-6">
+        <form onSubmit={onSubmit} className="space-y-4">
+          <Input label="Name" value={name} onChange={(event) => setName(event.target.value)} />
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <Select
+            label="Subject"
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            placeholder="Select a subject"
+            options={[
+              { value: "General", label: "General" },
+              { value: "Agent Enquiry", label: "Agent Enquiry" },
+              { value: "List My Agency", label: "List My Agency" },
+              { value: "Technical Issue", label: "Technical Issue" },
+              { value: "Other", label: "Other" },
+            ]}
+          />
+          <Textarea
+            label="Message"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+          />
 
-    return (
-        <div className="bg-white min-h-screen">
-            {/* Hero */}
-            <section className="pt-40 pb-24 bg-topo relative">
-                <div className="container mx-auto px-6 text-center space-y-6 max-w-4xl">
-                    <h1 className="text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-tight">
-                        How can we <span className="text-primary">Help?</span>
-                    </h1>
-                    <p className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
-                        Whether you&apos;re a buyer looking for advice or an agent wanting to join the directory, we&apos;d love to hear from you.
-                    </p>
-                </div>
-            </section>
+          {error ? <p className="text-caption text-destructive">{error}</p> : null}
+          {success ? (
+            <p className="text-caption text-success">
+              Message received. We&apos;ll respond within 1 business day.
+            </p>
+          ) : null}
 
-            {/* Main Grid */}
-            <section className="py-24">
-                <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 max-w-6xl mx-auto">
-
-                        {/* Contact Details */}
-                        <div className="space-y-12">
-                            <div className="space-y-6">
-                                <h2 className="text-3xl font-display font-black text-gray-900 tracking-tight">Get in touch</h2>
-                                <p className="text-lg text-stone font-medium leading-relaxed">
-                                    Our team is available Monday to Friday, 9am - 5pm AEST.
-                                    We aim to respond to all enquiries within 24 hours.
-                                </p>
-                            </div>
-
-                            <div className="space-y-8">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                                        <Mail className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest">Email Support</div>
-                                        <div className="text-xl font-bold text-gray-900">hello@buyerhq.com.au</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                                        <MessageSquare className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest">Business Enquiries</div>
-                                        <div className="text-xl font-bold text-gray-900">partners@buyerhq.com.au</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6 pt-10 border-t border-stone/5">
-                                <h3 className="text-sm font-black text-stone uppercase tracking-widest">Connect with us</h3>
-                                <div className="flex items-center gap-4">
-                                    {/* Socials intentionally omitted to keep focus on email contact */}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Form */}
-                        <Card className="border-stone/10 rounded-[3rem] bg-white shadow-2xl relative">
-                            <CardContent className="p-12 space-y-8">
-                                <form onSubmit={handleSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">First Name</label>
-                                            <Input
-                                                placeholder="John"
-                                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                                value={firstName}
-                                                onChange={(e) => setFirstName(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Last Name</label>
-                                            <Input
-                                                placeholder="Doe"
-                                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                                value={lastName}
-                                                onChange={(e) => setLastName(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Email Address</label>
-                                        <Input
-                                            type="email"
-                                            placeholder="john@example.com"
-                                            className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Subject</label>
-                                        <Input
-                                            placeholder="General enquiry"
-                                            className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                            value={subject}
-                                            onChange={(e) => setSubject(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Message</label>
-                                        <Textarea
-                                            placeholder="How can we help?"
-                                            className="min-h-[160px] rounded-2xl border-stone/10 p-6 font-medium"
-                                            value={message}
-                                            onChange={(e) => setMessage(e.target.value)}
-                                        />
-                                    </div>
-
-                                    {error && (
-                                        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-bold text-primary">
-                                            {error}
-                                        </div>
-                                    )}
-                                    {success && (
-                                        <div className="rounded-xl border border-verified/20 bg-verified/10 px-4 py-3 text-sm font-bold text-verified">
-                                            Thank you — your message has been sent. We&apos;ll be in touch shortly.
-                                        </div>
-                                    )}
-
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-gray-900/20 disabled:opacity-60"
-                                    >
-                                        {submitting ? 'Sending...' : 'Send Message'}
-                                        <Send className="ml-2 w-5 h-5" />
-                                    </Button>
-
-                                    <p className="text-[10px] font-bold text-stone/40 uppercase tracking-widest text-center">
-                                        By clicking send, you agree to our privacy policy.
-                                    </p>
-                                </form>
-                            </CardContent>
-                        </Card>
-
-                    </div>
-                </div>
-            </section>
-        </div>
-    );
+          <Button type="submit" loading={loading} disabled={loading}>
+            {loading ? "Sending..." : "Send Message"}
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
 }
 

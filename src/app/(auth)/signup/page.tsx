@@ -1,189 +1,146 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Logo } from '@/components/brand/Logo';
-import { CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { CheckCircle2, ShieldCheck, Star, Lock } from 'lucide-react';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-const benefits = [
-    { title: 'Privacy Guaranteed', desc: 'Your details only go to the agents you choose. No spam.', icon: Lock },
-    { title: 'Verified Experts', desc: 'Every agent is licence-verified.', icon: ShieldCheck },
-    { title: 'Personalised Matching', desc: "Find agents based on your goals.", icon: Star },
-    { title: 'Independent Reviews', desc: 'Read honest buyer feedback.', icon: CheckCircle2 }
-];
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
-    const [email, setEmail] = React.useState('')
-    const [password, setPassword] = React.useState('')
-    const [firstname, setFirstname] = React.useState('')
-    const [lastname, setLastname] = React.useState('')
-    const [loading, setLoading] = React.useState(false)
-    const [error, setError] = React.useState<string | null>(null)
-    const router = useRouter()
-    const supabase = createClient()
+  const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-    const handleSignup = async () => {
-        if (!email || !password || !firstname || !lastname) {
-            setError("Please fill in all fields")
-            return
-        }
+  const handleSignup = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
 
-        setLoading(true)
-        setError(null)
-
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    first_name: firstname,
-                    last_name: lastname,
-                    role: 'buyer'
-                }
-            }
-        })
-
-        if (error) {
-            setError(error.message)
-            setLoading(false)
-        } else {
-            // Check if email confirmation is required?
-            // For now, assume auto-confirm or redirect to dashboard if session exists
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session) {
-                router.push('/dashboard')
-            } else {
-                setError("Account created! Please check your email to verify.")
-                setLoading(false)
-            }
-        }
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      setError("All fields are required.");
+      return;
     }
 
-    return (
-        <div className="min-h-screen bg-topo flex flex-col items-center justify-center p-6">
-            <Link href="/" className="mb-12">
-                <Logo variant="white" />
-            </Link>
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
 
-            <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-[3rem] shadow-2xl overflow-hidden">
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
 
-                {/* Left: Benefits recap */}
-                <div className="hidden lg:flex flex-col justify-center p-16 bg-gray-900 text-white space-y-10">
-                    <div className="space-y-4">
-                        <h2 className="text-4xl font-display font-black tracking-tight leading-tight">
-                            Start your journey <br />
-                            <span className="text-primary">to the right home.</span>
-                        </h2>
-                        <p className="text-white/40 font-medium leading-relaxed">
-                            Join thousands of buyers who use BuyerHQ to find local property experts.
-                        </p>
-                    </div>
+    setLoading(true);
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        data: {
+          role: "buyer",
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        },
+      },
+    });
 
-                    <div className="space-y-6">
-                        {benefits.map((b) => (
-                            <div key={b.title} className="flex gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-primary">
-                                    <b.icon className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-sm tracking-tight">{b.title}</div>
-                                    <div className="text-xs text-stone font-medium mt-0.5">{b.desc}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+    if (signupError) {
+      setError(signupError.message);
+      setLoading(false);
+      return;
+    }
 
-                    <div className="pt-10 border-t border-white/5">
-                        <p className="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest text-center mt-6">
-                            Official Marketplace • Secured & Verified
-                        </p>
-                    </div>
-                </div>
+    if (data.session) {
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
 
-                {/* Right: Signup form */}
-                <CardContent className="p-10 md:p-16 space-y-8 flex flex-col justify-center">
-                    <div className="text-center lg:text-left space-y-2">
-                        <h1 className="text-3xl font-display font-black text-gray-900 tracking-tight">Create your Account</h1>
-                        <p className="text-stone font-medium text-sm">
-                            Free to search, compare, and save agents.
-                        </p>
-                    </div>
+    setSuccess("Account created. Check your email to confirm your account before signing in.");
+    setLoading(false);
+  };
 
-                    <div className="space-y-4">
-                        {error && (
-                            <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl text-center">
-                                {error}
-                            </div>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">First Name</label>
-                                <Input
-                                    placeholder="John"
-                                    className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                    value={firstname}
-                                    onChange={(e) => setFirstname(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Last Name</label>
-                                <Input
-                                    placeholder="Doe"
-                                    className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                    value={lastname}
-                                    onChange={(e) => setLastname(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Email Address</label>
-                            <Input
-                                placeholder="john@example.com"
-                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Password</label>
-                            <Input
-                                type="password"
-                                placeholder="••••••••"
-                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSignup()}
-                            />
-                        </div>
-                    </div>
-
-                    <Button
-                        onClick={handleSignup}
-                        disabled={loading}
-                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-teal/20 text-lg active:scale-95 transition-all disabled:opacity-50"
-                    >
-                        {loading ? 'Creating Account...' : 'Create Free Account'}
-                    </Button>
-
-                    <div className="text-center">
-                        <p className="text-stone text-xs font-medium">
-                            Already have an account? <Link href="/login" className="text-primary font-bold hover:underline">Log in</Link>
-                        </p>
-                    </div>
-
-                    <div className="bg-warm/30 p-4 rounded-xl border border-stone/5">
-                        <p className="text-[10px] text-stone font-medium text-center leading-relaxed">
-                            By creating an account, you agree to our <Link href="/terms" className="underline">Terms</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>.
-                        </p>
-                    </div>
-                </CardContent>
-
-            </div>
+  return (
+    <div className="container max-w-xl py-16">
+      <Card className="space-y-6 p-6">
+        <div>
+          <h1 className="text-heading">Create your account</h1>
+          <p className="mt-2 text-body-sm text-text-secondary">
+            Create a buyer account to save agents, send enquiries, and track progress.
+          </p>
         </div>
-    );
+
+        <form className="space-y-3" onSubmit={handleSignup}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              label="First name"
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              required
+            />
+            <Input
+              label="Last name"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              required
+            />
+          </div>
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+          <Input
+            label="Confirm password"
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            required
+          />
+
+          {error ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+              {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-caption text-success">
+              {success}
+            </p>
+          ) : null}
+
+          <Button type="submit" loading={loading} disabled={loading} fullWidth>
+            Create account
+          </Button>
+        </form>
+
+        <p className="text-body-sm text-text-secondary">
+          Already have an account?{" "}
+          <Link href="/login" className="text-text-primary underline">
+            Sign in
+          </Link>
+          .
+        </p>
+      </Card>
+    </div>
+  );
 }

@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { NextResponse } from "next/server";
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const contactRecipient = process.env.CONTACT_RECIPIENT_EMAIL || 'hello@buyerhq.com.au';
+import { createClient } from "@/lib/supabase/server";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { firstName, lastName, email, subject, message } = body as {
+    const payload = (await request.json()) as {
+      name?: string;
       firstName?: string;
       lastName?: string;
       email?: string;
@@ -15,48 +15,35 @@ export async function POST(request: Request) {
       message?: string;
     };
 
-    if (!firstName || !lastName || !email || !subject || !message) {
-      return NextResponse.json(
-        { error: 'Please complete all fields before sending your message.' },
-        { status: 400 }
-      );
+    const name =
+      payload.name?.trim() || `${payload.firstName ?? ""} ${payload.lastName ?? ""}`.trim();
+    const email = payload.email?.trim();
+    const subject = payload.subject?.trim();
+    const message = payload.message?.trim();
+
+    if (!name || !email || !subject || !message) {
+      return NextResponse.json({ error: "name, email, subject and message are required" }, { status: 400 });
     }
 
-    if (!resendApiKey) {
-      return NextResponse.json(
-        {
-          error:
-            'Email service is not configured yet. Please try again later or contact us directly at hello@buyerhq.com.au.',
-        },
-        { status: 503 }
-      );
+    if (!emailPattern.test(email)) {
+      return NextResponse.json({ error: "Please provide a valid email address" }, { status: 400 });
     }
 
-    const resend = new Resend(resendApiKey);
-
-    await resend.emails.send({
-      from: 'BuyerHQ Contact <no-reply@buyerhq.com.au>',
-      to: contactRecipient,
-      replyTo: email,
-      subject: `[BuyerHQ Contact] ${subject}`,
-      text: [
-        `From: ${firstName} ${lastName}`,
-        `Email: ${email}`,
-        '',
-        'Message:',
-        message,
-      ].join('\n'),
+    const supabase = createClient();
+    const { error } = await supabase.from("contact_submissions").insert({
+      name,
+      email,
+      subject,
+      message,
     });
 
-    return NextResponse.json({ ok: true });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json(
-      {
-        error:
-          'Something went wrong while sending your message. Please try again in a moment.',
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Unable to submit contact message" }, { status: 500 });
   }
 }
 

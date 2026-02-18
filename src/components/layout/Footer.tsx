@@ -1,99 +1,78 @@
-import React from 'react';
-import Link from 'next/link';
-import { Logo } from '@/components/brand/Logo';
-import { Mail } from 'lucide-react';
+import Link from "next/link";
 
-export const Footer = () => {
-    const currentYear = new Date().getFullYear();
-
-    const footerLinks = {
-        directory: [
-            { name: 'Find an Agent', href: '/agents' },
-            { name: 'How It Works', href: '/how-it-works' },
-            { name: 'Get Matched', href: '/get-matched' },
-            { name: 'Why BuyerHQ', href: '/why-buyerhq' },
-        ],
-        company: [
-            { name: 'About Us', href: '/about' },
-            { name: 'Contact', href: '/contact' },
-            { name: 'FAQ', href: '/faq' },
-            { name: 'Privacy Policy', href: '/privacy' },
-            { name: 'Terms of Service', href: '/terms' },
-        ],
-        professionals: [
-            { name: 'List Your Agency', href: '/join' },
-            { name: 'Agent Login', href: '/login' },
-            { name: 'Blog', href: '/blog' },
-            { name: 'Admin Console', href: '/admin-login' },
-        ]
-    };
-
-    return (
-        <footer className="bg-white pt-24 pb-12 border-t border-gray-200">
-            <div className="max-w-7xl mx-auto px-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-                    <div className="space-y-6">
-                        <Logo variant="default" />
-                        <p className="text-gray-600 font-medium leading-relaxed max-w-xs">
-                            Australia&apos;s leading marketplace for verified buyer&apos;s advocacy.
-                        </p>
-                        <div className="flex items-center gap-4">
-                            {/* Socials removed */}
-                            <Link href="mailto:hello@buyerhq.com.au" className="text-gray-400 hover:text-primary transition-colors"><Mail className="w-5 h-5" /></Link>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 className="text-gray-900 font-display font-bold text-lg mb-6">Directory</h4>
-                        <ul className="space-y-4">
-                            {footerLinks.directory.map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.href} className="text-gray-600 hover:text-primary transition-colors font-medium text-sm">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h4 className="text-gray-900 font-display font-bold text-lg mb-6">Professionals</h4>
-                        <ul className="space-y-4">
-                            {footerLinks.professionals.map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.href} className="text-gray-600 hover:text-primary transition-colors font-medium text-sm">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h4 className="text-gray-900 font-display font-bold text-lg mb-6">Support</h4>
-                        <ul className="space-y-4">
-                            {footerLinks.company.map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.href} className="text-gray-600 hover:text-primary transition-colors font-medium text-sm">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-
-                <div className="pt-12 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-gray-400 text-xs font-mono">
-                        &copy; {currentYear} BuyerHQ. All agents are independently licence-verified.
-                    </p>
-                    <div className="flex items-center gap-6 text-[10px] font-mono text-gray-400 uppercase tracking-widest">
-                        <span>Built in Australia</span>
-                        <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                        <span>Secure & Private</span>
-                    </div>
-                </div>
-            </div>
-        </footer>
-    );
+const footerLinks = {
+  directory: [
+    { name: "Find Agents", href: "/agents" },
+    { name: "Match Quiz", href: "/quiz" },
+    { name: "How It Works", href: "/how-it-works" },
+    { name: "Blog", href: "/blog" },
+  ],
+  professionals: [
+    { name: "List Your Agency", href: "/list-agency" },
+    { name: "Agent Portal", href: "/agent-portal" },
+    { name: "Agent Login", href: "/agent-portal/login" },
+    { name: "Admin Console", href: "/admin" },
+  ],
+  support: [
+    { name: "FAQ", href: "/faq" },
+    { name: "Contact", href: "/contact" },
+    { name: "About", href: "/about" },
+    { name: "Privacy", href: "/privacy" },
+  ],
 };
+
+export function Footer() {
+  return (
+    <footer className="border-t border-border bg-surface">
+      <div className="container py-16">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-4">
+            <Link href="/" className="font-mono text-heading font-semibold text-text-primary">
+              BuyerHQ
+            </Link>
+            <p className="max-w-xs text-body-sm text-text-secondary">
+              Australia&apos;s verified buyer&apos;s agent directory. Independent, buyer-first, and free
+              for buyers.
+            </p>
+          </div>
+
+          <FooterColumn title="Directory" links={footerLinks.directory} />
+          <FooterColumn title="Professionals" links={footerLinks.professionals} />
+          <FooterColumn title="Support" links={footerLinks.support} />
+        </div>
+
+        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
+          <p className="font-mono text-caption text-text-muted">
+            © {new Date().getFullYear()} BuyerHQ. All rights reserved.
+          </p>
+          <span className="inline-flex w-fit items-center rounded-full border border-border-light px-3 py-1 font-mono text-caption text-text-secondary">
+            Built in Australia
+          </span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: Array<{ name: string; href: string }>;
+}) {
+  return (
+    <div className="space-y-3">
+      <h3 className="font-mono text-label uppercase text-text-secondary">{title}</h3>
+      <ul className="space-y-2">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} className="text-body-sm text-text-secondary transition-colors hover:text-text-primary">
+              {link.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

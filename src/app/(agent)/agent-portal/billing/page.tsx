@@ -1,152 +1,307 @@
 "use client";
 
-import React from 'react';
-import {
-    CreditCard,
-    CheckCircle2,
-    Download,
-    Calendar,
-    AlertCircle
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarClock, CreditCard, ReceiptText } from "lucide-react";
+
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard } from "@/components/ui/StatCard";
+import type { AgentProfileRow, AgentRow, EnquiryRow } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+
+type PlanKey = AgentProfileRow["subscription_plan"];
+
+const planPrices: Record<PlanKey, { monthly: number; annual: number }> = {
+  starter: { monthly: 79, annual: 790 },
+  "verified-partner": { monthly: 149, annual: 1490 },
+  enterprise: { monthly: 299, annual: 2990 },
+};
+
+const planNames: Record<PlanKey, string> = {
+  starter: "Starter",
+  "verified-partner": "Verified Partner",
+  enterprise: "Enterprise",
+};
 
 export default function AgentBillingPage() {
-    const currentPlan = {
-        name: 'Verified Partner',
-        price: '$149',
-        period: 'monthly',
-        next_billing: '2024-03-15',
-        status: 'active'
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [agent, setAgent] = useState<AgentRow | null>(null);
+  const [profile, setProfile] = useState<AgentProfileRow | null>(null);
+  const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
+  const [cardBrand, setCardBrand] = useState("");
+  const [cardLast4, setCardLast4] = useState("");
+
+  const loadBilling = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      window.location.href = "/agent-portal/login";
+      return;
+    }
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("agent_profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profileData?.agent_id) {
+      setError(profileError?.message ?? "No linked billing profile found.");
+      setLoading(false);
+      return;
+    }
+
+    const [agentRes, enquiryRes] = await Promise.all([
+      supabase.from("agents").select("*").eq("id", profileData.agent_id).single(),
+      supabase.from("enquiries").select("*").eq("agent_id", profileData.agent_id).order("created_at", { ascending: false }),
+    ]);
+
+    if (agentRes.error || !agentRes.data) {
+      setError(agentRes.error?.message ?? "Unable to load agent account.");
+      setLoading(false);
+      return;
+    }
+
+    if (enquiryRes.error) {
+      setError(enquiryRes.error.message);
+      setLoading(false);
+      return;
+    }
+
+    setAgent(agentRes.data);
+    setProfile(profileData);
+    setEnquiries(enquiryRes.data ?? []);
+    setCardBrand(profileData.card_brand ?? "Visa");
+    setCardLast4(profileData.card_last4 ?? "4242");
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadBilling();
+  }, [loadBilling]);
+
+  const persistProfile = async (patch: Partial<AgentProfileRow>) => {
+    if (!profile) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    const { error: updateError } = await supabase.from("agent_profiles").update(patch).eq("id", profile.id);
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setProfile((current) => (current ? { ...current, ...patch } : current));
+      setSuccess("Billing settings updated.");
+    }
+    setSaving(false);
+  };
+
+  const selectedPlan = profile?.subscription_plan ?? "starter";
+  const selectedCycle = profile?.billing_cycle ?? "monthly";
+  const subscriptionStatus = profile?.subscription_status ?? "active";
+  const planCost = planPrices[selectedPlan][selectedCycle];
+  const nextBillingDate = profile?.next_billing_at
+    ? new Date(profile.next_billing_at)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  const thisMonth = new Date();
+  thisMonth.setUTCDate(1);
+  thisMonth.setUTCHours(0, 0, 0, 0);
+  const monthEnquiries = enquiries.filter((item) => new Date(item.created_at) >= thisMonth).length;
+
+  const invoiceHistory = Array.from({ length: 4 }, (_, index) => {
+    const issuedAt = new Date(nextBillingDate);
+    issuedAt.setMonth(issuedAt.getMonth() - (index + 1));
+    return {
+      id: `INV-${issuedAt.getFullYear()}${String(issuedAt.getMonth() + 1).padStart(2, "0")}`,
+      issuedAt,
+      amount: planCost,
+      status: "paid",
     };
+  });
 
-    const invoices = [
-        { id: 'INV-001', date: '2024-02-15', amount: '$149.00', status: 'paid' },
-        { id: 'INV-002', date: '2024-01-15', amount: '$149.00', status: 'paid' },
-    ];
-
+  if (loading) {
     return (
-        <div className="space-y-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        Billing & <span className="text-primary">Subscription</span>
-                    </h1>
-                    <p className="text-stone font-medium">Manage your agency&apos;s professional membership.</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-
-                {/* Current Plan & Management */}
-                <div className="lg:col-span-2 space-y-8">
-                    <Card className="border-stone/5 rounded-[3rem] bg-gray-900 text-white overflow-hidden shadow-2xl relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] -mr-32 -mt-32" />
-                        <CardContent className="p-10 md:p-14 space-y-10 relative z-10">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                <div className="space-y-4">
-                                    <Badge className="bg-primary text-white border-transparent font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[10px]">
-                                        Current Plan
-                                    </Badge>
-                                    <h2 className="text-4xl md:text-5xl font-display font-black tracking-tight">{currentPlan.name}</h2>
-                                    <div className="flex items-center gap-2 text-white/40 font-bold">
-                                        <Calendar className="w-4 h-4" />
-                                        Next billing date: {currentPlan.next_billing}
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-5xl font-mono font-black">{currentPlan.price}</div>
-                                    <div className="text-white/20 text-sm font-bold uppercase tracking-widest mt-1">per month</div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-10 border-t border-white/5">
-                                <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                                    <p className="text-sm font-medium text-white/60">Unlimited Leads & Enquiries</p>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                                    <p className="text-sm font-medium text-white/60">Verified Badge on Directory</p>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                                    <p className="text-sm font-medium text-white/60">Premium SEO Profile Page</p>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                                    <p className="text-sm font-medium text-white/60">Advanced Analytics Dashboard</p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-4 pt-10">
-                                <Button className="bg-white text-gray-900 font-black px-10 h-14 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-xl">
-                                    Change Plan
-                                </Button>
-                                <Button variant="ghost" className="text-white/40 hover:text-primary hover:bg-primary/5 rounded-2xl p-4 h-14">
-                                    Cancel Subscription
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Payment Method */}
-                    <div className="space-y-6">
-                        <h3 className="text-2xl font-display font-black text-gray-900 tracking-tight">Payment Method</h3>
-                        <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 group hover:border-primary/30 transition-all shadow-soft">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-12 bg-gray-900 rounded-xl flex items-center justify-center text-white">
-                                        <CreditCard className="w-7 h-7" />
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-gray-900 tracking-tight italic">Visa ending in 4242</div>
-                                        <div className="text-stone text-[10px] font-bold uppercase tracking-widest">Expires 12/26</div>
-                                    </div>
-                                </div>
-                                <Button variant="ghost" className="text-primary font-bold text-sm hover:underline">
-                                    Update
-                                </Button>
-                            </div>
-                        </Card>
-                    </div>
-                </div>
-
-                {/* Invoices */}
-                <div className="space-y-6">
-                    <h3 className="text-2xl font-display font-black text-gray-900 tracking-tight">Invoice History</h3>
-                    <div className="space-y-3">
-                        {invoices.map((inv) => (
-                            <Card key={inv.id} className="border-stone/10 rounded-3xl bg-white p-6 hover:shadow-sm transition-all shadow-soft">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-black text-gray-900 tracking-tight">{inv.amount}</div>
-                                        <div className="text-stone text-[10px] font-bold uppercase tracking-widest mt-0.5">{inv.date}</div>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl bg-warm/50 text-stone hover:text-primary transition-all">
-                                        <Download className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-
-                    <Card className="border-stone/10 rounded-[2rem] bg-warm/20 p-8 space-y-4 shadow-soft">
-                        <div className="flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-primary" />
-                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">Business Info</h4>
-                        </div>
-                        <p className="text-xs text-stone font-medium leading-relaxed">
-                            Tax invoices are sent to your business email. Ensure your ABN is up to date for GST compliance.
-                        </p>
-                        <Button variant="outline" className="w-full rounded-xl border-stone/10 text-xs font-bold text-stone hover:text-gray-900">
-                            Edit Billing Details
-                        </Button>
-                    </Card>
-                </div>
-
-            </div>
-        </div>
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
     );
+  }
+
+  if (error && !profile) {
+    return <ErrorState description={error} onRetry={loadBilling} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h1 className="text-heading">Billing & subscription</h1>
+        <p className="mt-2 text-body-sm text-text-secondary">
+          Manage your plan, cycle, payment details, and subscription status.
+        </p>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-3">
+        <StatCard label="Current plan" value={planNames[selectedPlan]} />
+        <StatCard label="Cycle" value={selectedCycle === "monthly" ? "Monthly" : "Annual"} />
+        <StatCard label="Leads this month" value={monthEnquiries} />
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-3">
+          <Card className="space-y-4 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-subheading">Subscription plan</h2>
+                <p className="text-caption text-text-secondary">
+                  Status: {subscriptionStatus} {profile?.cancel_at_period_end ? "(cancel at period end)" : ""}
+                </p>
+              </div>
+              <p className="text-heading text-text-primary">${planCost}</p>
+            </div>
+
+            <div className="grid gap-2 md:grid-cols-3">
+              {(Object.keys(planNames) as PlanKey[]).map((plan) => (
+                <Button
+                  key={plan}
+                  variant={selectedPlan === plan ? "primary" : "secondary"}
+                  loading={saving && selectedPlan === plan}
+                  disabled={saving}
+                  onClick={() => persistProfile({ subscription_plan: plan })}
+                >
+                  {planNames[plan]}
+                </Button>
+              ))}
+            </div>
+
+            <Select
+              label="Billing cycle"
+              value={selectedCycle}
+              onChange={(event) =>
+                persistProfile({ billing_cycle: event.target.value as AgentProfileRow["billing_cycle"] })
+              }
+              options={[
+                { value: "monthly", label: "Monthly" },
+                { value: "annual", label: "Annual" },
+              ]}
+            />
+
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-2 p-3">
+              <CalendarClock size={16} className="text-text-secondary" />
+              <p className="text-body-sm text-text-secondary">
+                Next billing date:{" "}
+                <span className="text-text-primary">{nextBillingDate.toLocaleDateString("en-AU")}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={profile?.cancel_at_period_end ? "primary" : "secondary"}
+                loading={saving}
+                disabled={saving}
+                onClick={() =>
+                  persistProfile({
+                    cancel_at_period_end: !profile?.cancel_at_period_end,
+                    subscription_status: !profile?.cancel_at_period_end ? "cancelled" : "active",
+                  })
+                }
+              >
+                {profile?.cancel_at_period_end ? "Reactivate subscription" : "Cancel at period end"}
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="space-y-4 p-4">
+            <h2 className="text-subheading">Payment method</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Input
+                label="Card brand"
+                value={cardBrand}
+                onChange={(event) => setCardBrand(event.target.value)}
+                placeholder="Visa"
+              />
+              <Input
+                label="Last 4 digits"
+                value={cardLast4}
+                onChange={(event) => setCardLast4(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="4242"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              loading={saving}
+              disabled={saving || cardLast4.length !== 4}
+              onClick={() =>
+                persistProfile({
+                  card_brand: cardBrand.trim() || null,
+                  card_last4: cardLast4.trim() || null,
+                })
+              }
+            >
+              <CreditCard size={16} />
+              Save payment details
+            </Button>
+          </Card>
+        </div>
+
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Invoice history</h2>
+          {invoiceHistory.length === 0 ? (
+            <EmptyState title="No invoices yet" description="Invoices will appear after your first billing cycle." />
+          ) : (
+            <div className="space-y-2">
+              {invoiceHistory.map((invoice) => (
+                <div key={invoice.id} className="rounded-md border border-border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-body-sm text-text-primary">{invoice.id}</p>
+                      <p className="text-caption text-text-secondary">
+                        {invoice.issuedAt.toLocaleDateString("en-AU")} · ${invoice.amount}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-border-light bg-surface-2 px-2 py-1 font-mono text-caption uppercase text-text-secondary">
+                      <ReceiptText size={12} />
+                      {invoice.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-caption text-text-muted">
+            Billing contact: {agent?.email ?? "Unknown"} · Agency: {agent?.agency_name ?? "Unknown"}
+          </p>
+        </Card>
+      </section>
+
+      {error ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-body-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-body-sm text-success">
+          {success}
+        </p>
+      ) : null}
+    </div>
+  );
 }

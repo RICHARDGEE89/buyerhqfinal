@@ -1,8 +1,8 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { ShieldCheck, Scale, Award, Zap, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
 export const metadata: Metadata = {

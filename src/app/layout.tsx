@@ -1,54 +1,45 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import localFont from "next/font/local";
+
+import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
+import { AuthProvider } from "@/context/AuthContext";
+
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-dm-sans",
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-primary",
+  weight: "100 900",
+  display: "swap",
+});
+
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-mono",
+  weight: "100 900",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "BuyerHQ | Find Your Perfect Buyer's Agent",
-    template: "%s | BuyerHQ"
-  },
-  description: "Australia's premier directory for verified buyer's agents. Transparent, trustworthy, and free for buyers.",
-  keywords: ["buyer's agent", "property search", "real estate australia", "buyers advocate", "property investment"],
-  authors: [{ name: "BuyerHQ Team" }],
-  creator: "BuyerHQ",
-  publisher: "BuyerHQ",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL('https://buyerhq.com.au'),
-  alternates: {
-    canonical: '/',
-  },
+  title: "BuyerHQ | Australia's Verified Buyer's Agent Directory",
+  description:
+    "Find verified buyer's agents across Australia. Compare specialists, read reviews, and enquire in minutes.",
+  metadataBase: new URL("https://buyerhq.com.au"),
   openGraph: {
-    title: "BuyerHQ | Find Your Perfect Buyer's Agent",
-    description: "Australia's premier directory for verified buyer's agents. Transparent, trustworthy, and free for buyers.",
-    url: 'https://buyerhq.com.au',
-    siteName: 'BuyerHQ',
-    locale: 'en_AU',
-    type: 'website',
+    title: "BuyerHQ | Australia's Verified Buyer's Agent Directory",
+    description:
+      "Find verified buyer's agents across Australia. Compare specialists, read reviews, and enquire in minutes.",
+    siteName: "BuyerHQ",
+    locale: "en_AU",
+    type: "website",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: "BuyerHQ | Find Your Perfect Buyer's Agent",
-    description: "Australia's premier directory for verified buyer's agents. Transparent, trustworthy, and free for buyers.",
-  },
-  robots: {
-    index: true,
-    follow: true,
+    card: "summary_large_image",
+    title: "BuyerHQ",
+    description: "Australia's verified buyer's agent directory.",
   },
 };
-
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 
 export default function RootLayout({
   children,
@@ -57,17 +48,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${dmSans.variable} font-sans antialiased bg-white text-gray-900`}
-      >
-        <Navbar />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+        <AuthProvider>
+          <Header />
+          <main className="min-h-screen bg-background text-text-primary">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
 }
-
-

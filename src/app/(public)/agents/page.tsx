@@ -1,12 +1,13 @@
-import React from 'react';
-import { Metadata } from 'next';
-import AgentsClientOnly from './AgentsClientOnly';
+import type { Metadata } from "next";
+
+import AgentsClientOnly from "./AgentsClientOnly";
 
 export const metadata: Metadata = {
-    title: "Find a Buyer's Agent | Verified Directory",
-    description: "Search and filter Australia's most comprehensive directory of verified buyer's agents. Find the perfect advocate for your property journey.",
+  title: "Find Agents | BuyerHQ",
+  description:
+    "Search BuyerHQ's verified buyer's agent directory with state, specialization, and rating filters.",
 };
 
 export default function AgentsPage() {
-    return <AgentsClientOnly />;
+  return <AgentsClientOnly />;
 }

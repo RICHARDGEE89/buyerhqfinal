@@ -1,169 +1,298 @@
 "use client";
 
-import React from 'react';
-import { AgentCard } from '@/components/agents/AgentCard';
-import { Button } from '@/components/ui/button';
-import { Trash2, ArrowLeft } from 'lucide-react';
-import { Agent } from '@/types';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Download, MessageSquare, Trash2 } from "lucide-react";
 
-type SavedAgent = {
-    saved_id: string;
-} & Partial<Agent>;
+import { AgentCard } from "@/components/AgentCard";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Textarea } from "@/components/ui/Textarea";
+import type { AgentRow } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+
+type SavedAgentRecord = {
+  id: string;
+  created_at: string;
+  agent: AgentRow | null;
+};
 
 export default function SavedAgentsPage() {
-    const [savedAgents, setSavedAgents] = React.useState<SavedAgent[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const supabase = React.useMemo(() => createClient(), []);
-    const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAgents, setSavedAgents] = useState<SavedAgentRecord[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [sendingBulk, setSendingBulk] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
 
-    React.useEffect(() => {
-        const fetchSaved = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push('/login');
-                return;
-            }
+  const loadSavedAgents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-            const {
-                data,
-                error,
-            } = await supabase
-                .from('saved_agents')
-                .select(`
-                    id,
-                    agent:agents (
-                        id,
-                        business_name,
-                        slug,
-                        primary_suburb,
-                        primary_state,
-                        years_experience,
-                        licence_verified,
-                        specialisations,
-                        bio
-                    )
-                `)
-                .order('created_at', { ascending: false });
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-            if (error) {
-                console.error('Error loading saved agents', error);
-            }
-
-            if (data) {
-                const flattened: SavedAgent[] = data
-                    .map((item) =>
-                        item.agent
-                            ? ({
-                                  saved_id: item.id,
-                                  ...(item.agent as unknown as Partial<Agent>),
-                              } as SavedAgent)
-                            : null
-                    )
-                    .filter((a): a is SavedAgent => a !== null);
-
-                setSavedAgents(flattened);
-            }
-            setLoading(false);
-        };
-        fetchSaved();
-    }, [router, supabase]);
-
-    const handleRemove = async (savedId: string) => {
-        const { error } = await supabase.from('saved_agents').delete().eq('id', savedId);
-        if (error) {
-            console.error('Error removing saved agent', error);
-            return;
-        }
-        setSavedAgents((prev) => prev.filter((a) => a.saved_id !== savedId));
-    };
-
-    if (loading) {
-        return <div className="py-20 text-center font-bold text-gray-500">Loading saved agents...</div>;
+    if (userError || !user) {
+      window.location.href = "/login";
+      return;
     }
 
-    return (
-        <div className="space-y-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">
-                        <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center gap-1">
-                            <ArrowLeft className="w-3 h-3" />
-                            Dashboard
-                        </Link>
-                    </div>
-                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        Saved <span className="text-primary">Agents</span>
-                    </h1>
-                    <p className="text-gray-500 font-medium">Your shortlist of verified property experts.</p>
-                </div>
-                <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-gray-200 font-bold text-gray-900 hover:bg-gray-50">
-                        Export List
-                    </Button>
-                    <Button className="bg-primary hover:bg-primary-700 text-white font-black h-12 px-8 rounded-xl shadow-lg">
-                        Send Multi-Enquiry
-                    </Button>
-                </div>
-            </div>
+    const fullName = [toText(user.user_metadata?.first_name), toText(user.user_metadata?.last_name)]
+      .filter(Boolean)
+      .join(" ");
+    setBuyerName(fullName || "BuyerHQ User");
+    setBuyerEmail(user.email ?? "");
+    setBuyerPhone(toText(user.user_metadata?.phone));
 
-            {savedAgents.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {savedAgents.map((agent) => (
-                        <div key={agent.saved_id} className="relative group">
-                            <AgentCard agent={agent} />
-                            <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="w-10 h-10 rounded-full shadow-lg"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleRemove(agent.saved_id)
-                                    }}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="py-24 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-                    <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-gray-400 mx-auto mb-6">
-                        <Heart className="w-10 h-10" />
-                    </div>
-                    <h3 className="text-2xl font-display font-black text-gray-900">No agents saved yet</h3>
-                    <p className="text-gray-500 font-medium mt-2 max-w-sm mx-auto">
-                        Browse the directory and click the heart icon to start building your professional shortlist.
-                    </p>
-                    <Link href="/agents">
-                        <Button className="mt-8 bg-primary text-white font-black h-12 px-8 rounded-xl">
-                            Browse Directory
-                        </Button>
-                    </Link>
-                </div>
-            )}
-        </div>
+    const { data, error: fetchError } = await supabase
+      .from("saved_agents")
+      .select("id, created_at, agent:agents(*)")
+      .eq("buyer_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      setError(fetchError.message);
+      setSavedAgents([]);
+      setLoading(false);
+      return;
+    }
+
+    const records = ((data ?? []) as SavedAgentRecord[]).filter((item) => item.agent !== null);
+    setSavedAgents(records);
+    setSelected(records.map((item) => item.id));
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadSavedAgents();
+  }, [loadSavedAgents]);
+
+  const toggleSelected = (savedId: string) => {
+    setSelected((current) =>
+      current.includes(savedId) ? current.filter((item) => item !== savedId) : [...current, savedId]
     );
+  };
+
+  const removeSaved = async (savedId: string) => {
+    const { error: deleteError } = await supabase.from("saved_agents").delete().eq("id", savedId);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    setSavedAgents((current) => current.filter((item) => item.id !== savedId));
+    setSelected((current) => current.filter((item) => item !== savedId));
+  };
+
+  const exportSelected = () => {
+    const rows = savedAgents.filter((item) => selected.includes(item.id) && item.agent);
+    if (rows.length === 0) {
+      setBulkResult("Select at least one saved agent to export.");
+      return;
+    }
+
+    const header = [
+      "name",
+      "agency",
+      "email",
+      "state",
+      "specializations",
+      "rating",
+      "reviews",
+      "fee_structure",
+    ];
+    const lines = rows.map((row) => {
+      const agent = row.agent!;
+      return [
+        csvValue(agent.name),
+        csvValue(agent.agency_name ?? ""),
+        csvValue(agent.email),
+        csvValue(agent.state ?? ""),
+        csvValue((agent.specializations ?? []).join("; ")),
+        csvValue(agent.avg_rating?.toString() ?? ""),
+        csvValue(agent.review_count?.toString() ?? ""),
+        csvValue(agent.fee_structure ?? ""),
+      ].join(",");
+    });
+
+    const csv = [header.join(","), ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "buyerhq-saved-agents.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+
+    setBulkResult(`Exported ${rows.length} saved agent(s).`);
+  };
+
+  const sendBulkEnquiry = async () => {
+    const targets = savedAgents.filter((item) => selected.includes(item.id) && item.agent);
+    if (targets.length === 0) {
+      setBulkResult("Select at least one saved agent.");
+      return;
+    }
+    if (!buyerName.trim() || !buyerEmail.trim() || !bulkMessage.trim()) {
+      setBulkResult("Name, email, and message are required.");
+      return;
+    }
+
+    setSendingBulk(true);
+    setBulkResult(null);
+
+    const responses = await Promise.all(
+      targets.map(async (item) => {
+        const response = await fetch("/api/enquiries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agent_id: item.agent!.id,
+            buyer_name: buyerName.trim(),
+            buyer_email: buyerEmail.trim(),
+            buyer_phone: buyerPhone.trim() || undefined,
+            message: bulkMessage.trim(),
+          }),
+        });
+        return response.ok;
+      })
+    );
+
+    const successCount = responses.filter(Boolean).length;
+    const failCount = responses.length - successCount;
+    setBulkResult(
+      failCount > 0
+        ? `${successCount} enquiries sent, ${failCount} failed.`
+        : `Successfully sent ${successCount} enquiries.`
+    );
+    setSendingBulk(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (error && savedAgents.length === 0) {
+    return <ErrorState description={error} onRetry={loadSavedAgents} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h1 className="text-heading">Saved agents</h1>
+        <p className="mt-2 text-body-sm text-text-secondary">
+          Manage your shortlist, export your list, and send one enquiry to multiple agents.
+        </p>
+      </section>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={exportSelected}>
+          <Download size={14} />
+          Export selected
+        </Button>
+        <Button onClick={() => setBulkModalOpen(true)} disabled={selected.length === 0}>
+          <MessageSquare size={14} />
+          Send multi-enquiry
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/agents">Browse agents</Link>
+        </Button>
+      </div>
+
+      {savedAgents.length === 0 ? (
+        <EmptyState
+          title="No saved agents yet"
+          description="Shortlist agents from the directory to compare and send multi-enquiries."
+          actionLabel="Browse directory"
+          onAction={() => (window.location.href = "/agents")}
+        />
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {savedAgents.map((item) => (
+            <Card key={item.id} className="space-y-3 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <label className="inline-flex items-center gap-2 text-body-sm text-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(item.id)}
+                    onChange={() => toggleSelected(item.id)}
+                    className="h-4 w-4 rounded border-border bg-surface-2"
+                  />
+                  Select
+                </label>
+                <Button variant="destructive" size="sm" onClick={() => removeSaved(item.id)}>
+                  <Trash2 size={14} />
+                  Remove
+                </Button>
+              </div>
+              {item.agent ? <AgentCard agent={item.agent} compact /> : null}
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {error ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-body-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {bulkResult ? (
+        <p className="rounded-md border border-border-light bg-surface-2 px-3 py-2 text-body-sm text-text-secondary">
+          {bulkResult}
+        </p>
+      ) : null}
+
+      <Modal isOpen={bulkModalOpen} onClose={() => setBulkModalOpen(false)} title="Send multi-enquiry">
+        <div className="space-y-3">
+          <Input label="Your name" value={buyerName} onChange={(event) => setBuyerName(event.target.value)} />
+          <Input
+            label="Email"
+            type="email"
+            value={buyerEmail}
+            onChange={(event) => setBuyerEmail(event.target.value)}
+          />
+          <Input
+            label="Phone (optional)"
+            value={buyerPhone}
+            onChange={(event) => setBuyerPhone(event.target.value)}
+          />
+          <Textarea
+            label="Message"
+            value={bulkMessage}
+            onChange={(event) => setBulkMessage(event.target.value)}
+            placeholder="Share your budget, location goals, and timeline."
+          />
+          <Button loading={sendingBulk} disabled={sendingBulk} fullWidth onClick={sendBulkEnquiry}>
+            Send to {selected.length} selected agent(s)
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
 }
 
-// Minimal Heart icon replacement for the empty state
-function Heart(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-        </svg>
-    );
+function toText(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function csvValue(input: string) {
+  const escaped = input.replaceAll("\"", "\"\"");
+  return `"${escaped}"`;
 }

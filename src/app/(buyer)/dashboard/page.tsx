@@ -1,129 +1,185 @@
 "use client";
 
-import React from 'react';
-import {
-    Heart,
-    MessageSquare,
-    ArrowRight,
-    CheckCircle2,
-    Clock
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard } from "@/components/ui/StatCard";
+import type { AgentRow, EnquiryRow, StateCode } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+
+const stateCodes: StateCode[] = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 
 export default function BuyerDashboardOverview() {
-    const stats = [
-        { label: 'Saved Agents', value: 4, icon: Heart, color: 'text-primary bg-primary/10' },
-        { label: 'Active Enquiries', value: 1, icon: MessageSquare, color: 'text-primary bg-primary/10' },
-        { label: 'Match Quiz Result', value: 'Ready', icon: Heart, color: 'text-primary bg-primary/10' },
-    ];
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [buyerName, setBuyerName] = useState("Buyer");
+  const [preferredState, setPreferredState] = useState("");
+  const [savedCount, setSavedCount] = useState(0);
+  const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
+  const [recommendedAgents, setRecommendedAgents] = useState<AgentRow[]>([]);
 
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const fullName = [toText(user.user_metadata?.first_name), toText(user.user_metadata?.last_name)]
+      .filter(Boolean)
+      .join(" ");
+    setBuyerName(fullName || user.email?.split("@")[0] || "Buyer");
+    setPreferredState(toText(user.user_metadata?.preferred_state).toUpperCase());
+
+    const [savedRes, enquiriesRes] = await Promise.all([
+      supabase.from("saved_agents").select("id", { count: "exact", head: true }).eq("buyer_id", user.id),
+      supabase.from("enquiries").select("*").eq("buyer_email", user.email ?? "").order("created_at", { ascending: false }),
+    ]);
+
+    if (savedRes.error || enquiriesRes.error) {
+      setError(savedRes.error?.message || enquiriesRes.error?.message || "Unable to load buyer dashboard.");
+      setLoading(false);
+      return;
+    }
+
+    setSavedCount(savedRes.count ?? 0);
+    setEnquiries(enquiriesRes.data ?? []);
+
+    let recommendedQuery = supabase
+      .from("agents")
+      .select("*")
+      .eq("is_verified", true)
+      .eq("is_active", true)
+      .order("avg_rating", { ascending: false, nullsFirst: false })
+      .limit(3);
+
+    const preferredState = toText(user.user_metadata?.preferred_state).toUpperCase();
+    if (preferredState && stateCodes.includes(preferredState as StateCode)) {
+      recommendedQuery = recommendedQuery.eq("state", preferredState as StateCode);
+    }
+
+    const { data: agentData, error: agentError } = await recommendedQuery;
+    if (agentError) {
+      setError(agentError.message);
+      setLoading(false);
+      return;
+    }
+
+    setRecommendedAgents(agentData ?? []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  const activeEnquiries = enquiries.filter((item) => item.status !== "closed").length;
+  const respondedEnquiries = enquiries.filter((item) => item.status === "responded").length;
+
+  if (loading) {
     return (
-        <div className="space-y-12">
-            {/* Welcome Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        Hi, <span className="text-primary">Richard</span>
-                    </h1>
-                    <p className="text-stone font-medium">Here&apos;s what&apos;s happening with your property search.</p>
-                </div>
-                <Link href="/get-matched">
-                    <Button className="bg-primary hover:bg-primary/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-gray-900/20">
-                        Find New Matches
-                    </Button>
-                </Link>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {stats.map((stat) => (
-                    <Card key={stat.label} className="border-stone/5 rounded-[2rem] bg-white shadow-soft transition-transform hover:-translate-y-1">
-                        <CardContent className="p-8 flex items-center gap-6">
-                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center", stat.color)}>
-                                <stat.icon className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-mono font-black text-gray-900">{stat.value}</div>
-                                <div className="text-xs font-bold text-stone uppercase tracking-widest mt-1">{stat.label}</div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-
-                {/* Recent Activity / Recommendations */}
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-display font-black text-gray-900 tracking-tight">Recommended for You</h2>
-                    <div className="space-y-4">
-                        {[1, 2].map((i) => (
-                            <Card key={i} className="border-stone/5 rounded-[2rem] bg-white shadow-sm overflow-hidden group">
-                                <CardContent className="p-6 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center font-display font-black text-primary">
-                                            BHQ
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900">Sydney Property Group</h4>
-                                            <p className="text-xs text-stone font-medium">Matches your &apos;Bondi&apos; search criteria</p>
-                                        </div>
-                                    </div>
-                                    <Link href="/agents" className="text-stone group-hover:text-primary transition-colors">
-                                        <ArrowRight className="w-5 h-5" />
-                                    </Link>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                    <Link href="/agents" className="inline-flex items-center text-primary font-bold text-sm hover:underline">
-                        Browse all agents <ArrowRight className="ml-2 w-4 h-4" />
-                    </Link>
-                </div>
-
-                {/* Next Steps / Checklist */}
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-display font-black text-gray-900 tracking-tight">Your Action Plan</h2>
-                    <div className="p-8 rounded-[2.5rem] bg-gray-50 border border-gray-100 space-y-6">
-                        <div className="flex items-start gap-4">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center border-2 border-gray-200 text-white">
-                                <CheckCircle2 className="w-3 h-3" />
-                            </div>
-                            <div>
-                                <div className="font-bold text-sm text-gray-900">Perfect your Match Quiz profile</div>
-                                <p className="text-xs text-gray-500 mt-1">Complete your preferences to get 5/5 matched agents.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-4 opacity-50">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
-                                <Clock className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div>
-                                <div className="font-bold text-sm text-gray-900">Send your first enquiry</div>
-                                <p className="text-xs text-gray-500 mt-1">Connect with an agent to discuss your budget.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-4 opacity-50">
-                            <div className="mt-1 flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
-                                <Clock className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div>
-                                <div className="font-bold text-sm text-gray-900">Verify your buyer status</div>
-                                <p className="text-xs text-gray-500 mt-1">Upload proof of funds to get responses faster.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState description={error} onRetry={loadDashboard} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-heading">Hi, {buyerName}</h1>
+            <p className="mt-2 text-body-sm text-text-secondary">
+              {preferredState ? `Tracking opportunities in ${preferredState}.` : "Track your property search activity."}
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/quiz">Update match quiz</Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Saved agents" value={savedCount} />
+        <StatCard label="Active enquiries" value={activeEnquiries} />
+        <StatCard label="Agent responses" value={respondedEnquiries} />
+        <StatCard label="Total enquiries" value={enquiries.length} />
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-2">
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Recommended agents</h2>
+          {recommendedAgents.length === 0 ? (
+            <EmptyState
+              title="No recommendations yet"
+              description="Complete your profile and quiz preferences to improve recommendations."
+              actionLabel="Complete profile"
+              onAction={() => (window.location.href = "/dashboard/profile")}
+            />
+          ) : (
+            <div className="space-y-2">
+              {recommendedAgents.map((agent) => (
+                <div key={agent.id} className="rounded-md border border-border p-3">
+                  <p className="text-body-sm text-text-primary">
+                    {agent.name} · {agent.agency_name || "Independent advisor"}
+                  </p>
+                  <p className="text-caption text-text-secondary">
+                    {agent.state || "No state"} · Rating {agent.avg_rating?.toFixed(1) ?? "N/A"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button variant="secondary" asChild>
+                      <Link href={`/agents/${agent.id}`}>View profile</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Next steps</h2>
+          <div className="space-y-2 text-body-sm text-text-secondary">
+            <p>1. Keep your buyer profile updated with budget and target suburbs.</p>
+            <p>2. Save at least 3 agents to compare communication and fee structures.</p>
+            <p>3. Send a multi-enquiry from your saved list for faster responses.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" asChild>
+              <Link href="/dashboard/profile">Edit profile</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/dashboard/saved">Open saved agents</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/agents">Browse agents</Link>
+            </Button>
+          </div>
+        </Card>
+      </section>
+    </div>
+  );
 }
 
-// Inline cn to avoid import issues
-function cn(...inputs: string[]) {
-    return inputs.filter(Boolean).join(' ');
+function toText(value: unknown) {
+  return typeof value === "string" ? value : "";
 }

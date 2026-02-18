@@ -1,126 +1,196 @@
 "use client";
 
-import React from 'react';
-import {
-    FileText,
-    ExternalLink,
-    XCircle,
-    AlertCircle,
-    BadgeCheck,
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BadgeCheck, Ban, CircleAlert } from "lucide-react";
+
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { AgentRow } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+
+type ActionState = "approving" | "rejecting" | null;
 
 export default function AdminVerificationsPage() {
-    const applications = [
-        {
-            id: '1',
-            agency: 'Elite Buyers Agency',
-            owner: 'Marcus Aurelius',
-            abn: '12 345 678 910',
-            licence: 'RE-123456-NSW',
-            applied: '2024-02-16',
-            status: 'pending',
-            docs: ['Licence.pdf', 'ABN_Lookup.pdf', 'Insurance.pdf']
-        },
-        {
-            id: '2',
-            agency: 'Harbour City Property',
-            owner: 'Julia Roberts',
-            abn: '98 765 432 109',
-            licence: 'RE-654321-NSW',
-            applied: '2024-02-15',
-            status: 'in_review',
-            docs: ['Licence_Final.pdf', 'Cert_III.png']
-        }
-    ];
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingAgents, setPendingAgents] = useState<AgentRow[]>([]);
+  const [activeAction, setActiveAction] = useState<Record<string, ActionState>>({});
 
-    return (
-        <div className="space-y-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight">
-                        Agency <span className="text-primary">Verifications</span>
-                    </h1>
-                    <p className="text-stone font-medium">Review and approve new property expert applications.</p>
-                </div>
-            </div>
+  const loadPendingAgents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-            <div className="space-y-8">
-                {applications.map((app) => (
-                    <Card key={app.id} className="border-stone/5 rounded-[3rem] bg-white shadow-soft overflow-hidden">
-                        <CardContent className="p-0">
-                            <div className="p-10 grid grid-cols-1 lg:grid-cols-4 gap-12">
+    const { data, error: fetchError } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("is_verified", false)
+      .order("created_at", { ascending: false });
 
-                                {/* Agency Info */}
-                                <div className="lg:col-span-1 space-y-6">
-                                    <div className="w-20 h-20 rounded-3xl bg-gray-900 flex items-center justify-center text-white font-display font-black text-2xl">
-                                        {app.agency.split(' ').map(n => n[0]).join('')}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-2xl font-display font-black text-gray-900 tracking-tight">{app.agency}</h3>
-                                        <p className="text-stone font-medium text-sm">{app.owner}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge className={cn(
-                                            "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border",
-                                            app.status === 'pending' ? "bg-primary/10 text-primary border-primary/20" : "bg-primary/10 text-primary border-primary/20"
-                                        )}>
-                                            {app.status.replace('_', ' ')}
-                                        </Badge>
-                                    </div>
-                                </div>
+    if (fetchError) {
+      setError(fetchError.message);
+      setPendingAgents([]);
+      setLoading(false);
+      return;
+    }
 
-                                {/* Details Table */}
-                                <div className="lg:col-span-2 grid grid-cols-2 gap-8 items-center bg-warm/20 rounded-[2rem] p-8 border border-stone/5">
-                                    <div className="space-y-1">
-                                        <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">ABN Number</div>
-                                        <div className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                                            {app.abn}
-                                            <ExternalLink className="w-3.5 h-3.5 text-primary" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Real Estate Licence</div>
-                                        <div className="text-sm font-bold text-gray-900 tracking-tight">{app.licence}</div>
-                                    </div>
-                                    <div className="space-y-4 col-span-2 pt-4 border-t border-stone/5">
-                                        <div className="text-[10px] font-mono font-bold text-stone/40 uppercase tracking-widest">Submitted Documents</div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {app.docs.map(doc => (
-                                                <div key={doc} className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-stone/10 text-xs font-bold text-gray-900 hover:border-primary transition-all cursor-pointer">
-                                                    <FileText className="w-3.5 h-3.5 text-stone" />
-                                                    {doc}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+    setPendingAgents(data ?? []);
+    setLoading(false);
+  }, [supabase]);
 
-                                {/* Verification Actions */}
-                                <div className="lg:col-span-1 flex flex-col justify-center gap-4">
-                                    <Button className="w-full h-14 bg-verified hover:bg-verified/90 text-white font-black rounded-2xl shadow-xl shadow-verified/20">
-                                        <BadgeCheck className="w-5 h-5 mr-2" />
-                                        Approve Expert
-                                    </Button>
-                                    <Button variant="outline" className="w-full h-14 border-primary/20 text-primary font-black rounded-2xl hover:bg-primary/5 transition-all">
-                                        <XCircle className="w-5 h-5 mr-2" />
-                                        Reject / Flag
-                                    </Button>
-                                    <div className="pt-4 flex items-center justify-center gap-3 text-stone font-bold text-[10px] uppercase tracking-widest">
-                                        <AlertCircle className="w-3.5 h-3.5" />
-                                        Requires Manual Audit
-                                    </div>
-                                </div>
+  useEffect(() => {
+    void loadPendingAgents();
+  }, [loadPendingAgents]);
 
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+  const updateVerification = async (agent: AgentRow, action: "approve" | "reject") => {
+    setActiveAction((current) => ({
+      ...current,
+      [agent.id]: action === "approve" ? "approving" : "rejecting",
+    }));
+
+    const updatePayload =
+      action === "approve"
+        ? {
+            is_verified: true,
+            is_active: true,
+            licence_verified_at: agent.licence_verified_at ?? new Date().toISOString(),
+          }
+        : {
+            is_verified: false,
+            is_active: false,
+          };
+
+    const { error: updateError } = await supabase.from("agents").update(updatePayload).eq("id", agent.id);
+
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setPendingAgents((current) => current.filter((item) => item.id !== agent.id));
+    }
+
+    setActiveAction((current) => ({ ...current, [agent.id]: null }));
+  };
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h1 className="text-heading">Agency verifications</h1>
+        <p className="mt-2 text-body-sm text-text-secondary">
+          Review pending agency applications, verify licence data, and approve directory visibility.
+        </p>
+      </section>
+
+      {error ? <ErrorState description={error} onRetry={loadPendingAgents} /> : null}
+
+      {loading ? (
+        <div className="grid gap-3">
+          {Array.from({ length: 3 }, (_, index) => (
+            <Card key={index} className="p-4">
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="mt-2 h-4 w-1/2" />
+              <Skeleton className="mt-4 h-10 w-full" />
+            </Card>
+          ))}
         </div>
-    );
-}
+      ) : null}
 
+      {!loading && pendingAgents.length === 0 ? (
+        <EmptyState
+          title="No pending applications"
+          description="All current applications are already reviewed."
+          actionLabel="Refresh"
+          onAction={loadPendingAgents}
+        />
+      ) : null}
+
+      {!loading && pendingAgents.length > 0 ? (
+        <div className="space-y-3">
+          {pendingAgents.map((agent) => {
+            const action = activeAction[agent.id];
+            return (
+              <Card key={agent.id} className="p-4">
+                <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-subheading">{agent.name}</h2>
+                      <Badge variant="state">{agent.state ?? "No state"}</Badge>
+                      {agent.is_active ? (
+                        <Badge variant="specialization">Active</Badge>
+                      ) : (
+                        <Badge variant="category">Inactive</Badge>
+                      )}
+                    </div>
+                    <p className="text-body-sm text-text-secondary">
+                      {agent.agency_name ?? "Independent advisor"} · {agent.email}
+                    </p>
+
+                    <div className="grid gap-2 text-caption text-text-secondary sm:grid-cols-2">
+                      <p>
+                        <span className="text-text-primary">Licence:</span>{" "}
+                        {agent.licence_number ?? "Not provided"}
+                      </p>
+                      <p>
+                        <span className="text-text-primary">Experience:</span>{" "}
+                        {agent.years_experience ?? 0} years
+                      </p>
+                      <p>
+                        <span className="text-text-primary">Applied:</span>{" "}
+                        {new Date(agent.created_at).toLocaleDateString("en-AU")}
+                      </p>
+                      <p>
+                        <span className="text-text-primary">Website:</span>{" "}
+                        {agent.website_url ? (
+                          <a
+                            href={agent.website_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline hover:text-text-primary"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "Not provided"
+                        )}
+                      </p>
+                    </div>
+
+                    {agent.bio ? <p className="text-body-sm text-text-secondary">{agent.bio}</p> : null}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 lg:flex-col">
+                    <Button
+                      variant="primary"
+                      loading={action === "approving"}
+                      onClick={() => updateVerification(agent, "approve")}
+                      disabled={Boolean(action)}
+                    >
+                      <BadgeCheck size={16} />
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      loading={action === "rejecting"}
+                      onClick={() => updateVerification(agent, "reject")}
+                      disabled={Boolean(action)}
+                    >
+                      <Ban size={16} />
+                      Reject
+                    </Button>
+                    <p className="inline-flex items-center gap-1 text-caption text-text-muted">
+                      <CircleAlert size={12} />
+                      Manual review required
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
