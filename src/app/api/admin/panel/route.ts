@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizeAgents } from "@/lib/agent-compat";
 import type { Database, Json } from "@/lib/database.types";
@@ -16,6 +17,8 @@ export const dynamic = "force-dynamic";
 const adminAllowList = new Set(["richardgoodwin@live.com", "cam.dirtymack@gmail.com"]);
 const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
+type DbTables = Database["public"]["Tables"];
+type TableName = keyof DbTables;
 
 async function getPrivilegedClient() {
   const serverClient = createServerClient();
@@ -58,6 +61,100 @@ function createPublicClient() {
   });
 }
 
+function tableLabel(tableName: TableName) {
+  return String(tableName);
+}
+
+function summarizeWarning(message: string) {
+  if (isPolicyRecursionError(message)) return policyFixHint;
+  return message;
+}
+
+async function fetchTableRows<K extends TableName>(
+  client: SupabaseClient<Database>,
+  tableName: K,
+  warnings: string[],
+  opts?: {
+    orderBy?: string;
+    fallbackClient?: SupabaseClient<Database> | null;
+  }
+): Promise<DbTables[K]["Row"][]> {
+  const orderBy = opts?.orderBy ?? "created_at";
+  let query = client.from(tableName).select("*");
+  if (orderBy) {
+    query = query.order(orderBy as never, { ascending: false });
+  }
+
+  let { data, error } = await query;
+
+  if (error && orderBy && isMissingColumnError(error.message, orderBy, tableLabel(tableName))) {
+    ({ data, error } = await client.from(tableName).select("*"));
+  }
+
+  if (!error) {
+    return ((data ?? []) as unknown) as DbTables[K]["Row"][];
+  }
+
+  if (isPolicyRecursionError(error.message) && opts?.fallbackClient) {
+    let fallbackQuery = opts.fallbackClient.from(tableName).select("*");
+    if (orderBy) {
+      fallbackQuery = fallbackQuery.order(orderBy as never, { ascending: false });
+    }
+    let { data: fallbackData, error: fallbackError } = await fallbackQuery;
+
+    if (fallbackError && orderBy && isMissingColumnError(fallbackError.message, orderBy, tableLabel(tableName))) {
+      ({ data: fallbackData, error: fallbackError } = await opts.fallbackClient.from(tableName).select("*"));
+    }
+
+    if (!fallbackError) {
+      warnings.push(`Using public fallback for ${tableLabel(tableName)} due policy recursion.`);
+      return ((fallbackData ?? []) as unknown) as DbTables[K]["Row"][];
+    }
+  }
+
+  if (isMissingRelationError(error.message, tableLabel(tableName))) {
+    warnings.push(`Missing table ${tableLabel(tableName)}. Using empty data.`);
+    return [];
+  }
+
+  warnings.push(`${tableLabel(tableName)}: ${summarizeWarning(error.message)}`);
+  return [];
+}
+
+async function fetchAdminAccountRow(
+  client: SupabaseClient<Database>,
+  user: { id: string; email?: string | null },
+  warnings: string[]
+) {
+  let { data, error } = await client.from("admin_accounts").select("*").eq("id", user.id).maybeSingle();
+
+  if (!error) {
+    return data;
+  }
+
+  if (
+    isMissingRelationError(error.message, "admin_accounts") ||
+    isMissingColumnError(error.message, "preferences", "admin_accounts") ||
+    isPolicyRecursionError(error.message)
+  ) {
+    warnings.push(`admin_accounts: ${summarizeWarning(error.message)}`);
+    return {
+      id: user.id,
+      email: user.email ?? "",
+      created_at: "",
+      preferences: {},
+    };
+  }
+
+  warnings.push(`admin_accounts: ${error.message}`);
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    created_at: "",
+    preferences: {},
+  };
+}
+
 export async function GET() {
   const privileged = await getPrivilegedClient();
   if (privileged.error || !privileged.client) {
@@ -65,88 +162,31 @@ export async function GET() {
   }
 
   const client = privileged.client;
-  const [agentsRes, enquiriesRes, reviewsRes, postsRes, contactsRes, adminRes] = await Promise.all([
-    client.from("agents").select("*").order("created_at", { ascending: false }),
-    client.from("enquiries").select("*").order("created_at", { ascending: false }),
-    client.from("reviews").select("*").order("created_at", { ascending: false }),
-    client.from("blog_posts").select("*").order("created_at", { ascending: false }),
-    client.from("contact_submissions").select("*").order("created_at", { ascending: false }),
-    client.from("admin_accounts").select("*").eq("id", privileged.user.id).maybeSingle(),
+  const publicClient = createPublicClient();
+  const warnings: string[] = [];
+
+  const [agents, enquiries, reviews, posts, contacts, adminAccount] = await Promise.all([
+    fetchTableRows(client, "agents", warnings, { fallbackClient: publicClient }),
+    fetchTableRows(client, "enquiries", warnings, { fallbackClient: publicClient }),
+    fetchTableRows(client, "reviews", warnings, { fallbackClient: publicClient }),
+    fetchTableRows(client, "blog_posts", warnings, { fallbackClient: publicClient }),
+    fetchTableRows(client, "contact_submissions", warnings, { fallbackClient: publicClient }),
+    fetchAdminAccountRow(client, privileged.user, warnings),
   ]);
 
-  const firstError =
-    agentsRes.error ||
-    enquiriesRes.error ||
-    reviewsRes.error ||
-    postsRes.error ||
-    contactsRes.error ||
-    adminRes.error;
-
-  if (firstError) {
-    if (isPolicyRecursionError(firstError.message)) {
-      const publicClient = createPublicClient();
-      let publicAgents: { data: Database["public"]["Tables"]["agents"]["Row"][] | null } = { data: [] };
-      let publicReviews: { data: Database["public"]["Tables"]["reviews"]["Row"][] | null } = { data: [] };
-      let publicPosts: { data: Database["public"]["Tables"]["blog_posts"]["Row"][] | null } = { data: [] };
-      if (publicClient) {
-        const [agentsFallbackRes, reviewsFallbackRes, postsFallbackRes] = await Promise.all([
-          publicClient.from("agents").select("*").order("created_at", { ascending: false }),
-          publicClient.from("reviews").select("*").order("created_at", { ascending: false }),
-          publicClient.from("blog_posts").select("*").order("created_at", { ascending: false }),
-        ]);
-        publicAgents = { data: agentsFallbackRes.data };
-        publicReviews = { data: reviewsFallbackRes.data };
-        publicPosts = { data: postsFallbackRes.data };
-      }
-
-      return NextResponse.json({
-        agents: normalizeAgents((publicAgents.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-        enquiries: [],
-        reviews: publicReviews.data ?? [],
-        posts: publicPosts.data ?? [],
-        contacts: [],
-        adminAccount: {
-          id: privileged.user.id,
-          email: privileged.user.email ?? "",
-          created_at: "",
-          preferences: {},
-        },
-        schemaFallback: true,
-        policyFallback: true,
-        warning: policyFixHint,
-      });
-    }
-
-    const fallbackAdmin =
-      adminRes.error &&
-      (isMissingColumnError(adminRes.error.message, "preferences", "admin_accounts") ||
-        isMissingRelationError(adminRes.error.message, "admin_accounts"))
-        ? { id: privileged.user.id, email: privileged.user.email ?? "", created_at: "", preferences: {} }
-        : null;
-
-    if (!fallbackAdmin) {
-      return NextResponse.json({ error: firstError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-      enquiries: enquiriesRes.data ?? [],
-      reviews: reviewsRes.data ?? [],
-      posts: postsRes.data ?? [],
-      contacts: contactsRes.data ?? [],
-      adminAccount: fallbackAdmin,
-      schemaFallback: true,
-    });
-  }
+  const warningMessage = warnings.length > 0 ? Array.from(new Set(warnings)).join(" | ") : undefined;
+  const policyFallback = warnings.some((item) => item.includes("policy recursion"));
 
   return NextResponse.json({
-    agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-    enquiries: enquiriesRes.data ?? [],
-    reviews: reviewsRes.data ?? [],
-    posts: postsRes.data ?? [],
-    contacts: contactsRes.data ?? [],
-    adminAccount: adminRes.data ?? null,
-    schemaFallback: false,
+    agents: normalizeAgents(agents as Database["public"]["Tables"]["agents"]["Row"][]),
+    enquiries,
+    reviews,
+    posts,
+    contacts,
+    adminAccount,
+    schemaFallback: warnings.length > 0,
+    policyFallback,
+    warning: warningMessage,
   });
 }
 
