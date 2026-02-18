@@ -69,7 +69,12 @@ export async function GET(request: Request) {
           warning: policyFixHint,
         });
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({
+        agents: [],
+        total: 0,
+        page: currentPage,
+        warning: error.message || "Unable to fetch agents. Showing 0 results.",
+      });
     }
 
     const searchTerm = search?.trim().toLowerCase() ?? "";
@@ -121,6 +126,11 @@ export async function GET(request: Request) {
       page: currentPage,
     });
   } catch {
-    return NextResponse.json({ error: "Unable to fetch agents" }, { status: 500 });
+    return NextResponse.json({
+      agents: [],
+      total: 0,
+      page: 1,
+      warning: "Unable to fetch agents. Showing 0 results.",
+    });
   }
 }

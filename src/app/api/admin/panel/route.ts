@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 
 import { normalizeAgents } from "@/lib/agent-compat";
 import type { Database, Json } from "@/lib/database.types";
-import { isMissingColumnError, isMissingRelationError, isPolicyRecursionError } from "@/lib/db-errors";
+import {
+  isMissingColumnError,
+  isMissingRelationError,
+  isOnConflictConstraintError,
+  isPolicyRecursionError,
+} from "@/lib/db-errors";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -325,6 +330,36 @@ export async function POST(request: Request) {
           return next as Database["public"]["Tables"]["agents"]["Insert"];
         });
         ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
+      }
+
+      if (error && isOnConflictConstraintError(error.message)) {
+        for (const row of effectiveRows) {
+          const { data: existing, error: existingError } = await client
+            .from("agents")
+            .select("id")
+            .eq("email", row.email)
+            .limit(1);
+          if (existingError) {
+            error = existingError;
+            break;
+          }
+
+          const existingId = existing?.[0]?.id;
+          if (existingId) {
+            const { error: updateError } = await client.from("agents").update(row).eq("id", existingId);
+            if (updateError) {
+              error = updateError;
+              break;
+            }
+          } else {
+            const { error: insertError } = await client.from("agents").insert(row);
+            if (insertError) {
+              error = insertError;
+              break;
+            }
+          }
+          error = null;
+        }
       }
       if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);

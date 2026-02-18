@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
 import type { Database } from "@/lib/database.types";
-import { isMissingColumnError } from "@/lib/db-errors";
+import { isMissingColumnError, isOnConflictConstraintError } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Account", "Personal", "Agency", "Profile", "Review"];
@@ -146,49 +146,117 @@ export default function ListAgencyContent() {
       }
 
       const baseAgentPayload: AgentInsert = {
-          name: `${firstName} ${lastName}`.trim(),
-          email: normalizedEmail,
-          phone: phone || null,
-          agency_name: agencyName,
-          bio,
-            state: toStateCode(state),
-          suburbs: targetSuburbs
-            .split(",")
-            .map((suburb) => suburb.trim())
-            .filter(Boolean),
-          specializations,
-          fee_structure: feeStructure,
-          licence_number: licenceNumber,
-          website_url: website || null,
-          is_verified: false,
-          is_active: true,
-        };
+        name: `${firstName} ${lastName}`.trim(),
+        email: normalizedEmail,
+        phone: phone || null,
+        agency_name: agencyName,
+        bio,
+        state: toStateCode(state),
+        suburbs: targetSuburbs
+          .split(",")
+          .map((suburb) => suburb.trim())
+          .filter(Boolean),
+        specializations,
+        fee_structure: feeStructure,
+        licence_number: licenceNumber,
+        website_url: website || null,
+        is_verified: false,
+        is_active: true,
+      };
 
-      const upsertAgent = async (payload: AgentInsert) =>
-        supabase.from("agents").upsert(payload, { onConflict: "email" }).select("id").single();
+      const withoutActive: AgentInsert = { ...baseAgentPayload };
+      delete withoutActive.is_active;
+      const minimalPayload: AgentInsert = { ...withoutActive };
+      delete minimalPayload.is_verified;
 
-      let { data: insertedAgent, error: agentInsertError } = await upsertAgent(baseAgentPayload);
+      const payloadVariants: AgentInsert[] = [baseAgentPayload, withoutActive, minimalPayload];
 
-      if (agentInsertError && isMissingColumnError(agentInsertError.message, "is_active", "agents")) {
-        const withoutActive: AgentInsert = { ...baseAgentPayload };
-        delete withoutActive.is_active;
-        ({ data: insertedAgent, error: agentInsertError } = await upsertAgent(withoutActive));
+      const upsertAgent = async (payload: AgentInsert) => {
+        const { data, error } = await supabase
+          .from("agents")
+          .upsert(payload, { onConflict: "email" })
+          .select("id")
+          .single();
+        return { id: data?.id ?? null, errorMessage: error?.message ?? null };
+      };
+
+      const findExistingAgentId = async () => {
+        const { data, error } = await supabase.from("agents").select("id").eq("email", normalizedEmail).limit(1);
+        return { id: data?.[0]?.id ?? null, errorMessage: error?.message ?? null };
+      };
+
+      const persistAgentWithoutConflict = async (payload: AgentInsert) => {
+        const existing = await findExistingAgentId();
+        if (existing.errorMessage) {
+          return { id: null as string | null, errorMessage: existing.errorMessage };
+        }
+
+        if (existing.id) {
+          const { data, error } = await supabase
+            .from("agents")
+            .update(payload)
+            .eq("id", existing.id)
+            .select("id")
+            .single();
+          return { id: data?.id ?? null, errorMessage: error?.message ?? null };
+        }
+
+        const { data, error } = await supabase.from("agents").insert(payload).select("id").single();
+        return { id: data?.id ?? null, errorMessage: error?.message ?? null };
+      };
+
+      let insertedAgentId: string | null = null;
+      let agentInsertErrorMessage: string | null = null;
+
+      for (const variant of payloadVariants) {
+        const upsertResult = await upsertAgent(variant);
+        if (upsertResult.id) {
+          insertedAgentId = upsertResult.id;
+          agentInsertErrorMessage = null;
+          break;
+        }
+
+        if (upsertResult.errorMessage && isOnConflictConstraintError(upsertResult.errorMessage)) {
+          for (const fallbackVariant of payloadVariants) {
+            const fallbackResult = await persistAgentWithoutConflict(fallbackVariant);
+            if (fallbackResult.id) {
+              insertedAgentId = fallbackResult.id;
+              agentInsertErrorMessage = null;
+              break;
+            }
+
+            agentInsertErrorMessage = fallbackResult.errorMessage ?? "Unable to save agent profile.";
+
+            if (
+              !isMissingColumnError(agentInsertErrorMessage, "is_active", "agents") &&
+              !isMissingColumnError(agentInsertErrorMessage, "is_verified", "agents")
+            ) {
+              break;
+            }
+          }
+          break;
+        }
+
+        agentInsertErrorMessage = upsertResult.errorMessage ?? "Unable to save agent profile.";
+
+        if (
+          !isMissingColumnError(agentInsertErrorMessage, "is_active", "agents") &&
+          !isMissingColumnError(agentInsertErrorMessage, "is_verified", "agents")
+        ) {
+          break;
+        }
       }
-      if (agentInsertError && isMissingColumnError(agentInsertError.message, "is_verified", "agents")) {
-        const minimal: AgentInsert = { ...baseAgentPayload };
-        delete minimal.is_verified;
-        delete minimal.is_active;
-        ({ data: insertedAgent, error: agentInsertError } = await upsertAgent(minimal));
-      }
 
-      if (agentInsertError) throw new Error(agentInsertError.message);
+      if (!insertedAgentId) {
+        throw new Error(agentInsertErrorMessage ?? "Unable to submit agency profile.");
+      }
 
       let profileLinked = false;
-      if (resolvedUserId && insertedAgent?.id) {
+      if (resolvedUserId && insertedAgentId) {
         if (hasSession) {
           const { error: profileError } = await supabase.from("agent_profiles").upsert({
             id: resolvedUserId,
-            agent_id: insertedAgent.id,
+            agent_id: insertedAgentId,
           });
           profileLinked = !profileError;
         }

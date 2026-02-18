@@ -23,3 +23,11 @@ export function isPolicyRecursionError(message: string) {
   const lower = message.toLowerCase();
   return lower.includes("infinite recursion detected in policy");
 }
+
+export function isOnConflictConstraintError(message: string) {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("no unique or exclusion constraint matching the on conflict specification") ||
+    lower.includes("42p10")
+  );
+}
