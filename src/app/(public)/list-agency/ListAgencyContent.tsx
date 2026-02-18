@@ -10,6 +10,8 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
+import type { Database } from "@/lib/database.types";
+import { isMissingColumnError } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/client";
 
 const steps = ["Account", "Personal", "Agency", "Profile", "Review"];
@@ -23,6 +25,7 @@ const specializationOptions = [
   "Negotiation",
 ];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
 
 export default function ListAgencyContent() {
   const supabase = useMemo(() => createClient(), []);
@@ -142,10 +145,7 @@ export default function ListAgencyContent() {
         }
       }
 
-      const { data: insertedAgent, error: agentInsertError } = await supabase
-        .from("agents")
-        .upsert(
-          {
+      const baseAgentPayload: AgentInsert = {
           name: `${firstName} ${lastName}`.trim(),
           email: normalizedEmail,
           phone: phone || null,
@@ -162,11 +162,24 @@ export default function ListAgencyContent() {
           website_url: website || null,
           is_verified: false,
           is_active: true,
-          },
-          { onConflict: "email" }
-        )
-        .select("id")
-        .single();
+        };
+
+      const upsertAgent = async (payload: AgentInsert) =>
+        supabase.from("agents").upsert(payload, { onConflict: "email" }).select("id").single();
+
+      let { data: insertedAgent, error: agentInsertError } = await upsertAgent(baseAgentPayload);
+
+      if (agentInsertError && isMissingColumnError(agentInsertError.message, "is_active", "agents")) {
+        const withoutActive: AgentInsert = { ...baseAgentPayload };
+        delete withoutActive.is_active;
+        ({ data: insertedAgent, error: agentInsertError } = await upsertAgent(withoutActive));
+      }
+      if (agentInsertError && isMissingColumnError(agentInsertError.message, "is_verified", "agents")) {
+        const minimal: AgentInsert = { ...baseAgentPayload };
+        delete minimal.is_verified;
+        delete minimal.is_active;
+        ({ data: insertedAgent, error: agentInsertError } = await upsertAgent(minimal));
+      }
 
       if (agentInsertError) throw new Error(agentInsertError.message);
 
@@ -312,7 +325,7 @@ export default function ListAgencyContent() {
               </div>
             </div>
             <Input
-              label="Target Suburbs (comma separated)"
+              label="Target Suburbs/Postcodes (comma separated)"
               value={targetSuburbs}
               onChange={(event) => setTargetSuburbs(event.target.value)}
             />

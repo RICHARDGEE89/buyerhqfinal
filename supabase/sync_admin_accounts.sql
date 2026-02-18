@@ -50,6 +50,17 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- Add RLS policies if they don't exist
+CREATE OR REPLACE FUNCTION public.is_admin_email()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT lower(coalesce(auth.jwt() ->> 'email', '')) IN (
+    'richardgoodwin@live.com',
+    'cam.dirtymack@gmail.com'
+  );
+$$;
+
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Users can view own data') THEN
@@ -61,9 +72,7 @@ BEGIN
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Admins can view all users') THEN
-    CREATE POLICY "Admins can view all users" ON public.users FOR SELECT USING (
-      EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
-    );
+    CREATE POLICY "Admins can view all users" ON public.users FOR SELECT USING (public.is_admin_email());
   END IF;
 END $$;
 

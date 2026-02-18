@@ -20,6 +20,7 @@ type ActionValue = "verify" | "active" | "delete" | null;
 export default function AgentsManagementContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
@@ -32,6 +33,7 @@ export default function AgentsManagementContent() {
     try {
       const payload = await fetchAdminPanelData();
       setAgents(payload.agents);
+      setWarning(payload.warning ?? null);
       setLoading(false);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Unable to load agents.");
@@ -120,6 +122,11 @@ export default function AgentsManagementContent() {
         <p className="mt-2 text-body-sm text-text-secondary">
           Manage directory eligibility, verification state, and account activity for all agents.
         </p>
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

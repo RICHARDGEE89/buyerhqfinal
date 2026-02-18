@@ -169,6 +169,25 @@ as $$
   );
 $$;
 
+-- Compatibility for legacy public.users setups:
+-- avoid recursive policy patterns that query public.users from itself.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public'
+      and table_name = 'users'
+  ) then
+    execute 'drop policy if exists "Admins can view all users" on public.users';
+    execute '
+      create policy "Admins can view all users"
+      on public.users for select
+      using (public.is_admin_email())
+    ';
+  end if;
+end $$;
+
 alter table public.agents enable row level security;
 alter table public.reviews enable row level security;
 alter table public.enquiries enable row level security;

@@ -37,9 +37,9 @@ export function AgentCard({
 
   const suburbsLabel = useMemo(() => {
     const suburbs = agent.suburbs ?? [];
-    if (suburbs.length === 0) return "Suburbs not specified";
-    if (suburbs.length <= 2) return suburbs.join(", ");
-    return `${suburbs.slice(0, 2).join(", ")} +${suburbs.length - 2} more`;
+    if (suburbs.length === 0) return "Australia-wide coverage";
+    if (suburbs.length <= 4) return suburbs.join(", ");
+    return `${suburbs.slice(0, 4).join(", ")} +${suburbs.length - 4} more`;
   }, [agent.suburbs]);
 
   return (
@@ -60,7 +60,7 @@ export function AgentCard({
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
               {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
-              <Badge variant="state">{suburbsLabel}</Badge>
+              <Badge variant="state">Suburbs: {suburbsLabel}</Badge>
             </div>
             <div className="flex flex-wrap gap-2">
               {(agent.specializations ?? []).slice(0, compact ? 2 : 3).map((specialization) => (

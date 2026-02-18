@@ -29,7 +29,7 @@ export function ProtectedRoute({
       const allowed = ["richardgoodwin@live.com", "cam.dirtymack@gmail.com"];
       const email = user.email?.toLowerCase() ?? "";
       if (!allowed.includes(email)) {
-        router.replace("/agent-portal");
+        router.replace("/dashboard");
       }
     }
   }, [loading, redirectTo, requireAdmin, router, user]);

@@ -1,22 +1,16 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+import { normalizeAgents } from "@/lib/agent-compat";
 import type { Database, Json } from "@/lib/database.types";
+import { isMissingColumnError, isMissingRelationError, isPolicyRecursionError } from "@/lib/db-errors";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 const adminAllowList = new Set(["richardgoodwin@live.com", "cam.dirtymack@gmail.com"]);
-
-function isMissingColumnError(message: string, column: string) {
-  const lower = message.toLowerCase();
-  return lower.includes("column") && lower.includes(column.toLowerCase()) && lower.includes("does not exist");
-}
-
-function isMissingRelationError(message: string, relation: string) {
-  const lower = message.toLowerCase();
-  return lower.includes("relation") && lower.includes(relation.toLowerCase()) && lower.includes("does not exist");
-}
+const policyFixHint =
+  "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
 
 async function getPrivilegedClient() {
   const serverClient = createServerClient();
@@ -50,6 +44,15 @@ async function getPrivilegedClient() {
   return { error: null, status: 200 as const, client: serverClient, user };
 }
 
+function createPublicClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return null;
+  return createSupabaseClient<Database>(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export async function GET() {
   const privileged = await getPrivilegedClient();
   if (privileged.error || !privileged.client) {
@@ -75,9 +78,43 @@ export async function GET() {
     adminRes.error;
 
   if (firstError) {
+    if (isPolicyRecursionError(firstError.message)) {
+      const publicClient = createPublicClient();
+      let publicAgents: { data: Database["public"]["Tables"]["agents"]["Row"][] | null } = { data: [] };
+      let publicReviews: { data: Database["public"]["Tables"]["reviews"]["Row"][] | null } = { data: [] };
+      let publicPosts: { data: Database["public"]["Tables"]["blog_posts"]["Row"][] | null } = { data: [] };
+      if (publicClient) {
+        const [agentsFallbackRes, reviewsFallbackRes, postsFallbackRes] = await Promise.all([
+          publicClient.from("agents").select("*").order("created_at", { ascending: false }),
+          publicClient.from("reviews").select("*").order("created_at", { ascending: false }),
+          publicClient.from("blog_posts").select("*").order("created_at", { ascending: false }),
+        ]);
+        publicAgents = { data: agentsFallbackRes.data };
+        publicReviews = { data: reviewsFallbackRes.data };
+        publicPosts = { data: postsFallbackRes.data };
+      }
+
+      return NextResponse.json({
+        agents: normalizeAgents((publicAgents.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
+        enquiries: [],
+        reviews: publicReviews.data ?? [],
+        posts: publicPosts.data ?? [],
+        contacts: [],
+        adminAccount: {
+          id: privileged.user.id,
+          email: privileged.user.email ?? "",
+          created_at: "",
+          preferences: {},
+        },
+        schemaFallback: true,
+        policyFallback: true,
+        warning: policyFixHint,
+      });
+    }
+
     const fallbackAdmin =
       adminRes.error &&
-      (isMissingColumnError(adminRes.error.message, "preferences") ||
+      (isMissingColumnError(adminRes.error.message, "preferences", "admin_accounts") ||
         isMissingRelationError(adminRes.error.message, "admin_accounts"))
         ? { id: privileged.user.id, email: privileged.user.email ?? "", created_at: "", preferences: {} }
         : null;
@@ -87,7 +124,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      agents: agentsRes.data ?? [],
+      agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
       enquiries: enquiriesRes.data ?? [],
       reviews: reviewsRes.data ?? [],
       posts: postsRes.data ?? [],
@@ -98,7 +135,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    agents: agentsRes.data ?? [],
+    agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
     enquiries: enquiriesRes.data ?? [],
     reviews: reviewsRes.data ?? [],
     posts: postsRes.data ?? [],
@@ -148,7 +185,27 @@ export async function POST(request: Request) {
         Object.entries(payload.patch ?? {}).filter(([key]) => allowedFields.has(key))
       );
       if (!payload.id || Object.keys(patch).length === 0) return fail("Invalid agent update payload.");
-      const { error } = await client.from("agents").update(patch).eq("id", payload.id);
+
+      const effectivePatch = { ...patch };
+      let { error } = await client.from("agents").update(effectivePatch).eq("id", payload.id);
+
+      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
+        delete effectivePatch.is_active;
+        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
+      }
+      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
+        delete effectivePatch.is_verified;
+        delete effectivePatch.licence_verified_at;
+        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
+      }
+
+      if (Object.keys(effectivePatch).length === 0) {
+        return NextResponse.json({ success: true, schemaFallback: true });
+      }
+
+      if (error && isPolicyRecursionError(error.message)) {
+        return fail(policyFixHint, 500);
+      }
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -156,6 +213,7 @@ export async function POST(request: Request) {
     case "delete_agent": {
       if (!payload.id) return fail("Missing agent id.");
       const { error } = await client.from("agents").delete().eq("id", payload.id);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -163,6 +221,7 @@ export async function POST(request: Request) {
     case "approve_review": {
       if (!payload.id) return fail("Missing review id.");
       const { error } = await client.from("reviews").update({ is_approved: true }).eq("id", payload.id);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -170,6 +229,7 @@ export async function POST(request: Request) {
     case "reject_review": {
       if (!payload.id) return fail("Missing review id.");
       const { error } = await client.from("reviews").delete().eq("id", payload.id);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -180,6 +240,7 @@ export async function POST(request: Request) {
         .from("blog_posts")
         .update({ is_published: Boolean(payload.value) })
         .eq("id", payload.id);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -187,6 +248,7 @@ export async function POST(request: Request) {
     case "delete_post": {
       if (!payload.id) return fail("Missing post id.");
       const { error } = await client.from("blog_posts").delete().eq("id", payload.id);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -196,6 +258,7 @@ export async function POST(request: Request) {
         .from("contact_submissions")
         .update({ is_resolved: true })
         .eq("is_resolved", false);
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -207,6 +270,7 @@ export async function POST(request: Request) {
         .update({ status: "closed" })
         .eq("buyer_email", payload.buyer_email)
         .neq("status", "closed");
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
       return NextResponse.json({ success: true });
     }
@@ -225,7 +289,7 @@ export async function POST(request: Request) {
       const { error } = await client.from("admin_accounts").upsert(withPreferences);
       if (!error) return NextResponse.json({ success: true });
 
-      if (isMissingColumnError(error.message, "preferences")) {
+      if (isMissingColumnError(error.message, "preferences", "admin_accounts")) {
         const fallback = await client.from("admin_accounts").upsert(basePayload);
         if (!fallback.error) return NextResponse.json({ success: true, schemaFallback: true });
       }
@@ -233,6 +297,7 @@ export async function POST(request: Request) {
       if (isMissingRelationError(error.message, "admin_accounts")) {
         return NextResponse.json({ success: true, schemaFallback: true });
       }
+      if (isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
 
       return fail(error.message, 500);
     }
@@ -241,9 +306,29 @@ export async function POST(request: Request) {
       if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
         return fail("No rows provided for bulk upload.");
       }
-      const { error } = await client.from("agents").upsert(payload.rows, { onConflict: "email" });
+
+      let effectiveRows = payload.rows.map((row) => ({ ...row }));
+      let { error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
+      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
+        effectiveRows = effectiveRows.map((row) => {
+          const next = { ...row } as Record<string, unknown>;
+          delete next.is_active;
+          return next as Database["public"]["Tables"]["agents"]["Insert"];
+        });
+        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
+      }
+      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
+        effectiveRows = effectiveRows.map((row) => {
+          const next = { ...row } as Record<string, unknown>;
+          delete next.is_verified;
+          delete next.is_active;
+          return next as Database["public"]["Tables"]["agents"]["Insert"];
+        });
+        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
+      }
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
-      return NextResponse.json({ success: true, inserted: payload.rows.length });
+      return NextResponse.json({ success: true, inserted: effectiveRows.length });
     }
 
     default:

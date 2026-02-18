@@ -30,6 +30,7 @@ export default function AdminDashboardOverview() {
   const [posts, setPosts] = useState<BlogPostRow[]>([]);
   const [contacts, setContacts] = useState<ContactSubmission[]>([]);
   const [schemaFallback, setSchemaFallback] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +46,7 @@ export default function AdminDashboardOverview() {
         setPosts(payload.posts);
         setContacts(payload.contacts.slice(0, 10) as ContactSubmission[]);
         setSchemaFallback(Boolean(payload.schemaFallback));
+        setWarning(payload.warning ?? null);
       } catch (loadError) {
         if (!cancelled) {
           setError(loadError instanceof Error ? loadError.message : "Failed to load admin data");
@@ -131,6 +133,11 @@ export default function AdminDashboardOverview() {
         {schemaFallback ? (
           <p className="mt-2 text-caption text-text-muted">
             Running in compatibility mode. Some advanced settings are using fallback storage.
+          </p>
+        ) : null}
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
           </p>
         ) : null}
       </section>

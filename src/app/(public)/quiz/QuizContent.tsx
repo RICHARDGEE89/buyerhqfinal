@@ -172,10 +172,10 @@ export default function QuizContent() {
         {step === 3 ? (
           <div className="mt-4">
             <Input
-              label="Target suburb (optional)"
+              label="Target suburb or postcode (optional)"
               value={targetSuburb}
               onChange={(event) => setTargetSuburb(event.target.value)}
-              placeholder="e.g. Newtown"
+              placeholder="e.g. Newtown or 2000"
             />
           </div>
         ) : null}
@@ -217,7 +217,7 @@ export default function QuizContent() {
             {!loadingMatches && !matchError && matches.length === 0 ? (
               <EmptyState
                 title="No matches yet"
-                description="Try broadening your suburb input or selecting fewer constraints."
+                description="Try another suburb/postcode or selecting fewer constraints."
               />
             ) : null}
 

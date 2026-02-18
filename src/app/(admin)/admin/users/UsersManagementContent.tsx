@@ -40,6 +40,7 @@ type UserListItem = {
 export default function UsersManagementContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
   const [contacts, setContacts] = useState<ContactSubmissionRow[]>([]);
@@ -56,6 +57,7 @@ export default function UsersManagementContent() {
       setAgents(payload.agents);
       setEnquiries(payload.enquiries);
       setContacts(payload.contacts);
+      setWarning(payload.warning ?? null);
       setLoading(false);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load user data.");
@@ -209,6 +211,11 @@ export default function UsersManagementContent() {
         <p className="mt-2 text-body-sm text-text-secondary">
           View account activity across agents and buyers. Moderate account status and close enquiry threads.
         </p>
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

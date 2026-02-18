@@ -20,6 +20,8 @@ type AdminPanelResponse = {
     preferences: Json;
   } | null;
   schemaFallback?: boolean;
+  policyFallback?: boolean;
+  warning?: string;
 };
 
 export async function fetchAdminPanelData() {

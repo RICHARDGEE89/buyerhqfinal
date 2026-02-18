@@ -5,7 +5,7 @@ import AgentsClientOnly from "./AgentsClientOnly";
 export const metadata: Metadata = {
   title: "Find Agents | BuyerHQ",
   description:
-    "Search BuyerHQ's verified buyer's agent directory with state, specialization, and rating filters.",
+    "Search BuyerHQ's buyer's agent directory by suburb or postcode across Australia with state and specialization filters.",
 };
 
 export default function AgentsPage() {

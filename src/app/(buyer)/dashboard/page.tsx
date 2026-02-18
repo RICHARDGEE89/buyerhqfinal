@@ -58,27 +58,25 @@ export default function BuyerDashboardOverview() {
     setSavedCount(savedRes.count ?? 0);
     setEnquiries(enquiriesRes.data ?? []);
 
-    let recommendedQuery = supabase
-      .from("agents")
-      .select("*")
-      .eq("is_verified", true)
-      .eq("is_active", true)
-      .order("avg_rating", { ascending: false, nullsFirst: false })
-      .limit(3);
-
     const preferredState = toText(user.user_metadata?.preferred_state).toUpperCase();
+    const params = new URLSearchParams({
+      verified: "true",
+      page: "1",
+      limit: "3",
+    });
     if (preferredState && stateCodes.includes(preferredState as StateCode)) {
-      recommendedQuery = recommendedQuery.eq("state", preferredState as StateCode);
+      params.set("state", preferredState);
     }
 
-    const { data: agentData, error: agentError } = await recommendedQuery;
-    if (agentError) {
-      setError(agentError.message);
+    const response = await fetch(`/api/agents?${params.toString()}`);
+    const payload = (await response.json()) as { agents?: AgentRow[]; error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Unable to load recommendations.");
       setLoading(false);
       return;
     }
 
-    setRecommendedAgents(agentData ?? []);
+    setRecommendedAgents(payload.agents ?? []);
     setLoading(false);
   }, [supabase]);
 

@@ -34,6 +34,7 @@ export default function AdminSettingsContent() {
   const [success, setSuccess] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [schemaFallback, setSchemaFallback] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<AdminPreferences>(defaultPreferences);
 
   const loadSettings = useCallback(async () => {
@@ -46,6 +47,7 @@ export default function AdminSettingsContent() {
       const fallbackEmail = payload.adminAccount?.email ?? "ops@buyerhq.com.au";
       setAdminEmail(fallbackEmail);
       setSchemaFallback(Boolean(payload.schemaFallback));
+      setWarning(payload.warning ?? null);
       setPreferences(parsePreferences(payload.adminAccount?.preferences ?? null, fallbackEmail));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load admin settings.");
@@ -103,6 +105,11 @@ export default function AdminSettingsContent() {
         {schemaFallback ? (
           <p className="mt-2 text-caption text-text-muted">
             Preferences column not available in current schema. Using compatibility mode.
+          </p>
+        ) : null}
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
           </p>
         ) : null}
       </section>

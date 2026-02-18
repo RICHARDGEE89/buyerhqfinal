@@ -31,6 +31,7 @@ export default function AgentsClientOnly() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -66,11 +67,12 @@ export default function AgentsClientOnly() {
         setError(null);
 
         const response = await fetch(`/api/agents?${queryString}`);
-        const data = await response.json();
+        const data = (await response.json()) as { agents?: AgentRow[]; total?: number; error?: string; warning?: string };
         if (!response.ok) throw new Error(data.error ?? "Unable to fetch agents");
 
         if (cancelled) return;
         setTotal(data.total ?? 0);
+        setWarning(data.warning ?? null);
         setAgents((prev) => (page === 1 ? data.agents ?? [] : [...prev, ...(data.agents ?? [])]));
       } catch (fetchError) {
         if (!cancelled) {
@@ -125,7 +127,7 @@ export default function AgentsClientOnly() {
       <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
         <h1 className="text-display text-text-primary md:text-display-lg">Find buyer&apos;s agents</h1>
         <p className="mt-3 max-w-2xl text-body text-text-secondary">
-          Filter by state, specialisation, and performance to build your shortlist.
+          Search across Australia by suburb or postcode, then filter by state and specialisation.
         </p>
       </section>
 
@@ -133,7 +135,7 @@ export default function AgentsClientOnly() {
         <aside className="space-y-3 rounded-lg border border-border bg-surface p-4">
           <Input
             label="Search"
-            placeholder="Name, agency, suburb"
+            placeholder="Name, agency, suburb, or postcode"
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -188,7 +190,7 @@ export default function AgentsClientOnly() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-body-sm text-text-secondary">
-              Showing <span className="text-text-primary">{total}</span> verified agents
+              Showing <span className="text-text-primary">{total}</span> agents
             </p>
             <div className="flex gap-2">
               <Button variant={viewMode === "grid" ? "primary" : "secondary"} onClick={() => setViewMode("grid")}>
@@ -218,6 +220,12 @@ export default function AgentsClientOnly() {
                 <AgentCardSkeleton key={i} />
               ))}
             </div>
+          ) : null}
+
+          {warning ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+              {warning}
+            </p>
           ) : null}
 
           {!loading && error ? (

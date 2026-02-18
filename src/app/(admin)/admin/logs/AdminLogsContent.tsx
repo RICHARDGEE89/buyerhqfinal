@@ -31,6 +31,7 @@ type ActivityLog = {
 export default function AdminLogsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [filter, setFilter] = useState<LogType>("all");
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
@@ -49,6 +50,7 @@ export default function AdminLogsContent() {
       setReviews(payload.reviews.slice(0, 60));
       setContacts(payload.contacts.slice(0, 60));
       setPosts(payload.posts.slice(0, 60));
+      setWarning(payload.warning ?? null);
       setLoading(false);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load logs.");
@@ -125,6 +127,11 @@ export default function AdminLogsContent() {
         <p className="mt-2 text-body-sm text-text-secondary">
           Live activity feed across agent profiles, enquiries, reviews, contacts, and blog content.
         </p>
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
+          </p>
+        ) : null}
       </section>
 
       <section className="flex flex-wrap items-end justify-between gap-3">

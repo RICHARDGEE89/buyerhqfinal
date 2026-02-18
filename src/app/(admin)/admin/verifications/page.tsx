@@ -17,6 +17,7 @@ type ActionState = "approving" | "rejecting" | null;
 export default function AdminVerificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [pendingAgents, setPendingAgents] = useState<AgentRow[]>([]);
   const [activeAction, setActiveAction] = useState<Record<string, ActionState>>({});
 
@@ -27,6 +28,7 @@ export default function AdminVerificationsPage() {
     try {
       const payload = await fetchAdminPanelData();
       setPendingAgents(payload.agents.filter((agent) => !agent.is_verified));
+      setWarning(payload.warning ?? null);
       setLoading(false);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Unable to load pending agents.");
@@ -74,6 +76,11 @@ export default function AdminVerificationsPage() {
         <p className="mt-2 text-body-sm text-text-secondary">
           Review pending agency applications, verify licence data, and approve directory visibility.
         </p>
+        {warning ? (
+          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
+            {warning}
+          </p>
+        ) : null}
       </section>
 
       {error ? <ErrorState description={error} onRetry={loadPendingAgents} /> : null}

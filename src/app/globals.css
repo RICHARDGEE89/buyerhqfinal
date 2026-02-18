@@ -12,8 +12,8 @@ html {
 }
 
 body {
-  background: #080808;
-  color: #f2f2f2;
+  background: #ffffff;
+  color: #0f0f0f;
   font-family: var(--font-primary), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -24,22 +24,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #111111;
+  background: #f0f0f0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: #bdbdbd;
   border-radius: 3px;
 }
 
 /* Selection */
 ::selection {
-  background: #ffffff20;
+  background: #1111111f;
 }
 
 /* Focus */
 :focus-visible {
-  outline: 1px solid #555555;
+  outline: 1px solid #111111;
   outline-offset: 2px;
 }
 
@@ -50,7 +50,7 @@ body {
   h4,
   h5,
   h6 {
-    color: #f2f2f2;
+    color: #0f0f0f;
   }
 }
 

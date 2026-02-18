@@ -136,11 +136,15 @@ export default function AgentProfileContent({
           <Card className="p-5">
             <h2 className="text-heading">Target Suburbs</h2>
             <div className="mt-3 flex flex-wrap gap-2">
-              {(agent.suburbs ?? []).map((suburb) => (
-                <Badge key={suburb} variant="state">
-                  {suburb}
-                </Badge>
-              ))}
+              {(agent.suburbs ?? []).length === 0 ? (
+                <Badge variant="state">Australia-wide coverage</Badge>
+              ) : (
+                (agent.suburbs ?? []).map((suburb) => (
+                  <Badge key={suburb} variant="state">
+                    {suburb}
+                  </Badge>
+                ))
+              )}
             </div>
           </Card>
 

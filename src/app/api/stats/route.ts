@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { agentIsActive, agentIsVerified, normalizeAgents } from "@/lib/agent-compat";
+import type { AgentRow } from "@/lib/database.types";
+import { isPolicyRecursionError } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 300;
@@ -8,24 +11,17 @@ export async function GET() {
   try {
     const supabase = createClient();
 
-    const { count: verifiedAgents, error: verifiedError } = await supabase
-      .from("agents")
-      .select("*", { count: "exact", head: true })
-      .eq("is_verified", true)
-      .eq("is_active", true);
-
-    if (verifiedError) {
-      return NextResponse.json({ error: verifiedError.message }, { status: 500 });
-    }
-
-    const { data: statesData, error: statesError } = await supabase
-      .from("agents")
-      .select("state")
-      .eq("is_verified", true)
-      .eq("is_active", true);
-
-    if (statesError) {
-      return NextResponse.json({ error: statesError.message }, { status: 500 });
+    const { data: agentsData, error: agentsError } = await supabase.from("agents").select("*");
+    if (agentsError) {
+      if (isPolicyRecursionError(agentsError.message)) {
+        return NextResponse.json({
+          verifiedAgents: 0,
+          statesCovered: 0,
+          enquiriesMtd: 0,
+          avgResponseTime: "< 2hrs",
+        });
+      }
+      return NextResponse.json({ error: agentsError.message }, { status: 500 });
     }
 
     const monthStart = new Date();
@@ -41,10 +37,12 @@ export async function GET() {
       return NextResponse.json({ error: enquiriesError.message }, { status: 500 });
     }
 
-    const statesCovered = new Set((statesData ?? []).map((item) => item.state).filter(Boolean)).size;
+    const agents = normalizeAgents((agentsData ?? []) as AgentRow[]);
+    const visibleAgents = agents.filter((agent) => agentIsActive(agent) && agentIsVerified(agent));
+    const statesCovered = new Set(visibleAgents.map((item) => item.state).filter(Boolean)).size;
 
     return NextResponse.json({
-      verifiedAgents: verifiedAgents ?? 0,
+      verifiedAgents: visibleAgents.length,
       statesCovered,
       enquiriesMtd: enquiriesMtd ?? 0,
       avgResponseTime: "< 2hrs",
