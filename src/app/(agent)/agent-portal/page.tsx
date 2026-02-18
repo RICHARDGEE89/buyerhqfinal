@@ -92,6 +92,31 @@ export default function AgentDashboardOverview() {
         fetchDashboard();
     }, [router, supabase]);
 
+    const handleExportLeads = () => {
+        if (!leads.length) return;
+        const headers = ['id', 'buyer_name', 'subject', 'status', 'created_at'];
+        const rows = leads.map((lead) => [
+            lead.id,
+            lead.buyer_name ?? '',
+            lead.subject ?? '',
+            lead.status,
+            lead.created_at,
+        ]);
+        const csv = [headers, ...rows]
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'buyerhq-agent-leads.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     if (loading) return <div className="p-12 text-center text-gray-500 font-bold">Loading dashboard...</div>;
 
     const metrics = [
@@ -112,12 +137,19 @@ export default function AgentDashboardOverview() {
                     <p className="text-stone font-medium">Performance summary for {agent?.business_name || 'Your Agency'}.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white">
-                        Export Report
+                    <Button
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white"
+                        onClick={handleExportLeads}
+                        disabled={!leads.length}
+                    >
+                        Export Leads CSV
                     </Button>
-                    <Button className="bg-gray-900 hover:bg-primary text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
-                        Manage Profile
-                    </Button>
+                    <Link href="/agent-portal/leads">
+                        <Button className="bg-gray-900 hover:bg-primary text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
+                            Manage Leads
+                        </Button>
+                    </Link>
                 </div>
             </div>
 

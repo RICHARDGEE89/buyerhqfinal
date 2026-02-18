@@ -13,9 +13,10 @@ export default function AgentsClientOnly() {
     const [agents, setAgents] = React.useState<Partial<Agent>[]>([]);
     const [loading, setLoading] = React.useState(true);
     const supabase = React.useMemo(() => createClient(), []);
+    const [loadMoreMessage, setLoadMoreMessage] = React.useState<string | null>(null);
 
-    React.useEffect(() => {
-        const fetchAgents = async () => {
+    const fetchAgents = React.useCallback(
+        async () => {
             const { data, error } = await supabase
                 .from('agents')
                 .select('*')
@@ -37,9 +38,13 @@ export default function AgentsClientOnly() {
                 if (allAgents) setAgents(allAgents);
             }
             setLoading(false);
-        };
+        },
+        [supabase]
+    );
+
+    React.useEffect(() => {
         fetchAgents();
-    }, [supabase]);
+    }, [fetchAgents]);
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -100,11 +105,20 @@ export default function AgentsClientOnly() {
                                 )}
                             </div>
 
-                            {/* Pagination Placeholder */}
-                            <div className="pt-12 flex justify-center">
-                                <Button variant="outline" className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-primary transition-all">
+                            {/* Pagination / Load More */}
+                            <div className="pt-12 flex flex-col items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="rounded-full border-stone/20 font-bold px-12 h-12 hover:bg-white hover:border-primary transition-all"
+                                    onClick={() => setLoadMoreMessage('All available agents are already shown. New profiles appear here as they are verified.')}
+                                >
                                     Load More Agents
                                 </Button>
+                                {loadMoreMessage && (
+                                    <p className="text-xs font-medium text-stone text-center max-w-md">
+                                        {loadMoreMessage}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

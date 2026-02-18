@@ -37,6 +37,39 @@ export default function AgentLeadsPage() {
 
     const filteredLeads = filter === 'all' ? leads : leads.filter(l => l.status === filter);
 
+    const downloadCsv = () => {
+        if (!filteredLeads.length) return;
+        const headers = ['id', 'name', 'type', 'location', 'budget', 'date', 'status', 'email'];
+        const rows = filteredLeads.map((lead) => [
+            lead.id,
+            lead.name,
+            lead.type,
+            lead.location,
+            lead.budget,
+            lead.date,
+            lead.status,
+            lead.email,
+        ]);
+        const csv = [headers, ...rows]
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'buyerhq-agent-leads.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const mailtoForLead = (lead: Lead) =>
+        `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(
+            `Re: your BuyerHQ enquiry`
+        )}`;
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'new': return 'bg-primary/10 text-primary border-primary/20';
@@ -56,11 +89,19 @@ export default function AgentLeadsPage() {
                     <p className="text-stone font-medium">Manage and respond to property buyer interest.</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white">
+                    <Button
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900 bg-white"
+                        onClick={downloadCsv}
+                        disabled={!filteredLeads.length}
+                    >
                         Download CSV
                     </Button>
-                    <Button className="bg-primary text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
-                        Bulk Action
+                    <Button
+                        className="bg-primary text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-gray-900/20"
+                        onClick={() => setFilter('new')}
+                    >
+                        Focus New Leads
                     </Button>
                 </div>
             </div>
@@ -141,11 +182,18 @@ export default function AgentLeadsPage() {
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-4">
-                                        <Button variant="outline" className="h-14 px-8 rounded-xl border-stone/10 font-black text-gray-900 flex-1 lg:flex-none">
+                                        <Button
+                                            variant="outline"
+                                            className="h-14 px-8 rounded-xl border-stone/10 font-black text-gray-900 flex-1 lg:flex-none"
+                                            onClick={() => (window.location.href = mailtoForLead(lead))}
+                                        >
                                             <MessageSquare className="w-4 h-4 mr-2" />
                                             Quick Reply
                                         </Button>
-                                        <Button className="h-14 w-14 rounded-xl bg-warm/50 text-gray-900 hover:bg-primary hover:text-white transition-all flex items-center justify-center flex-shrink-0">
+                                        <Button
+                                            className="h-14 w-14 rounded-xl bg-warm/50 text-gray-900 hover:bg-primary hover:text-white transition-all flex items-center justify-center flex-shrink-0"
+                                            onClick={() => (window.location.href = mailtoForLead(lead))}
+                                        >
                                             <ChevronRight className="w-6 h-6" />
                                         </Button>
                                     </div>

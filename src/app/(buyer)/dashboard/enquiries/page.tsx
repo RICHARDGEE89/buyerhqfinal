@@ -87,14 +87,18 @@ export default function MyEnquiriesPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4 w-full md:w-auto">
-                                        <Button variant="outline" className="flex-1 md:flex-none h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900">
-                                            View Thread
-                                        </Button>
-                                        <Button className="flex-1 md:flex-none bg-primary hover:bg-primary-700 text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg">
-                                            Follow Up
-                                        </Button>
-                                    </div>
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <Link href="/agents" className="flex-1 md:flex-none">
+                            <Button variant="outline" className="w-full h-12 px-6 rounded-xl border-stone/10 font-bold text-gray-900">
+                                View Matching Agents
+                            </Button>
+                        </Link>
+                        <Link href="/contact" className="flex-1 md:flex-none">
+                            <Button className="w-full bg-primary hover:bg-primary-700 text-white font-black h-12 px-8 rounded-xl transition-all shadow-lg shadow-gray-900/20">
+                                Follow Up
+                            </Button>
+                        </Link>
+                    </div>
                                 </div>
                             </CardContent>
                         </Card>

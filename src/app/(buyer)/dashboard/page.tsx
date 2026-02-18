@@ -30,7 +30,7 @@ export default function BuyerDashboardOverview() {
                     <p className="text-stone font-medium">Here&apos;s what&apos;s happening with your property search.</p>
                 </div>
                 <Link href="/get-matched">
-                    <Button className="bg-primary hover:bg-primary/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-teal/20">
+                    <Button className="bg-primary hover:bg-primary/90 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-gray-900/20">
                         Find New Matches
                     </Button>
                 </Link>
@@ -72,9 +72,9 @@ export default function BuyerDashboardOverview() {
                                             <p className="text-xs text-stone font-medium">Matches your &apos;Bondi&apos; search criteria</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="text-stone group-hover:text-primary transition-colors">
+                                    <Link href="/agents" className="text-stone group-hover:text-primary transition-colors">
                                         <ArrowRight className="w-5 h-5" />
-                                    </Button>
+                                    </Link>
                                 </CardContent>
                             </Card>
                         ))}

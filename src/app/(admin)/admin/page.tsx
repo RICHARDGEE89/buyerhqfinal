@@ -118,18 +118,24 @@ export default function AdminDashboardOverview() {
                     <div className="space-y-4">
                         <Card className="border-stone/10 rounded-[2.5rem] bg-white p-8 space-y-6 shadow-soft">
                             <div className="space-y-4">
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                    <UserPlus className="w-5 h-5 mr-4" />
-                                    Invite New Agency
-                                </Button>
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                    <FileText className="w-5 h-5 mr-4" />
-                                    Generate Site Report
-                                </Button>
-                                <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
-                                    <ShieldAlert className="w-5 h-5 mr-4" />
-                                    Review Flagged Content
-                                </Button>
+                                <Link href="/join">
+                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
+                                        <UserPlus className="w-5 h-5 mr-4" />
+                                        Invite New Agency
+                                    </Button>
+                                </Link>
+                                <Link href="/admin/verifications">
+                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
+                                        <FileText className="w-5 h-5 mr-4" />
+                                        Generate Verification Report
+                                    </Button>
+                                </Link>
+                                <Link href="/admin/verifications">
+                                    <Button className="w-full justify-start h-14 bg-warm/30 hover:bg-primary hover:text-white text-gray-900 font-bold rounded-xl transition-all">
+                                        <ShieldAlert className="w-5 h-5 mr-4" />
+                                        Review Flagged Content
+                                    </Button>
+                                </Link>
                             </div>
                         </Card>
 

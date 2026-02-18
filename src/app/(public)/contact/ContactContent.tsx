@@ -8,6 +8,53 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function ContactContent() {
+    const [firstName, setFirstName] = React.useState('');
+    const [lastName, setLastName] = React.useState('');
+    const [email, setEmail] = React.useState('');
+    const [subject, setSubject] = React.useState('');
+    const [message, setMessage] = React.useState('');
+    const [submitting, setSubmitting] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [success, setSuccess] = React.useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSuccess(false);
+
+        if (!firstName || !lastName || !email || !subject || !message) {
+            setError('Please complete all fields before sending your message.');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const res = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName, lastName, email, subject, message }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error ?? 'Something went wrong. Please try again.');
+                return;
+            }
+
+            setSuccess(true);
+            setFirstName('');
+            setLastName('');
+            setEmail('');
+            setSubject('');
+            setMessage('');
+        } catch {
+            setError('Unable to send your message right now. Please try again shortly.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="bg-white min-h-screen">
             {/* Hero */}
@@ -62,7 +109,7 @@ export default function ContactContent() {
                             <div className="space-y-6 pt-10 border-t border-stone/5">
                                 <h3 className="text-sm font-black text-stone uppercase tracking-widest">Connect with us</h3>
                                 <div className="flex items-center gap-4">
-                                    {/* Socials placeholder */}
+                                    {/* Socials intentionally omitted to keep focus on email contact */}
                                 </div>
                             </div>
                         </div>
@@ -70,39 +117,80 @@ export default function ContactContent() {
                         {/* Form */}
                         <Card className="border-stone/10 rounded-[3rem] bg-white shadow-2xl relative">
                             <CardContent className="p-12 space-y-8">
-                                <div className="space-y-6">
+                                <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">First Name</label>
-                                            <Input placeholder="John" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                            <Input
+                                                placeholder="John"
+                                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Last Name</label>
-                                            <Input placeholder="Doe" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                            <Input
+                                                placeholder="Doe"
+                                                className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Email Address</label>
-                                        <Input placeholder="john@example.com" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                        <Input
+                                            type="email"
+                                            placeholder="john@example.com"
+                                            className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Subject</label>
-                                        <Input placeholder="General enquiry" className="h-12 rounded-xl border-stone/10 px-4 font-medium" />
+                                        <Input
+                                            placeholder="General enquiry"
+                                            className="h-12 rounded-xl border-stone/10 px-4 font-medium"
+                                            value={subject}
+                                            onChange={(e) => setSubject(e.target.value)}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-mono font-bold text-stone uppercase tracking-widest ml-2">Message</label>
-                                        <Textarea placeholder="How can we help?" className="min-h-[160px] rounded-2xl border-stone/10 p-6 font-medium" />
+                                        <Textarea
+                                            placeholder="How can we help?"
+                                            className="min-h-[160px] rounded-2xl border-stone/10 p-6 font-medium"
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                        />
                                     </div>
-                                </div>
 
-                                <Button className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-teal/20">
-                                    Send Message
-                                    <Send className="ml-2 w-5 h-5" />
-                                </Button>
+                                    {error && (
+                                        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-bold text-primary">
+                                            {error}
+                                        </div>
+                                    )}
+                                    {success && (
+                                        <div className="rounded-xl border border-verified/20 bg-verified/10 px-4 py-3 text-sm font-bold text-verified">
+                                            Thank you — your message has been sent. We&apos;ll be in touch shortly.
+                                        </div>
+                                    )}
 
-                                <p className="text-[10px] font-bold text-stone/40 uppercase tracking-widest text-center">
-                                    By clicking send, you agree to our privacy policy.
-                                </p>
+                                    <Button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-gray-900/20 disabled:opacity-60"
+                                    >
+                                        {submitting ? 'Sending...' : 'Send Message'}
+                                        <Send className="ml-2 w-5 h-5" />
+                                    </Button>
+
+                                    <p className="text-[10px] font-bold text-stone/40 uppercase tracking-widest text-center">
+                                        By clicking send, you agree to our privacy policy.
+                                    </p>
+                                </form>
                             </CardContent>
                         </Card>
 
@@ -112,3 +200,4 @@ export default function ContactContent() {
         </div>
     );
 }
+
