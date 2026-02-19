@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, Heart, MapPin, Star } from "lucide-react";
+import { Heart } from "lucide-react";
 
 import type { AgentRow } from "@/lib/database.types";
 import { Avatar } from "@/components/ui/Avatar";
@@ -11,6 +11,15 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+const specialistOptions = new Set([
+  "First Home Buyers",
+  "Luxury",
+  "Investment Strategy",
+  "Auction Bidding",
+  "Off-Market Access",
+  "Negotiation",
+]);
 
 export function AgentCard({
   agent,
@@ -28,130 +37,68 @@ export function AgentCard({
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const suburbs = useMemo(() => agent.suburbs ?? [], [agent.suburbs]);
-  const primarySuburb = useMemo(() => suburbs[0] ?? "Australia-wide", [suburbs]);
-  const suburbsLabel = useMemo(() => {
-    const suburbs = agent.suburbs ?? [];
-    if (suburbs.length === 0) return "Australia-wide coverage";
-    if (suburbs.length <= 4) return suburbs.join(", ");
-    return `${suburbs.slice(0, 4).join(", ")} +${suburbs.length - 4} more`;
-  }, [agent.suburbs]);
-  const bioPreview = useMemo(() => {
-    const cleaned = (agent.bio ?? "").trim();
-    if (!cleaned) {
-      return "Specialist buyer representation with a strategy-first approach across local and off-market opportunities.";
+  const specialist = useMemo(() => {
+    const first =
+      (agent.specializations ?? []).find((value) => specialistOptions.has(value)) ??
+      (agent.specializations ?? [])[0] ??
+      "";
+    return first || "No verified specialist yet.";
+  }, [agent.specializations]);
+  const coverage = useMemo(() => {
+    if (suburbs.length > 0) {
+      const label = suburbs.slice(0, 2).join(", ");
+      return agent.state ? `${label}, ${agent.state}` : label;
     }
-    if (cleaned.length <= 240) return cleaned;
-    return `${cleaned.slice(0, 237)}...`;
-  }, [agent.bio]);
-  const specializationPreview = useMemo(
-    () => (agent.specializations ?? []).slice(0, compact ? 4 : 7),
-    [agent.specializations, compact]
-  );
-  const coverageCount = Math.max(suburbs.length - 1, 0);
+    if (agent.state) return `${agent.state} only`;
+    return "No verified coverage yet.";
+  }, [agent.state, suburbs]);
+  const aboutAgency = useMemo(() => {
+    const text = (agent.about ?? agent.bio ?? "").trim();
+    if (!text) return "No verified agency information yet.";
+    if (text.length <= 130) return text;
+    return `${text.slice(0, 127)}...`;
+  }, [agent.about, agent.bio]);
+  const rankLabel = useMemo(() => formatRankLabel(agent.buyerhqrank), [agent.buyerhqrank]);
 
   return (
-    <Card interactive className={cn("h-full p-4", compact ? "p-3" : "p-4")}>
-      <div className="flex h-full flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <Avatar name={agent.name} src={agent.avatar_url} size={compact ? "md" : "lg"} />
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h3 className="text-subheading text-text-primary">{agent.name}</h3>
-                <p className="text-body-sm text-text-secondary">{agent.agency_name ?? "Independent Advisor"}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
-                <Badge variant="state" className="normal-case">
-                  BUYERHQRANK {agent.buyerhqrank ?? "STARTER"}
-                </Badge>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-1 text-body-sm text-text-primary">
-                <Star size={14} className="fill-current text-amber-500" />
-                {typeof agent.avg_rating === "number" ? agent.avg_rating.toFixed(1) : "N/A"}
-              </div>
-              <span className="text-body-sm text-text-secondary">
-                ({agent.review_count ?? 0} review{agent.review_count === 1 ? "" : "s"})
-              </span>
-              <span className="text-body-sm text-text-secondary">Authority {agent.authority_score ?? 0}/100</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="state" className="normal-case">
-                Social: {agent.social_media_presence ?? "D"}
-              </Badge>
-              <Badge variant="state" className="normal-case">
-                Followers: {(agent.total_followers ?? 0).toLocaleString("en-AU")}
-              </Badge>
-            </div>
+    <Card interactive className={cn("h-full p-3", compact ? "p-2.5" : "p-3")}>
+      <div className="flex h-full flex-col gap-3">
+        <div className="flex items-start gap-2.5">
+          <Avatar name={agent.name} src={agent.avatar_url} size="md" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="truncate text-body-sm text-text-primary">{agent.agency_name ?? "No verified agency name yet."}</p>
+            <p className="truncate text-caption text-text-secondary">{agent.name}</p>
           </div>
+          {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
         </div>
 
-        <div className="space-y-2">
-          <p className="text-body-sm text-text-secondary">{bioPreview}</p>
-          <div className="flex flex-wrap gap-2">
-            {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
-            <Badge variant="state" className="normal-case">
-              <MapPin size={12} />
-              Area specialist: {primarySuburb}
-              {agent.state ? `, ${agent.state}` : ""}
-            </Badge>
-            {coverageCount > 0 ? <Badge variant="state">+{coverageCount} areas</Badge> : null}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-caption text-text-secondary lg:grid-cols-4">
-          <div className="rounded-md border border-border bg-surface-2 px-2 py-2">
-            <p className="font-mono text-label uppercase">Experience</p>
-            <p className="text-body-sm text-text-primary">{agent.years_experience ?? 0} yrs</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-2 px-2 py-2">
-            <p className="font-mono text-label uppercase">Properties</p>
-            <p className="text-body-sm text-text-primary">{agent.properties_purchased ?? 0} settled</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-2 px-2 py-2">
-            <p className="font-mono text-label uppercase">Reviews</p>
-            <p className="text-body-sm text-text-primary">{agent.review_count ?? 0} verified</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-2 px-2 py-2">
-            <p className="font-mono text-label uppercase">Coverage</p>
-            <p className="text-body-sm text-text-primary">{suburbsLabel}</p>
-          </div>
-        </div>
-
-        {specializationPreview.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {specializationPreview.map((specialization) => (
-              <Badge key={specialization} variant="specialization" className="normal-case">
-                {specialization}
-              </Badge>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="rounded-md border border-border bg-surface-2 px-3 py-2">
-          <p className="font-mono text-label uppercase text-text-secondary">Fee Structure</p>
-          <p className="text-body-sm text-text-primary">{agent.fee_structure ?? "Fee details shared on request."}</p>
-          <p className="mt-2 text-caption text-text-muted">
-            BuyerHQ brokered introductions only. We coordinate with agents before any next-step handover.
+        <div className="space-y-2 rounded-md border border-border bg-surface-2 p-2.5">
+          <p className="text-caption text-text-secondary">
+            <span className="font-medium text-text-primary">Buyer HQ Rank:</span> {rankLabel}
+          </p>
+          <p className="text-caption text-text-secondary">
+            <span className="font-medium text-text-primary">Specialist:</span> {specialist}
+          </p>
+          <p className="text-caption text-text-secondary">
+            <span className="font-medium text-text-primary">Coverage:</span> {coverage}
+          </p>
+          <p className="text-caption text-text-secondary">
+            <span className="font-medium text-text-primary">About Agency:</span> {aboutAgency}
           </p>
         </div>
 
         <div className={cn("mt-auto grid gap-2", showEnquiryAction ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
-          <Button variant="primary" asChild>
-            <Link href={`/agents/${agent.id}`}>
-              View Profile
-              <ArrowRight size={14} />
-            </Link>
+          <Button variant="primary" size="sm" asChild>
+            <Link href={`/agents/${agent.id}`}>View</Link>
           </Button>
           {showEnquiryAction ? (
-            <Button variant="secondary" asChild>
-              <Link href={`/quiz?agent=${encodeURIComponent(agent.id)}`}>Enquire via BuyerHQ</Link>
+            <Button variant="secondary" size="sm" asChild>
+              <Link href={`/quiz?agent=${encodeURIComponent(agent.id)}`}>Enquire</Link>
             </Button>
           ) : null}
           <Button
             variant="secondary"
+            size="sm"
             loading={saveLoading}
             disabled={saveLoading || isSaved}
             onClick={async () => {
@@ -181,6 +128,7 @@ export function AgentCard({
             {isSaved ? "Saved" : "Save"}
           </Button>
         </div>
+
         {showAuthPrompt ? (
           <div className="rounded-md border border-border bg-surface-2 px-3 py-3">
             <p className="text-caption text-text-secondary">
@@ -200,4 +148,14 @@ export function AgentCard({
       </div>
     </Card>
   );
+}
+
+function formatRankLabel(value: string | null) {
+  const base = (value || "STARTER").toLowerCase();
+  if (!base.trim()) return "Starter";
+  return base
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

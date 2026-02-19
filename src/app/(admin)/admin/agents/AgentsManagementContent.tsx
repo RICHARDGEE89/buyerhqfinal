@@ -23,7 +23,7 @@ type AgentDraft = {
   agency_name: string;
   state: string;
   suburbs: string;
-  specializations: string;
+  specialist: string;
   fee_structure: string;
   website_url: string;
   verified: "Verified" | "Unverified";
@@ -32,11 +32,23 @@ type AgentDraft = {
   instagram_followers: string;
   facebook_followers: string;
   tiktok_followers: string;
+  youtube_subscribers: string;
   google_rating: string;
   google_reviews: string;
+  facebook_rating: string;
+  facebook_reviews: string;
 };
 
 const stateOptions = ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
+const specialistOptions = [
+  "",
+  "First Home Buyers",
+  "Luxury",
+  "Investment Strategy",
+  "Auction Bidding",
+  "Off-Market Access",
+  "Negotiation",
+];
 
 export default function AgentsManagementContent() {
   const [loading, setLoading] = useState(true);
@@ -58,7 +70,9 @@ export default function AgentsManagementContent() {
         agency_name: agent.agency_name ?? "",
         state: agent.state ?? "",
         suburbs: (agent.suburbs ?? []).join(", "),
-        specializations: (agent.specializations ?? []).join(", "),
+        specialist:
+          (agent.specializations ?? []).find((item) => specialistOptions.includes(item)) ??
+          "",
         fee_structure: agent.fee_structure ?? "",
         website_url: agent.website_url ?? "",
         verified: agent.verified ?? (agent.is_verified ? "Verified" : "Unverified"),
@@ -67,8 +81,11 @@ export default function AgentsManagementContent() {
         instagram_followers: String(agent.instagram_followers ?? 0),
         facebook_followers: String(agent.facebook_followers ?? 0),
         tiktok_followers: String(agent.tiktok_followers ?? 0),
+        youtube_subscribers: String(agent.youtube_subscribers ?? 0),
         google_rating: String(agent.google_rating ?? 0),
         google_reviews: String(agent.google_reviews ?? 0),
+        facebook_rating: String(agent.facebook_rating ?? 0),
+        facebook_reviews: String(agent.facebook_reviews ?? 0),
       };
     });
     setDrafts(next);
@@ -388,12 +405,12 @@ export default function AgentsManagementContent() {
                     className="h-4 w-4 rounded border-border bg-surface-2"
                   />
                 </th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Agency</th>
+                <th className="px-3 py-2">Agent Name</th>
+                <th className="px-3 py-2">Agency Name</th>
                 <th className="px-3 py-2">State</th>
-                <th className="px-3 py-2">Suburbs</th>
-                <th className="px-3 py-2">Specialisations</th>
-                <th className="px-3 py-2">Fee structure</th>
+                <th className="px-3 py-2">Area</th>
+                <th className="px-3 py-2">Specialist</th>
+                <th className="px-3 py-2">Fee Structure</th>
                 <th className="px-3 py-2">Website</th>
                 <th className="px-3 py-2">Verified</th>
                 <th className="px-3 py-2">Status</th>
@@ -401,11 +418,13 @@ export default function AgentsManagementContent() {
                 <th className="px-3 py-2">IG</th>
                 <th className="px-3 py-2">FB</th>
                 <th className="px-3 py-2">TikTok</th>
+                <th className="px-3 py-2">YouTube</th>
                 <th className="px-3 py-2">Google rating</th>
                 <th className="px-3 py-2">Google reviews</th>
+                <th className="px-3 py-2">Facebook rating</th>
+                <th className="px-3 py-2">Facebook reviews</th>
                 <th className="px-3 py-2">Followers</th>
-                <th className="px-3 py-2">Authority</th>
-                <th className="px-3 py-2">BUYERHQRANK</th>
+                <th className="px-3 py-2">Buyer HQ Rank</th>
                 <th className="px-3 py-2">Claimed at</th>
                 <th className="px-3 py-2">Last updated</th>
                 <th className="px-3 py-2">Actions</th>
@@ -462,11 +481,17 @@ export default function AgentsManagementContent() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <input
-                        value={draft.specializations}
-                        onChange={(event) => updateDraft(agent.id, "specializations", event.target.value)}
+                      <select
+                        value={draft.specialist}
+                        onChange={(event) => updateDraft(agent.id, "specialist", event.target.value)}
                         className="w-56 rounded-md border border-border bg-surface px-2 py-1"
-                      />
+                      >
+                        {specialistOptions.map((item) => (
+                          <option key={`spec-${item || "blank"}`} value={item}>
+                            {item || "No verified specialist yet."}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-3 py-2">
                       <input
@@ -539,6 +564,13 @@ export default function AgentsManagementContent() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        value={draft.youtube_subscribers}
+                        onChange={(event) => updateDraft(agent.id, "youtube_subscribers", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
                         value={draft.google_rating}
                         onChange={(event) => updateDraft(agent.id, "google_rating", event.target.value)}
                         className="w-20 rounded-md border border-border bg-surface px-2 py-1"
@@ -552,14 +584,25 @@ export default function AgentsManagementContent() {
                       />
                     </td>
                     <td className="px-3 py-2">
+                      <input
+                        value={draft.facebook_rating}
+                        onChange={(event) => updateDraft(agent.id, "facebook_rating", event.target.value)}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.facebook_reviews}
+                        onChange={(event) => updateDraft(agent.id, "facebook_reviews", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
                       <span className="text-text-primary">{agent.total_followers ?? 0}</span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-text-primary">{agent.authority_score ?? 0}</span>
-                    </td>
-                    <td className="px-3 py-2">
                       <span className="inline-flex items-center rounded-full border border-border px-2 py-1 font-mono text-caption text-text-secondary">
-                        {agent.buyerhqrank ?? "STARTER"}
+                        Buyer HQ Rank: {formatRankLabel(agent.buyerhqrank)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-caption text-text-secondary">
@@ -642,7 +685,7 @@ function buildPatchFromDraft(draft: AgentDraft) {
     agency_name: draft.agency_name.trim() || null,
     state: draft.state || null,
     suburbs: splitCsv(draft.suburbs),
-    specializations: splitCsv(draft.specializations),
+    specializations: draft.specialist ? [draft.specialist] : [],
     fee_structure: draft.fee_structure.trim() || null,
     website_url: draft.website_url.trim() || null,
     verified: draft.verified,
@@ -651,7 +694,19 @@ function buildPatchFromDraft(draft: AgentDraft) {
     instagram_followers: toInt(draft.instagram_followers),
     facebook_followers: toInt(draft.facebook_followers),
     tiktok_followers: toInt(draft.tiktok_followers),
+    youtube_subscribers: toInt(draft.youtube_subscribers),
     google_rating: toFloat(draft.google_rating),
     google_reviews: toInt(draft.google_reviews),
+    facebook_rating: toFloat(draft.facebook_rating),
+    facebook_reviews: toInt(draft.facebook_reviews),
   };
+}
+
+function formatRankLabel(value: string | null | undefined) {
+  const base = (value || "STARTER").toLowerCase();
+  return base
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

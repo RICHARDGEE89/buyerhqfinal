@@ -17,6 +17,10 @@ export type AgentBulkParseResult = {
   duplicateAgentNames: string[];
 };
 
+type ParseBulkOptions = {
+  defaultState?: string;
+};
+
 const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
 
 const keyAliasMap: Record<string, string> = {
@@ -29,16 +33,22 @@ const keyAliasMap: Record<string, string> = {
   business_name: "agency_name",
   email: "email",
   phone: "phone",
+  agent: "name",
+  address: "address",
   state: "state",
   suburbs: "suburbs",
   suburb_coverage: "suburbs",
   primary_suburb: "suburbs",
+  specialist: "specialisations",
   specialisations: "specialisations",
   specializations: "specialisations",
+  area: "area_specialist",
   years_of_experience: "years_of_experience",
   years_experience: "years_of_experience",
+  experience: "years_of_experience",
   properties_purchased: "properties_purchased",
   total_properties: "properties_purchased",
+  properties: "properties_purchased",
   verified: "verified",
   verified_status: "verified",
   is_verified: "verified",
@@ -56,6 +66,8 @@ const keyAliasMap: Record<string, string> = {
   slug: "slug",
   profile_description: "profile_description",
   bio: "profile_description",
+  agent_bio: "profile_description",
+  about_agency: "about",
   about: "about",
 
   google_rating: "google_rating",
@@ -81,14 +93,18 @@ const keyAliasMap: Record<string, string> = {
   pinterest_followers: "pinterest_followers",
   x_followers: "x_followers",
   snapchat_followers: "snapchat_followers",
+  youtube_followers: "youtube_subscribers",
 
   social_media_presence: "social_media_presence",
+  social_media_score: "social_media_presence",
   total_followers: "total_followers",
   authority_score: "authority_score",
+  buyerhq_rank: "buyerhqrank",
+  buyerhqrank: "buyerhqrank",
   last_updated: "last_updated",
 };
 
-export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
+export function parseBulkAgentRows(input: unknown, options: ParseBulkOptions = {}): AgentBulkParseResult {
   const sourceRows = Array.isArray(input) ? input : [input];
   const rows: AgentInsert[] = [];
   const errors: string[] = [];
@@ -105,17 +121,24 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
 
     const raw = normalizeInputRow(rawItem as Record<string, unknown>);
 
+    const inferredState =
+      normalizeStateCode(raw.state) ||
+      extractStateFromText(`${toText(raw.area_specialist)} ${toText(raw.address)}`) ||
+      normalizeStateCode(options.defaultState);
+    const inferredSuburbs = toText(raw.suburbs) || toText(raw.address) || toText(raw.area_specialist);
+    const inferredArea = toText(raw.area_specialist) || toText(raw.suburbs) || toText(raw.address);
+
     const simplified = normalizeSimplifiedBuyerhqrankRow({
       agency_name: raw.agency_name,
-      state: raw.state,
-      suburbs: raw.suburbs,
+      state: inferredState,
+      suburbs: inferredSuburbs,
       specialisations: raw.specialisations,
       years_of_experience: raw.years_of_experience,
       properties_purchased: raw.properties_purchased,
       verified: raw.verified,
       profile_status: raw.profile_status,
       claimed_at: raw.claimed_at,
-      area_specialist: raw.area_specialist,
+      area_specialist: inferredArea,
       fee_structure: raw.fee_structure,
       google_rating: raw.google_rating,
       google_reviews: raw.google_reviews,
@@ -127,8 +150,8 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       trustpilot_reviews: raw.trustpilot_reviews,
       ratemyagent_rating: raw.ratemyagent_rating,
       ratemyagent_reviews: raw.ratemyagent_reviews,
-      profile_description: raw.profile_description,
-      about: raw.about,
+      profile_description: raw.profile_description ?? raw.agent_bio,
+      about: raw.about ?? raw.about_agency,
       social_media_presence: raw.social_media_presence,
       total_followers: raw.total_followers,
       authority_score: raw.authority_score,
@@ -321,6 +344,16 @@ function normalizeWebsiteUrl(value: string | null) {
   if (!value) return null;
   if (/^https?:\/\//i.test(value)) return value;
   return `https://${value}`;
+}
+
+function normalizeStateCode(value: unknown) {
+  const normalized = toText(value).toUpperCase();
+  return stateCodes.has(normalized) ? normalized : "";
+}
+
+function extractStateFromText(value: string) {
+  const match = value.toUpperCase().match(/\b(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)\b/);
+  return match?.[1] ?? "";
 }
 
 function normalizeDuplicateText(value: string) {

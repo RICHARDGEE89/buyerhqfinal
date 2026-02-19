@@ -12,22 +12,25 @@ import {
   type DuplicateResolutionStrategy,
 } from "@/lib/agent-bulk-upload";
 import {
-  buildSimplifiedBuyerhqrankTemplateRow,
-  simplifiedBuyerhqrankHeadings,
+  buildUniversalAgentUploadTemplateRow,
+  universalAgentUploadHeadings,
 } from "@/lib/buyerhqrank-simplified";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Textarea } from "@/components/ui/Textarea";
 
-const starterJson = JSON.stringify([buildSimplifiedBuyerhqrankTemplateRow()], null, 2);
 type UploadDuplicateStrategy = DuplicateResolutionStrategy | "ask";
+type RawUploadRow = Record<string, unknown>;
+
+const stateOptions = ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 
 export default function BulkUploadPage() {
-  const [jsonData, setJsonData] = useState(starterJson);
+  const [loadedRows, setLoadedRows] = useState<RawUploadRow[]>([]);
+  const [loadedFileName, setLoadedFileName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [preview, setPreview] = useState<AgentBulkParseResult | null>(null);
   const [duplicateStrategy, setDuplicateStrategy] = useState<UploadDuplicateStrategy>("ask");
+  const [defaultState, setDefaultState] = useState("VIC");
 
   const previewSummary = useMemo(() => {
     return {
@@ -37,63 +40,56 @@ export default function BulkUploadPage() {
     };
   }, [preview]);
 
-  const validateJson = () => {
-    setResult(null);
-    try {
-      const parsed = JSON.parse(jsonData) as unknown;
-      const nextPreview = parseBulkAgentRows(parsed);
-      setPreview(nextPreview);
-
-      if (nextPreview.errors.length > 0) {
-        setResult({
-          success: false,
-          message: `Validation found ${nextPreview.errors.length} issue(s).`,
-        });
-        return;
-      }
-
-      setResult({
-        success: true,
-        message: `Validation passed. ${nextPreview.rows.length} row(s) ready for upload.`,
-      });
-    } catch (parseError) {
+  const validateRows = () => {
+    if (loadedRows.length === 0) {
+      setResult({ success: false, message: "Upload a CSV or Excel file first." });
       setPreview(null);
+      return null;
+    }
+    const parsed = parseBulkAgentRows(loadedRows, { defaultState });
+    setPreview(parsed);
+    if (parsed.errors.length > 0) {
       setResult({
         success: false,
-        message: parseError instanceof Error ? parseError.message : "Invalid payload.",
+        message: `Validation found ${parsed.errors.length} issue(s).`,
       });
+      return null;
     }
+    setResult({
+      success: true,
+      message: `Validation passed. ${parsed.rows.length} row(s) ready for upload.`,
+    });
+    return parsed;
   };
 
   const handleSpreadsheetFile = async (file: File) => {
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-    if (extension === "json") {
-      const text = await file.text();
-      setJsonData(text);
-      return;
+    if (!["csv", "xls", "xlsx"].includes(extension)) {
+      throw new Error("Use CSV or Excel only (.csv, .xls, .xlsx).");
     }
 
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) throw new Error("No worksheet found in uploaded file.");
-
     const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-    setJsonData(JSON.stringify(rows, null, 2));
+    const rows = XLSX.utils.sheet_to_json<RawUploadRow>(sheet, { defval: "" });
+
+    setLoadedRows(rows);
+    setLoadedFileName(file.name);
+    setPreview(null);
+    setResult({
+      success: true,
+      message: `${file.name} loaded with ${rows.length} row(s). Click Validate.`,
+    });
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setResult(null);
-
     try {
       await handleSpreadsheetFile(file);
-      setResult({
-        success: true,
-        message: `${file.name} loaded. Review and validate before upload.`,
-      });
     } catch (error) {
       setResult({
         success: false,
@@ -109,7 +105,7 @@ export default function BulkUploadPage() {
     setResult(null);
 
     try {
-      const parsed = parseBulkAgentRows(JSON.parse(jsonData) as unknown);
+      const parsed = preview ?? parseBulkAgentRows(loadedRows, { defaultState });
       setPreview(parsed);
 
       if (parsed.rows.length === 0) {
@@ -133,7 +129,7 @@ export default function BulkUploadPage() {
         if (!promptChoice) {
           setResult({
             success: false,
-            message: "Upload cancelled. Resolve duplicate agencies or choose a duplicate strategy.",
+            message: "Upload cancelled. Resolve duplicates or choose a duplicate strategy.",
           });
           setIsUploading(false);
           return;
@@ -173,7 +169,8 @@ export default function BulkUploadPage() {
         success: true,
         message: `Upload complete. ${parsed.rows.length} profile(s) processed.`,
       });
-      setJsonData(starterJson);
+      setLoadedRows([]);
+      setLoadedFileName("");
       setPreview(null);
     } catch (uploadError) {
       setResult({
@@ -186,10 +183,10 @@ export default function BulkUploadPage() {
   };
 
   const downloadCsvTemplate = () => {
-    const templateRow = buildSimplifiedBuyerhqrankTemplateRow();
-    const header = simplifiedBuyerhqrankHeadings.join(",");
-    const row = simplifiedBuyerhqrankHeadings
-      .map((heading) => csvValue(templateRow[heading as keyof typeof templateRow]))
+    const templateRow = buildUniversalAgentUploadTemplateRow();
+    const header = universalAgentUploadHeadings.join(",");
+    const row = universalAgentUploadHeadings
+      .map((heading) => csvValue(templateRow[heading]))
       .join(",");
     const csv = `${header}\n${row}\n`;
 
@@ -197,7 +194,7 @@ export default function BulkUploadPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "buyerhqrank_bulk_template.csv";
+    link.download = "buyerhq_universal_upload_template.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -211,19 +208,18 @@ export default function BulkUploadPage() {
             Back to dashboard
           </Link>
         </div>
-        <h1 className="text-heading">Bulk agency upload</h1>
+        <h1 className="text-heading">Universal agency upload</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Upload JSON, CSV, or XLSX and let BuyerHQ parse, validate, enrich, and calculate BUYERHQRANK fields
-          automatically.
+          Upload Excel or CSV directly. No JSON step required. Use the template below for fastest imports.
         </p>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-[1fr_360px]">
-        <Card className="p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <section className="grid gap-3 lg:grid-cols-[1fr_380px]">
+        <Card className="space-y-3 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="inline-flex items-center gap-2 font-mono text-label uppercase text-text-secondary">
               <FileSpreadsheet size={14} />
-              Spreadsheet / JSON payload
+              File upload only
             </p>
             <div className="flex flex-wrap gap-2">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-body-sm text-text-secondary hover:text-text-primary">
@@ -231,12 +227,12 @@ export default function BulkUploadPage() {
                 Import file
                 <input
                   type="file"
-                  accept=".json,.csv,.tsv,.xlsx,.xls"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                   onChange={(event) => void handleFileUpload(event)}
                 />
               </label>
-              <Button variant="secondary" onClick={validateJson}>
+              <Button variant="secondary" onClick={validateRows}>
                 Validate
               </Button>
               <Button variant="secondary" onClick={downloadCsvTemplate}>
@@ -247,46 +243,52 @@ export default function BulkUploadPage() {
               </Button>
             </div>
           </div>
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-2 p-2">
-            <label htmlFor="duplicate-strategy" className="text-caption text-text-secondary">
-              Duplicate handling
-            </label>
-            <select
-              id="duplicate-strategy"
-              value={duplicateStrategy}
-              onChange={(event) => setDuplicateStrategy(event.target.value as UploadDuplicateStrategy)}
-              className="rounded-md border border-border bg-surface px-2 py-1 text-caption text-text-primary"
-            >
-              <option value="ask">Ask me when duplicates are detected</option>
-              <option value="abort">Block upload if duplicates exist</option>
-              <option value="update_existing">Update matching existing agency records</option>
-              <option value="skip_duplicates">Skip duplicate rows</option>
-            </select>
+
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="rounded-md border border-border bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+              File: <span className="text-text-primary">{loadedFileName || "No file loaded yet."}</span>
+            </div>
+            <div className="rounded-md border border-border bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+              Rows detected: <span className="text-text-primary">{loadedRows.length}</span>
+            </div>
           </div>
-          <Textarea
-            value={jsonData}
-            onChange={(event) => setJsonData(event.target.value)}
-            className="min-h-[380px] font-mono text-caption"
-            placeholder={starterJson}
-          />
+
+          <div className="grid gap-2 md:grid-cols-2">
+            <label className="rounded-md border border-border bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+              Default state for blank rows
+              <select
+                value={defaultState}
+                onChange={(event) => setDefaultState(event.target.value)}
+                className="mt-1 block w-full rounded-md border border-border bg-surface px-2 py-1 text-body-sm text-text-primary"
+              >
+                {stateOptions.map((state) => (
+                  <option key={`state-${state || "blank"}`} value={state}>
+                    {state || "No default"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="rounded-md border border-border bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+              Duplicate handling
+              <select
+                value={duplicateStrategy}
+                onChange={(event) => setDuplicateStrategy(event.target.value as UploadDuplicateStrategy)}
+                className="mt-1 block w-full rounded-md border border-border bg-surface px-2 py-1 text-body-sm text-text-primary"
+              >
+                <option value="ask">Ask me when duplicates are detected</option>
+                <option value="abort">Block upload if duplicates exist</option>
+                <option value="update_existing">Update matching existing records</option>
+                <option value="skip_duplicates">Skip duplicate rows</option>
+              </select>
+            </label>
+          </div>
         </Card>
 
         <div className="space-y-3">
           <Card className="space-y-2 p-4">
-            <h2 className="text-subheading">Validation engine</h2>
-            <ul className="space-y-1 text-caption text-text-secondary">
-              <li>Draft 2020-12 JSON schema enforcement on every row.</li>
-              <li>Blank numeric values auto-normalize to 0 safely.</li>
-              <li>BUYERHQRANK fields are system-calculated and non-manual.</li>
-              <li>Company logo fallback uses website favicon when avatar is missing.</li>
-              <li>Supports JSON, CSV, TSV, XLSX, and XLS import workflows.</li>
-              <li>Parses your exact simplified headings in snake_case for every user row.</li>
-            </ul>
-          </Card>
-          <Card className="space-y-2 p-4">
-            <h2 className="text-subheading">Accepted headings</h2>
+            <h2 className="text-subheading">Universal accepted headings</h2>
             <p className="overflow-x-auto rounded-md border border-border bg-surface-2 p-2 font-mono text-[11px] leading-5 text-text-secondary">
-              {simplifiedBuyerhqrankHeadings.join(" ")}
+              {universalAgentUploadHeadings.join(" | ")}
             </p>
           </Card>
 

@@ -39,6 +39,61 @@ export const simplifiedBuyerhqrankHeadings = [
   "last_updated",
 ] as const;
 
+export const universalAgentUploadHeadings = [
+  "Agent Name",
+  "Agency Name",
+  "Address",
+  "Website",
+  "Phone",
+  "Google Rating",
+  "Google Reviews",
+  "Specialist",
+  "Area",
+  "About Agency",
+  "Agent Bio",
+  "Experience",
+  "Properties",
+  "Fee Structure",
+  "BuyerHQ Rank",
+  "Social Media Score",
+  "Facebook Rating",
+  "Facebook Reviews",
+  "TikTok Followers",
+  "Instagram Followers",
+  "Youtube Followers",
+  "Total Followers",
+] as const;
+
+export type UniversalAgentUploadHeading = (typeof universalAgentUploadHeadings)[number];
+export type UniversalAgentUploadRow = Record<UniversalAgentUploadHeading, string | number>;
+
+export function buildUniversalAgentUploadTemplateRow(): UniversalAgentUploadRow {
+  return {
+    "Agent Name": "",
+    "Agency Name": "",
+    Address: "",
+    Website: "",
+    Phone: "",
+    "Google Rating": 0,
+    "Google Reviews": 0,
+    Specialist: "",
+    Area: "",
+    "About Agency": "",
+    "Agent Bio": "",
+    Experience: 0,
+    Properties: 0,
+    "Fee Structure": "",
+    "BuyerHQ Rank": "STARTER",
+    "Social Media Score": "D",
+    "Facebook Rating": 0,
+    "Facebook Reviews": 0,
+    "TikTok Followers": 0,
+    "Instagram Followers": 0,
+    "Youtube Followers": 0,
+    "Total Followers": 0,
+  };
+}
+
 export type SimplifiedBuyerhqrankHeading = (typeof simplifiedBuyerhqrankHeadings)[number];
 
 export type SimplifiedBuyerhqrankRow = {

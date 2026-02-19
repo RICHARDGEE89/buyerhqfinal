@@ -6,7 +6,6 @@ import { Grid2X2, List } from "lucide-react";
 
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/Input";
@@ -70,10 +69,10 @@ export default function AgentsClientOnly() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [stateFilter, setStateFilter] = useState("");
-  const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
-  const [hasFeeOnly, setHasFeeOnly] = useState(false);
-  const [hasReviewsOnly, setHasReviewsOnly] = useState(false);
+  const [selectedSpecialization, setSelectedSpecialization] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "unverified">("verified");
+  const [feeFilter, setFeeFilter] = useState<"all" | "available">("all");
+  const [reviewsFilter, setReviewsFilter] = useState<"all" | "available">("all");
   const [minRating, setMinRating] = useState("");
   const [minExperience, setMinExperience] = useState("0");
   const [sortBy, setSortBy] = useState<SortValue>("rating_desc");
@@ -88,9 +87,10 @@ export default function AgentsClientOnly() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     if (stateFilter) params.set("state", stateFilter);
-    if (verifiedOnly) params.set("verified", "true");
-    if (hasFeeOnly) params.set("hasFee", "true");
-    if (hasReviewsOnly) params.set("minReviews", "1");
+    if (verifiedFilter === "verified") params.set("verified", "true");
+    if (verifiedFilter === "unverified") params.set("verified", "false");
+    if (feeFilter === "available") params.set("hasFee", "true");
+    if (reviewsFilter === "available") params.set("minReviews", "1");
     if (minRating) params.set("minRating", minRating);
     if (minExperience !== "0") params.set("minExperience", minExperience);
     params.set("sort", sortBy);
@@ -98,15 +98,15 @@ export default function AgentsClientOnly() {
     if (selectedLocation?.suburb) params.set("suburb", selectedLocation.suburb);
     if (selectedLocation?.postcode) params.set("postcode", selectedLocation.postcode);
     if (!selectedLocation && locationInput.trim()) params.set("location", locationInput.trim());
-    if (selectedSpecializations.length) {
-      params.set("specializations", selectedSpecializations.join(","));
+    if (selectedSpecialization) {
+      params.set("specialization", selectedSpecialization);
     }
     params.set("page", String(page));
     params.set("limit", String(limit));
     return params.toString();
   }, [
-    hasFeeOnly,
-    hasReviewsOnly,
+    feeFilter,
+    reviewsFilter,
     limit,
     locationInput,
     minExperience,
@@ -114,10 +114,10 @@ export default function AgentsClientOnly() {
     page,
     search,
     selectedLocation,
-    selectedSpecializations,
+    selectedSpecialization,
     sortBy,
     stateFilter,
-    verifiedOnly,
+    verifiedFilter,
   ]);
 
   useEffect(() => {
@@ -190,13 +190,6 @@ export default function AgentsClientOnly() {
     setPage(1);
   };
 
-  const onToggleSpecialization = (specialization: string, checked: boolean) => {
-    setSelectedSpecializations((current) =>
-      checked ? [...current, specialization] : current.filter((item) => item !== specialization)
-    );
-    resetPagination();
-  };
-
   const hasMore = agents.length < total;
   const topSuburbs = useMemo(() => locationHints.slice(0, 20), [locationHints]);
   const activeSearchLabel = useMemo(() => {
@@ -209,7 +202,7 @@ export default function AgentsClientOnly() {
     if (stateFilter) {
       return stateFilter;
     }
-    return "Australia-wide";
+    return "All states";
   }, [locationInput, selectedLocation, stateFilter]);
 
   const handleSaveSearch = async () => {
@@ -254,8 +247,8 @@ export default function AgentsClientOnly() {
   return (
     <div className="container space-y-6 pb-16 pt-10">
       <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
-        <h1 className="text-display text-text-primary md:text-display-lg">Find buyer&apos;s agents</h1>
-        <p className="mt-3 max-w-2xl text-body text-text-secondary">
+        <h1 className="text-heading text-text-primary md:text-display">Find buyer&apos;s agents</h1>
+        <p className="mt-3 max-w-2xl text-body-sm text-text-secondary">
           Search a verified directory built from collated review signals and negotiated fee outcomes, then let BuyerHQ
           broker the next step.
         </p>
@@ -347,7 +340,7 @@ export default function AgentsClientOnly() {
             }}
             options={[
               { value: "rating_desc", label: "Top rated" },
-              { value: "authority_desc", label: "Highest BUYERHQRANK score" },
+              { value: "authority_desc", label: "Highest Buyer HQ Rank score" },
               { value: "experience_desc", label: "Most experience" },
               { value: "reviews_desc", label: "Most reviews" },
               { value: "newest_desc", label: "Newest profiles" },
@@ -385,19 +378,16 @@ export default function AgentsClientOnly() {
             />
           </div>
 
-          <div className="space-y-2">
-            <p className="font-mono text-label uppercase text-text-secondary">Specialization</p>
-            <div className="grid gap-2">
-              {specializations.map((item) => (
-                <Checkbox
-                  key={item}
-                  checked={selectedSpecializations.includes(item)}
-                  onChange={(checked) => onToggleSpecialization(item, checked)}
-                  label={item}
-                />
-              ))}
-            </div>
-          </div>
+          <Select
+            label="Specialist"
+            value={selectedSpecialization}
+            onChange={(event) => {
+              setSelectedSpecialization(event.target.value);
+              resetPagination();
+            }}
+            placeholder="All specialists"
+            options={specializations.map((item) => ({ value: item, label: item }))}
+          />
 
           <div className="space-y-2 border-t border-border pt-3">
             <p className="font-mono text-label uppercase text-text-secondary">Popular suburbs</p>
@@ -428,30 +418,43 @@ export default function AgentsClientOnly() {
             )}
           </div>
 
-          <div className="space-y-2 border-t border-border pt-3">
-            <Checkbox
-              checked={verifiedOnly}
-              onChange={(checked) => {
-                setVerifiedOnly(checked);
+          <div className="grid gap-2 border-t border-border pt-3">
+            <Select
+              label="Verified"
+              value={verifiedFilter}
+              onChange={(event) => {
+                setVerifiedFilter(event.target.value as "all" | "verified" | "unverified");
                 resetPagination();
               }}
-              label="Verified only"
+              options={[
+                { value: "all", label: "All" },
+                { value: "verified", label: "Verified only" },
+                { value: "unverified", label: "Unverified only" },
+              ]}
             />
-            <Checkbox
-              checked={hasFeeOnly}
-              onChange={(checked) => {
-                setHasFeeOnly(checked);
+            <Select
+              label="Fee structure"
+              value={feeFilter}
+              onChange={(event) => {
+                setFeeFilter(event.target.value as "all" | "available");
                 resetPagination();
               }}
-              label="Fee structure available"
+              options={[
+                { value: "all", label: "Any" },
+                { value: "available", label: "Available only" },
+              ]}
             />
-            <Checkbox
-              checked={hasReviewsOnly}
-              onChange={(checked) => {
-                setHasReviewsOnly(checked);
+            <Select
+              label="Reviews"
+              value={reviewsFilter}
+              onChange={(event) => {
+                setReviewsFilter(event.target.value as "all" | "available");
                 resetPagination();
               }}
-              label="Has review history"
+              options={[
+                { value: "all", label: "Any" },
+                { value: "available", label: "Has verified reviews" },
+              ]}
             />
           </div>
           <div className="border-t border-border pt-3">
@@ -463,10 +466,10 @@ export default function AgentsClientOnly() {
                 setLocationInput("");
                 setSelectedLocation(null);
                 setStateFilter("");
-                setSelectedSpecializations([]);
-                setVerifiedOnly(true);
-                setHasFeeOnly(false);
-                setHasReviewsOnly(false);
+                setSelectedSpecialization("");
+                setVerifiedFilter("verified");
+                setFeeFilter("all");
+                setReviewsFilter("all");
                 setMinRating("");
                 setMinExperience("0");
                 setSortBy("rating_desc");
