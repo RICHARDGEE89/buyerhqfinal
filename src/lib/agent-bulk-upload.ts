@@ -170,7 +170,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
     const avatarUrl = toNullableText(raw.avatar_url) || toNullableText(raw.headshot_url) || avatarFromSite;
     const mergedBio = [computed.profile_description, computed.about].filter(Boolean).join("\n\n").trim() || null;
 
-    const baseRow: Record<string, unknown> = {
+    const baseRow: AgentInsert & Record<string, unknown> = {
       name: agentName,
       email,
       phone: toNullableText(raw.phone),
@@ -221,7 +221,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
     };
 
     const withDerived = applyBuyerhqrankFields(baseRow);
-    rows.push(withDerived as AgentInsert);
+    rows.push(withDerived);
   });
 
   return {
