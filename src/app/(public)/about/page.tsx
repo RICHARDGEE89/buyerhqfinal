@@ -17,7 +17,7 @@ export default function AboutPage() {
         <h1 className="text-display text-text-primary md:text-display-lg">About BuyerHQ</h1>
         <p className="mt-3 max-w-3xl text-body-lg text-text-secondary">
           BuyerHQ exists to make buyer representation easier to discover, compare, and trust across
-          Australia.
+          Australia while keeping every introduction client-focused and brokered through our platform.
         </p>
       </section>
 
@@ -42,7 +42,7 @@ export default function AboutPage() {
         <Card className="p-5">
           <h3 className="text-subheading">Verification</h3>
           <p className="mt-2 text-body-sm text-text-secondary">
-            Profiles are reviewed before a verified badge is applied.
+            Profiles can be published by admin or via agent self-onboarding, then reviewed before verification is applied.
           </p>
         </Card>
         <Card className="p-5">
@@ -52,9 +52,9 @@ export default function AboutPage() {
           </p>
         </Card>
         <Card className="p-5">
-          <h3 className="text-subheading">Independence</h3>
+          <h3 className="text-subheading">Brokered introductions</h3>
           <p className="mt-2 text-body-sm text-text-secondary">
-            BuyerHQ is a marketplace directory, not a selling agency.
+            BuyerHQ coordinates conversations and details as middleman so buyers are protected by a managed workflow.
           </p>
         </Card>
       </section>

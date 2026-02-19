@@ -71,7 +71,7 @@ export function Header() {
             href="/list-agency"
             className="rounded-md bg-accent px-4 py-2 text-body-sm font-semibold text-text-inverse transition-opacity hover:opacity-90"
           >
-            List Your Agency
+            Create Agent Profile
           </Link>
         </div>
 
@@ -130,7 +130,7 @@ export function Header() {
               href="/list-agency"
               className="rounded-md bg-accent px-4 py-3 text-center text-body font-semibold text-text-inverse"
             >
-              List Your Agency
+              Create Agent Profile
             </Link>
           </div>
         </div>

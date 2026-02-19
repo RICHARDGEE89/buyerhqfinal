@@ -24,12 +24,12 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "BuyerHQ | Australia's Verified Buyer's Agent Directory",
   description:
-    "Find verified buyer's agents across Australia. Compare specialists, read reviews, and enquire in minutes.",
+    "Find verified buyer's agents across Australia. Compare specialists and submit brokered enquiries managed by BuyerHQ.",
   metadataBase: new URL("https://buyerhq.com.au"),
   openGraph: {
     title: "BuyerHQ | Australia's Verified Buyer's Agent Directory",
     description:
-      "Find verified buyer's agents across Australia. Compare specialists, read reviews, and enquire in minutes.",
+      "Find verified buyer's agents across Australia with brokered, client-focused introductions.",
     siteName: "BuyerHQ",
     locale: "en_AU",
     type: "website",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "BuyerHQ",
-    description: "Australia's verified buyer's agent directory.",
+    description: "Australia's verified buyer's agent directory with brokered introductions.",
   },
 };
 

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { extractMissingColumnName, isPolicyRecursionError } from "@/lib/db-errors";
+import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,28 +33,59 @@ export async function POST(request: Request) {
     }
 
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("enquiries")
-      .insert({
-        agent_id: payload.agent_id,
-        buyer_name: payload.buyer_name,
-        buyer_email: payload.buyer_email,
-        buyer_phone: payload.buyer_phone ?? null,
-        budget_min: payload.budget_min ?? null,
-        budget_max: payload.budget_max ?? null,
-        target_suburbs: payload.target_suburbs ?? [],
-        property_type: payload.property_type ?? null,
-        message: payload.message,
-        status: payload.status ?? "new",
-      })
-      .select("id")
-      .single();
+    const insertPayload: Database["public"]["Tables"]["enquiries"]["Insert"] & Record<string, unknown> = {
+      agent_id: payload.agent_id,
+      buyer_name: payload.buyer_name,
+      buyer_email: payload.buyer_email,
+      buyer_phone: payload.buyer_phone ?? null,
+      budget_min: payload.budget_min ?? null,
+      budget_max: payload.budget_max ?? null,
+      target_suburbs: payload.target_suburbs ?? [],
+      property_type: payload.property_type ?? null,
+      message: payload.message,
+      status: payload.status ?? "new",
+    };
 
-    if (error || !data) {
-      return NextResponse.json({ error: error?.message ?? "Unable to insert enquiry" }, { status: 500 });
+    const strippedColumns: string[] = [];
+    let enquiryId: string | null = null;
+    let lastError: string | null = null;
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const { data, error } = await supabase
+        .from("enquiries")
+        .insert(insertPayload as Database["public"]["Tables"]["enquiries"]["Insert"])
+        .select("id")
+        .single();
+      if (!error && data?.id) {
+        enquiryId = data.id;
+        break;
+      }
+
+      lastError = error?.message ?? "Unable to insert enquiry";
+      if (error && isPolicyRecursionError(error.message)) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      const missingColumn = error ? extractMissingColumnName(error.message, "enquiries") : null;
+      if (missingColumn && Object.prototype.hasOwnProperty.call(insertPayload, missingColumn)) {
+        delete insertPayload[missingColumn];
+        strippedColumns.push(missingColumn);
+        continue;
+      }
+
+      break;
     }
 
-    return NextResponse.json({ success: true, enquiry_id: data.id });
+    if (!enquiryId) {
+      return NextResponse.json({ error: lastError ?? "Unable to insert enquiry" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      enquiry_id: enquiryId,
+      schemaFallback: strippedColumns.length > 0,
+      strippedColumns,
+    });
   } catch {
     return NextResponse.json({ error: "Unable to submit enquiry" }, { status: 500 });
   }

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 export const metadata: Metadata = {
   title: "How It Works | BuyerHQ",
   description:
-    "Understand the BuyerHQ process for discovering, comparing, and enquiring with verified buyer's agents.",
+    "Understand the BuyerHQ process for discovering, comparing, and sending brokered enquiries to verified buyer's agents.",
 };
 
 export default function HowItWorksPage() {
@@ -22,7 +22,7 @@ export default function HowItWorksPage() {
     },
     {
       title: "Step 3 — Enquire and engage",
-      text: "Send direct enquiries and decide who to engage based on communication quality, approach, and strategy alignment.",
+      text: "Submit a brokered enquiry. BuyerHQ coordinates introductions and next-step details with the selected agent.",
     },
   ];
 

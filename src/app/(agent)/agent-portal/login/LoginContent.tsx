@@ -90,7 +90,7 @@ export default function LoginContent() {
             Forgot password?
           </button>
           <Link href="/list-agency" className="text-text-secondary hover:text-text-primary">
-            List Your Agency
+            Create Agent Profile
           </Link>
         </div>
       </Card>

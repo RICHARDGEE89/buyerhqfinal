@@ -267,6 +267,7 @@ export default function SavedAgentsPage() {
             type="email"
             value={buyerEmail}
             onChange={(event) => setBuyerEmail(event.target.value)}
+            helperText="Used for in-platform status updates. BuyerHQ brokers all outreach."
           />
           <Input
             label="Contact number (optional)"

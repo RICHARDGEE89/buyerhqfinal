@@ -90,7 +90,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
       <section className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-heading">Ready to find your agent?</h2>
         <p className="mt-2 text-body text-text-secondary">
-          Explore verified specialists and enquire directly from the directory.
+          Explore verified specialists and submit a brokered enquiry managed by BuyerHQ.
         </p>
         <div className="mt-4">
           <Button asChild>

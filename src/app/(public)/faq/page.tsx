@@ -45,7 +45,7 @@ const faqs = [
   },
   {
     q: "9. How do I list my business?",
-    a: "Use the 'List Your Agency' link in the header. Complete the onboarding flow with your licence and profile details. Applications are reviewed before verification.",
+    a: "Use the 'Create Agent Profile' link in the header. Complete onboarding with your licence and profile details. Profiles can also be uploaded directly by BuyerHQ admin. Every listing is reviewed before verification.",
   },
   {
     q: "10. Can't find an agent in my suburb?",

@@ -8,7 +8,7 @@ const footerLinks = {
     { name: "Blog", href: "/blog" },
   ],
   professionals: [
-    { name: "List Your Agency", href: "/list-agency" },
+    { name: "Create Agent Profile", href: "/list-agency" },
     { name: "Agent Portal", href: "/agent-portal" },
     { name: "Agent Login", href: "/agent-portal/login" },
     { name: "Admin Console", href: "/admin" },
@@ -31,8 +31,8 @@ export function Footer() {
               BuyerHQ
             </Link>
             <p className="max-w-xs text-body-sm text-text-secondary">
-              Australia&apos;s verified buyer&apos;s agent directory. Independent, buyer-first, and free
-              for buyers.
+              Australia&apos;s verified buyer&apos;s agent directory. Client-focused and brokered by BuyerHQ
+              from request to introduction.
             </p>
           </div>
 

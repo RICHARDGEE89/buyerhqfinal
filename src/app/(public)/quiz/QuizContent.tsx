@@ -451,6 +451,7 @@ export default function QuizContent() {
                     type="email"
                     value={enquiryEmail}
                     onChange={(event) => setEnquiryEmail(event.target.value)}
+                    helperText="Used for in-platform updates only. BuyerHQ handles outreach."
                   />
                   <Input
                     label="Phone (optional)"

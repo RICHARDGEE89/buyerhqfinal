@@ -288,9 +288,10 @@ export default function ListAgencyContent() {
   return (
     <div className="container space-y-6 pb-16 pt-10">
       <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
-        <h1 className="text-display text-text-primary md:text-display-lg">List Your Agency</h1>
+        <h1 className="text-display text-text-primary md:text-display-lg">Create Agent Profile</h1>
         <p className="mt-3 max-w-2xl text-body text-text-secondary">
-          Complete the onboarding flow to apply for a verified BuyerHQ listing.
+          Agents can onboard directly here or be published by our admin team. BuyerHQ brokers all buyer conversations
+          and operational details.
         </p>
       </section>
 

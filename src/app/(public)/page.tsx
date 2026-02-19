@@ -64,9 +64,14 @@ export default async function HomePage() {
             Find trusted buyer representation in minutes.
           </h1>
           <p className="mt-4 max-w-2xl text-body-lg text-text-secondary">
-            Compare verified advisors by location, specialisation, and proven outcomes. BuyerHQ is
-            independent and free for buyers.
+            Compare verified advisors by location, specialisation, and proven outcomes through a
+            client-focused, brokered platform.
           </p>
+          <ul className="mt-4 grid gap-2 text-body-sm text-text-secondary">
+            <li>• Client focused: buyers compare clearly and submit requests through BuyerHQ.</li>
+            <li>• Agents can be published by our admin team or self-onboard through profile setup.</li>
+            <li>• BuyerHQ brokers conversations and operational details as middleman.</li>
+          </ul>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild>
               <Link href="/agents">Find an Agent</Link>

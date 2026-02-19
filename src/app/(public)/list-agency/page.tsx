@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import ListAgencyContent from "./ListAgencyContent";
 
 export const metadata: Metadata = {
-  title: "List Your Agency | BuyerHQ",
-  description: "Apply to list your buyer's agency on BuyerHQ.",
+  title: "Create Agent Profile | BuyerHQ",
+  description: "Create your buyer's agent profile for admin review and managed onboarding on BuyerHQ.",
 };
 
 export default function ListAgencyPage() {
