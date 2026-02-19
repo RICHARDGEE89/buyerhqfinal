@@ -179,7 +179,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       about: computed.about || null,
       avatar_url: avatarUrl,
       slug: toNullableText(raw.slug),
-      state: computed.state,
+      state: computed.state as AgentInsert["state"],
       suburbs,
       specializations,
       years_experience: computed.years_of_experience,
