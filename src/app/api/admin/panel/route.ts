@@ -1,16 +1,31 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { buildDuplicateAgencyKey, parseBulkAgentRows } from "@/lib/agent-bulk-upload";
+import { isAdminEmail } from "@/lib/admin-access";
 import { normalizeAgents } from "@/lib/agent-compat";
+import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
 import type { Database, Json } from "@/lib/database.types";
-import { isMissingColumnError, isMissingRelationError, isPolicyRecursionError } from "@/lib/db-errors";
+import {
+  extractMissingColumnName,
+  extractNotNullColumnName,
+  isMissingColumnError,
+  isMissingRelationError,
+  isOnConflictConstraintError,
+  isPolicyRecursionError,
+} from "@/lib/db-errors";
+import { syncExternalReviews } from "@/lib/review-sync";
+import { buildAgentSlug } from "@/lib/slug";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const adminAllowList = new Set(["richardgoodwin@live.com", "cam.dirtymack@gmail.com"]);
 const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
+type DbTables = Database["public"]["Tables"];
+type TableName = keyof DbTables;
+type DuplicateResolutionStrategy = "abort" | "update_existing" | "skip_duplicates";
 
 async function getPrivilegedClient() {
   const serverClient = createServerClient();
@@ -23,8 +38,7 @@ async function getPrivilegedClient() {
     return { error: "Unauthorized", status: 401 as const, client: null };
   }
 
-  const email = user.email.toLowerCase();
-  if (!adminAllowList.has(email)) {
+  if (!isAdminEmail(user.email)) {
     return { error: "Forbidden", status: 403 as const, client: null };
   }
 
@@ -53,106 +67,363 @@ function createPublicClient() {
   });
 }
 
-export async function GET() {
-  const privileged = await getPrivilegedClient();
-  if (privileged.error || !privileged.client) {
-    return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+function tableLabel(tableName: TableName) {
+  return String(tableName);
+}
+
+function summarizeWarning(message: string) {
+  if (isPolicyRecursionError(message)) return policyFixHint;
+  return message;
+}
+
+async function fetchTableRows<K extends TableName>(
+  client: SupabaseClient<Database>,
+  tableName: K,
+  warnings: string[],
+  opts?: {
+    orderBy?: string;
+    fallbackClient?: SupabaseClient<Database> | null;
+  }
+): Promise<DbTables[K]["Row"][]> {
+  const orderBy = opts?.orderBy ?? "created_at";
+  let query = client.from(tableName).select("*");
+  if (orderBy) {
+    query = query.order(orderBy as never, { ascending: false });
   }
 
-  const client = privileged.client;
-  const [agentsRes, enquiriesRes, reviewsRes, postsRes, contactsRes, adminRes] = await Promise.all([
-    client.from("agents").select("*").order("created_at", { ascending: false }),
-    client.from("enquiries").select("*").order("created_at", { ascending: false }),
-    client.from("reviews").select("*").order("created_at", { ascending: false }),
-    client.from("blog_posts").select("*").order("created_at", { ascending: false }),
-    client.from("contact_submissions").select("*").order("created_at", { ascending: false }),
-    client.from("admin_accounts").select("*").eq("id", privileged.user.id).maybeSingle(),
-  ]);
+  let { data, error } = await query;
 
-  const firstError =
-    agentsRes.error ||
-    enquiriesRes.error ||
-    reviewsRes.error ||
-    postsRes.error ||
-    contactsRes.error ||
-    adminRes.error;
-
-  if (firstError) {
-    if (isPolicyRecursionError(firstError.message)) {
-      const publicClient = createPublicClient();
-      let publicAgents: { data: Database["public"]["Tables"]["agents"]["Row"][] | null } = { data: [] };
-      let publicReviews: { data: Database["public"]["Tables"]["reviews"]["Row"][] | null } = { data: [] };
-      let publicPosts: { data: Database["public"]["Tables"]["blog_posts"]["Row"][] | null } = { data: [] };
-      if (publicClient) {
-        const [agentsFallbackRes, reviewsFallbackRes, postsFallbackRes] = await Promise.all([
-          publicClient.from("agents").select("*").order("created_at", { ascending: false }),
-          publicClient.from("reviews").select("*").order("created_at", { ascending: false }),
-          publicClient.from("blog_posts").select("*").order("created_at", { ascending: false }),
-        ]);
-        publicAgents = { data: agentsFallbackRes.data };
-        publicReviews = { data: reviewsFallbackRes.data };
-        publicPosts = { data: postsFallbackRes.data };
-      }
-
-      return NextResponse.json({
-        agents: normalizeAgents((publicAgents.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-        enquiries: [],
-        reviews: publicReviews.data ?? [],
-        posts: publicPosts.data ?? [],
-        contacts: [],
-        adminAccount: {
-          id: privileged.user.id,
-          email: privileged.user.email ?? "",
-          created_at: "",
-          preferences: {},
-        },
-        schemaFallback: true,
-        policyFallback: true,
-        warning: policyFixHint,
-      });
-    }
-
-    const fallbackAdmin =
-      adminRes.error &&
-      (isMissingColumnError(adminRes.error.message, "preferences", "admin_accounts") ||
-        isMissingRelationError(adminRes.error.message, "admin_accounts"))
-        ? { id: privileged.user.id, email: privileged.user.email ?? "", created_at: "", preferences: {} }
-        : null;
-
-    if (!fallbackAdmin) {
-      return NextResponse.json({ error: firstError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-      enquiries: enquiriesRes.data ?? [],
-      reviews: reviewsRes.data ?? [],
-      posts: postsRes.data ?? [],
-      contacts: contactsRes.data ?? [],
-      adminAccount: fallbackAdmin,
-      schemaFallback: true,
-    });
+  if (error && orderBy && isMissingColumnError(error.message, orderBy, tableLabel(tableName))) {
+    ({ data, error } = await client.from(tableName).select("*"));
   }
 
-  return NextResponse.json({
-    agents: normalizeAgents((agentsRes.data ?? []) as Database["public"]["Tables"]["agents"]["Row"][]),
-    enquiries: enquiriesRes.data ?? [],
-    reviews: reviewsRes.data ?? [],
-    posts: postsRes.data ?? [],
-    contacts: contactsRes.data ?? [],
-    adminAccount: adminRes.data ?? null,
-    schemaFallback: false,
+  if (!error) {
+    return ((data ?? []) as unknown) as DbTables[K]["Row"][];
+  }
+
+  if (isPolicyRecursionError(error.message) && opts?.fallbackClient) {
+    let fallbackQuery = opts.fallbackClient.from(tableName).select("*");
+    if (orderBy) {
+      fallbackQuery = fallbackQuery.order(orderBy as never, { ascending: false });
+    }
+    let { data: fallbackData, error: fallbackError } = await fallbackQuery;
+
+    if (fallbackError && orderBy && isMissingColumnError(fallbackError.message, orderBy, tableLabel(tableName))) {
+      ({ data: fallbackData, error: fallbackError } = await opts.fallbackClient.from(tableName).select("*"));
+    }
+
+    if (!fallbackError) {
+      warnings.push(`Using public fallback for ${tableLabel(tableName)} due policy recursion.`);
+      return ((fallbackData ?? []) as unknown) as DbTables[K]["Row"][];
+    }
+  }
+
+  if (isMissingRelationError(error.message, tableLabel(tableName))) {
+    warnings.push(`Missing table ${tableLabel(tableName)}. Using empty data.`);
+    return [];
+  }
+
+  warnings.push(`${tableLabel(tableName)}: ${summarizeWarning(error.message)}`);
+  return [];
+}
+
+async function fetchAdminAccountRow(
+  client: SupabaseClient<Database>,
+  user: { id: string; email?: string | null },
+  warnings: string[]
+) {
+  const { data, error } = await client.from("admin_accounts").select("*").eq("id", user.id).maybeSingle();
+
+  if (!error) {
+    return data;
+  }
+
+  if (
+    isMissingRelationError(error.message, "admin_accounts") ||
+    isMissingColumnError(error.message, "preferences", "admin_accounts") ||
+    isPolicyRecursionError(error.message)
+  ) {
+    warnings.push(`admin_accounts: ${summarizeWarning(error.message)}`);
+    return {
+      id: user.id,
+      email: user.email ?? "",
+      created_at: "",
+      preferences: {},
+    };
+  }
+
+  warnings.push(`admin_accounts: ${error.message}`);
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    created_at: "",
+    preferences: {},
+  };
+}
+
+function stripColumnFromAgentRows(
+  rows: Database["public"]["Tables"]["agents"]["Insert"][],
+  column: string
+) {
+  return rows.map((row) => {
+    const next = { ...row } as Record<string, unknown>;
+    delete next[column];
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
   });
 }
 
-export async function POST(request: Request) {
-  const privileged = await getPrivilegedClient();
-  if (privileged.error || !privileged.client) {
-    return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+function addSlugToAgentRows(rows: Database["public"]["Tables"]["agents"]["Insert"][]) {
+  return rows.map((row, index) => {
+    const next = { ...row } as Record<string, unknown>;
+    const existingSlug = typeof next.slug === "string" ? next.slug.trim() : "";
+    if (!existingSlug) {
+      const name = typeof next.name === "string" ? next.name : "";
+      const email = typeof next.email === "string" ? next.email : "";
+      next.slug = buildAgentSlug(name, email, index);
+    }
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
+  });
+}
+
+function applyAgentNotNullFallback(
+  rows: Database["public"]["Tables"]["agents"]["Insert"][],
+  column: string
+) {
+  const normalized = column.toLowerCase();
+
+  if (normalized === "slug") {
+    return {
+      rows: addSlugToAgentRows(rows),
+      changed: true,
+    };
   }
 
-  const client = privileged.client;
-  const payload = (await request.json()) as
+  const mutated = rows.map((row) => {
+    const next = { ...row } as Record<string, unknown>;
+    switch (normalized) {
+      case "created_at":
+        if (!next.created_at) next.created_at = new Date().toISOString();
+        break;
+      case "is_active":
+        if (typeof next.is_active !== "boolean") next.is_active = true;
+        break;
+      case "is_verified":
+        if (typeof next.is_verified !== "boolean") next.is_verified = false;
+        break;
+      case "suburbs":
+        if (!Array.isArray(next.suburbs)) next.suburbs = [];
+        break;
+      case "specializations":
+        if (!Array.isArray(next.specializations)) next.specializations = [];
+        break;
+      default:
+        break;
+    }
+    return next as Database["public"]["Tables"]["agents"]["Insert"];
+  });
+
+  const changed =
+    normalized === "created_at" ||
+    normalized === "is_active" ||
+    normalized === "is_verified" ||
+    normalized === "suburbs" ||
+    normalized === "specializations";
+
+  return { rows: mutated, changed };
+}
+
+function stripColumnFromAgentPatch(
+  patch: Database["public"]["Tables"]["agents"]["Update"],
+  column: string
+) {
+  const next = { ...patch } as Record<string, unknown>;
+  delete next[column];
+  return next as Database["public"]["Tables"]["agents"]["Update"];
+}
+
+function deriveAgentSystemPatch(
+  current: Database["public"]["Tables"]["agents"]["Row"],
+  patch: Database["public"]["Tables"]["agents"]["Update"]
+) {
+  const merged = { ...current, ...patch } as Record<string, unknown>;
+  const derived = applyBuyerhqrankFields(merged);
+  return {
+    total_followers: derived.total_followers,
+    social_media_presence: derived.social_media_presence,
+    authority_score: derived.authority_score,
+    buyerhqrank: derived.buyerhqrank,
+    profile_status: derived.profile_status,
+    verified: derived.verified,
+    claimed_at: derived.claimed_at,
+    last_updated: derived.last_updated,
+    is_verified: derived.is_verified,
+  } as Database["public"]["Tables"]["agents"]["Update"];
+}
+
+async function manualUpsertAgentsWithoutConflict(
+  client: SupabaseClient<Database>,
+  rows: Database["public"]["Tables"]["agents"]["Insert"][]
+) {
+  for (const rawRow of rows) {
+    let row = { ...rawRow } as Database["public"]["Tables"]["agents"]["Insert"];
+
+    if (!row.email) {
+      return { error: { message: "Each uploaded row requires email." } as { message: string } };
+    }
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const { data: existing, error: existingError } = await client
+        .from("agents")
+        .select("id")
+        .eq("email", row.email)
+        .limit(1);
+      if (existingError) {
+        return { error: existingError };
+      }
+
+      const existingId = existing?.[0]?.id;
+      const { error: writeError } = existingId
+        ? await client.from("agents").update(row).eq("id", existingId)
+        : await client.from("agents").insert(row);
+
+      if (!writeError) {
+        break;
+      }
+
+      const missingColumn = extractMissingColumnName(writeError.message, "agents");
+      if (missingColumn) {
+        row = stripColumnFromAgentRows([row], missingColumn)[0];
+        continue;
+      }
+
+      const notNullColumn = extractNotNullColumnName(writeError.message);
+      if (notNullColumn) {
+        const applied = applyAgentNotNullFallback([row], notNullColumn);
+        if (applied.changed) {
+          row = applied.rows[0];
+          continue;
+        }
+      }
+
+      return { error: writeError };
+    }
+  }
+
+  return { error: null };
+}
+
+function normalizeDuplicateKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+type ExistingAgentIdentity = Pick<
+  Database["public"]["Tables"]["agents"]["Row"],
+  "id" | "email" | "name" | "agency_name"
+>;
+
+async function fetchExistingAgentIdentities(
+  client: SupabaseClient<Database>,
+  rows: Database["public"]["Tables"]["agents"]["Insert"][]
+) {
+  const byAgency = new Map<string, ExistingAgentIdentity>();
+  const byName = new Map<string, ExistingAgentIdentity>();
+
+  const agencyNames = Array.from(
+    new Set(
+      rows
+        .map((row) => (typeof row.agency_name === "string" ? row.agency_name.trim() : ""))
+        .filter(Boolean)
+    )
+  );
+  const names = Array.from(
+    new Set(rows.map((row) => (typeof row.name === "string" ? row.name.trim() : "")).filter(Boolean))
+  );
+
+  if (agencyNames.length > 0) {
+    const { data, error } = await client
+      .from("agents")
+      .select("id,email,name,agency_name")
+      .in("agency_name", agencyNames);
+    if (!error) {
+      (data ?? []).forEach((row) => {
+        const key = normalizeDuplicateKey(row.agency_name);
+        if (key && !byAgency.has(key)) byAgency.set(key, row);
+      });
+    }
+  }
+
+  if (names.length > 0) {
+    const { data, error } = await client.from("agents").select("id,email,name,agency_name").in("name", names);
+    if (!error) {
+      (data ?? []).forEach((row) => {
+        const key = normalizeDuplicateKey(row.name);
+        if (key && !byName.has(key)) byName.set(key, row);
+      });
+    }
+  }
+
+  return { byAgency, byName };
+}
+
+export async function GET() {
+  try {
+    const privileged = await getPrivilegedClient();
+    if (privileged.error || !privileged.client) {
+      return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+    }
+
+    const client = privileged.client;
+    const publicClient = createPublicClient();
+    const warnings: string[] = [];
+
+    const [agents, enquiries, brokerStates, brokerNotes, reviews, reviewSources, externalReviews, posts, contacts, adminAccount] = await Promise.all([
+      fetchTableRows(client, "agents", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "enquiries", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "broker_enquiry_states", warnings, { fallbackClient: publicClient, orderBy: "updated_at" }),
+      fetchTableRows(client, "broker_enquiry_notes", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "reviews", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "agency_review_sources", warnings, { fallbackClient: publicClient, orderBy: "updated_at" }),
+      fetchTableRows(client, "external_reviews", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "blog_posts", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "contact_submissions", warnings, { fallbackClient: publicClient }),
+      fetchAdminAccountRow(client, privileged.user, warnings),
+    ]);
+
+    const warningMessage = warnings.length > 0 ? Array.from(new Set(warnings)).join(" | ") : undefined;
+    const policyFallback = warnings.some((item) => item.includes("policy recursion"));
+
+    return NextResponse.json({
+      agents: normalizeAgents(agents as Database["public"]["Tables"]["agents"]["Row"][]),
+      enquiries,
+      brokerStates,
+      brokerNotes,
+      reviews,
+      reviewSources,
+      externalReviews,
+      posts,
+      contacts,
+      adminAccount,
+      schemaFallback: warnings.length > 0,
+      policyFallback,
+      warning: warningMessage,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to load admin panel." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const privileged = await getPrivilegedClient();
+    if (privileged.error || !privileged.client) {
+      return NextResponse.json({ error: privileged.error }, { status: privileged.status });
+    }
+
+    const client = privileged.client;
+    const payload = (await request.json()) as
     | { type: "update_agent"; id: string; patch: Record<string, unknown> }
     | { type: "delete_agent"; id: string }
     | { type: "approve_review"; id: string }
@@ -162,52 +433,196 @@ export async function POST(request: Request) {
     | { type: "resolve_all_contacts" }
     | { type: "close_buyer_enquiries"; buyer_email: string }
     | { type: "update_admin_preferences"; preferences: Json }
-    | { type: "bulk_upsert_agents"; rows: Database["public"]["Tables"]["agents"]["Insert"][] };
+    | { type: "bulk_upsert_agents"; rows: unknown[]; duplicate_strategy?: DuplicateResolutionStrategy }
+    | { type: "claim_agent_profile"; id: string }
+    | { type: "upsert_review_source"; source: Database["public"]["Tables"]["agency_review_sources"]["Insert"] & { id?: string } }
+    | { type: "delete_review_source"; id: string }
+    | {
+      type: "set_external_review_state";
+      id: string;
+      patch: Pick<
+        Database["public"]["Tables"]["external_reviews"]["Update"],
+        "is_approved" | "is_hidden" | "is_featured"
+      >;
+    }
+    | { type: "sync_external_reviews"; sourceId?: string; force?: boolean }
+    | {
+      type: "upsert_broker_state";
+      enquiry_id: string;
+      patch: Partial<
+        Pick<
+          Database["public"]["Tables"]["broker_enquiry_states"]["Insert"],
+          "owner_email" | "priority" | "stage" | "sla_due_at" | "next_action" | "last_touch_at" | "metadata"
+        >
+      >;
+    }
+    | { type: "add_broker_note"; enquiry_id: string; note: string; is_internal?: boolean };
 
-  const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
+    const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
 
-  switch (payload.type) {
+    switch (payload.type) {
     case "update_agent": {
       const allowedFields = new Set([
         "is_verified",
         "is_active",
-        "licence_verified_at",
         "name",
         "agency_name",
         "phone",
         "state",
         "bio",
+        "about",
+        "avatar_url",
         "suburbs",
         "specializations",
         "fee_structure",
+        "website_url",
+        "linkedin_url",
+        "years_experience",
+        "properties_purchased",
+        "avg_rating",
+        "review_count",
+        "licence_number",
+        "licence_verified_at",
+        "instagram_followers",
+        "facebook_followers",
+        "tiktok_followers",
+        "youtube_subscribers",
+        "linkedin_connections",
+        "linkedin_followers",
+        "pinterest_followers",
+        "x_followers",
+        "snapchat_followers",
+        "google_rating",
+        "google_reviews",
+        "facebook_rating",
+        "facebook_reviews",
+        "ratemyagent_rating",
+        "ratemyagent_reviews",
+        "trustpilot_rating",
+        "trustpilot_reviews",
+        "productreview_rating",
+        "productreview_reviews",
+        "profile_status",
+        "verified",
       ]);
       const patch = Object.fromEntries(
         Object.entries(payload.patch ?? {}).filter(([key]) => allowedFields.has(key))
-      );
+      ) as Database["public"]["Tables"]["agents"]["Update"];
+      if (typeof patch.is_verified === "boolean" && !patch.verified) {
+        patch.verified = patch.is_verified ? "Verified" : "Unverified";
+      }
       if (!payload.id || Object.keys(patch).length === 0) return fail("Invalid agent update payload.");
 
-      const effectivePatch = { ...patch };
-      let { error } = await client.from("agents").update(effectivePatch).eq("id", payload.id);
+      const { data: currentAgent, error: currentAgentError } = await client
+        .from("agents")
+        .select("*")
+        .eq("id", payload.id)
+        .maybeSingle();
+      if (currentAgentError) return fail(currentAgentError.message, 500);
+      if (!currentAgent) return fail("Agent not found.", 404);
 
-      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
-        delete effectivePatch.is_active;
-        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
-      }
-      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
-        delete effectivePatch.is_verified;
-        delete effectivePatch.licence_verified_at;
-        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
-      }
+      let effectivePatch = {
+        ...patch,
+        ...deriveAgentSystemPatch(currentAgent, patch),
+      } as Database["public"]["Tables"]["agents"]["Update"];
+      const strippedColumns = new Set<string>();
+      let error: { message: string } | null = null;
 
-      if (Object.keys(effectivePatch).length === 0) {
-        return NextResponse.json({ success: true, schemaFallback: true });
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (Object.keys(effectivePatch).length === 0) {
+          return NextResponse.json({
+            success: true,
+            schemaFallback: true,
+            strippedColumns: Array.from(strippedColumns),
+          });
+        }
+
+        const updateResult = await client.from("agents").update(effectivePatch).eq("id", payload.id);
+        error = updateResult.error;
+        if (!error) break;
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          strippedColumns.add(missingColumn);
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, missingColumn);
+          continue;
+        }
+
+        if (isMissingColumnError(error.message, "is_active", "agents")) {
+          strippedColumns.add("is_active");
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, "is_active");
+          continue;
+        }
+        if (isMissingColumnError(error.message, "is_verified", "agents")) {
+          strippedColumns.add("is_verified");
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, "is_verified");
+          continue;
+        }
+
+        break;
       }
 
       if (error && isPolicyRecursionError(error.message)) {
         return fail(policyFixHint, 500);
       }
       if (error) return fail(error.message, 500);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({
+        success: true,
+        schemaFallback: strippedColumns.size > 0,
+        strippedColumns: Array.from(strippedColumns),
+      });
+    }
+
+    case "claim_agent_profile": {
+      if (!payload.id) return fail("Missing agent id.");
+
+      const { data: currentAgent, error: currentError } = await client
+        .from("agents")
+        .select("*")
+        .eq("id", payload.id)
+        .maybeSingle();
+      if (currentError) return fail(currentError.message, 500);
+      if (!currentAgent) return fail("Agent not found.", 404);
+
+      const claimedAt = new Date().toISOString();
+      let patch = deriveAgentSystemPatch(currentAgent, {
+        profile_status: "Claimed",
+        verified: "Verified",
+        is_verified: true,
+        claimed_at: claimedAt,
+      });
+      const strippedColumns = new Set<string>();
+      let error: { message: string } | null = null;
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (Object.keys(patch).length === 0) {
+          return NextResponse.json({
+            success: true,
+            schemaFallback: true,
+            strippedColumns: Array.from(strippedColumns),
+          });
+        }
+
+        const updateResult = await client.from("agents").update(patch).eq("id", payload.id);
+        error = updateResult.error;
+        if (!error) break;
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          strippedColumns.add(missingColumn);
+          patch = stripColumnFromAgentPatch(patch, missingColumn);
+          continue;
+        }
+
+        break;
+      }
+
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({
+        success: true,
+        schemaFallback: strippedColumns.size > 0,
+        strippedColumns: Array.from(strippedColumns),
+      });
     }
 
     case "delete_agent": {
@@ -302,36 +717,278 @@ export async function POST(request: Request) {
       return fail(error.message, 500);
     }
 
+    case "upsert_review_source": {
+      if (!payload.source?.agent_id || !payload.source?.source || !payload.source?.external_id) {
+        return fail("agent_id, source, and external_id are required for review sources.");
+      }
+      const nextSource = {
+        ...payload.source,
+        metadata: payload.source.metadata ?? {},
+      };
+
+      const { error } = await client.from("agency_review_sources").upsert(nextSource);
+      if (error && isMissingRelationError(error.message, "agency_review_sources")) {
+        return fail(
+          "Missing table agency_review_sources. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "delete_review_source": {
+      if (!payload.id) return fail("Missing review source id.");
+      const { error } = await client.from("agency_review_sources").delete().eq("id", payload.id);
+      if (error && isMissingRelationError(error.message, "agency_review_sources")) {
+        return fail(
+          "Missing table agency_review_sources. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "set_external_review_state": {
+      if (!payload.id || !payload.patch) return fail("Invalid external review moderation payload.");
+      const allowedFields = new Set(["is_approved", "is_hidden", "is_featured"]);
+      const patch = Object.fromEntries(
+        Object.entries(payload.patch).filter(([key]) => allowedFields.has(key))
+      );
+      if (Object.keys(patch).length === 0) return fail("No moderation fields provided.");
+
+      const { error } = await client.from("external_reviews").update(patch).eq("id", payload.id);
+      if (error && isMissingRelationError(error.message, "external_reviews")) {
+        return fail(
+          "Missing table external_reviews. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "sync_external_reviews": {
+      const result = await syncExternalReviews(client, {
+        sourceId: payload.sourceId,
+        force: Boolean(payload.force),
+      });
+      return NextResponse.json({ success: true, result });
+    }
+
+    case "upsert_broker_state": {
+      if (!payload.enquiry_id) return fail("Missing enquiry_id.");
+      const allowedFields = new Set([
+        "owner_email",
+        "priority",
+        "stage",
+        "sla_due_at",
+        "next_action",
+        "last_touch_at",
+        "metadata",
+      ]);
+      const patch = Object.fromEntries(
+        Object.entries(payload.patch ?? {}).filter(([key]) => allowedFields.has(key))
+      );
+      const nextState = {
+        enquiry_id: payload.enquiry_id,
+        ...patch,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await client.from("broker_enquiry_states").upsert(nextState);
+      if (error && isMissingRelationError(error.message, "broker_enquiry_states")) {
+        return fail(
+          "Missing table broker_enquiry_states. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "add_broker_note": {
+      if (!payload.enquiry_id || !payload.note?.trim()) return fail("enquiry_id and note are required.");
+      const { error } = await client.from("broker_enquiry_notes").insert({
+        enquiry_id: payload.enquiry_id,
+        note: payload.note.trim(),
+        is_internal: payload.is_internal ?? true,
+        author_email: privileged.user.email ?? null,
+      });
+      if (error && isMissingRelationError(error.message, "broker_enquiry_notes")) {
+        return fail(
+          "Missing table broker_enquiry_notes. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
     case "bulk_upsert_agents": {
       if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
         return fail("No rows provided for bulk upload.");
       }
 
-      let effectiveRows = payload.rows.map((row) => ({ ...row }));
-      let { error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
-      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
-        effectiveRows = effectiveRows.map((row) => {
-          const next = { ...row } as Record<string, unknown>;
-          delete next.is_active;
-          return next as Database["public"]["Tables"]["agents"]["Insert"];
-        });
-        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
+      const duplicateStrategy: DuplicateResolutionStrategy = payload.duplicate_strategy ?? "abort";
+      const parsedRows = parseBulkAgentRows(payload.rows);
+      if (parsedRows.rows.length === 0) {
+        return fail("No valid rows found to upload.");
       }
-      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
-        effectiveRows = effectiveRows.map((row) => {
-          const next = { ...row } as Record<string, unknown>;
-          delete next.is_verified;
-          delete next.is_active;
-          return next as Database["public"]["Tables"]["agents"]["Insert"];
-        });
-        ({ error } = await client.from("agents").upsert(effectiveRows, { onConflict: "email" }));
+      if (parsedRows.errors.length > 0) {
+        return fail(`Validation failed: ${parsedRows.errors.slice(0, 10).join(" | ")}`);
       }
+
+      let effectiveRows = addSlugToAgentRows(parsedRows.rows.map((row) => ({ ...row })));
+      const skipped: string[] = [];
+
+      if (parsedRows.duplicateAgencyKeys.length > 0 || parsedRows.duplicateAgentNames.length > 0) {
+        if (duplicateStrategy === "abort") {
+          const duplicateSummary = [
+            parsedRows.duplicateAgencyKeys.length
+              ? `agencies: ${parsedRows.duplicateAgencyKeys.join(", ")}`
+              : "",
+            parsedRows.duplicateAgentNames.length ? `agents: ${parsedRows.duplicateAgentNames.join(", ")}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | ");
+          return fail(
+            `Duplicate records found in upload (${duplicateSummary}). ` +
+              "Choose a duplicate strategy: update_existing or skip_duplicates."
+          );
+        }
+
+        const deduped = new Map<string, (typeof effectiveRows)[number]>();
+        for (const row of effectiveRows) {
+          const key = buildDuplicateAgencyKey(row.agency_name ?? "", row.state ?? "");
+          if (!deduped.has(key)) {
+            deduped.set(key, row);
+            continue;
+          }
+          skipped.push(key);
+          if (duplicateStrategy === "update_existing") {
+            deduped.set(key, row);
+          }
+        }
+        effectiveRows = Array.from(deduped.values());
+
+        const dedupedByName = new Map<string, (typeof effectiveRows)[number]>();
+        const unnamedRows: typeof effectiveRows = [];
+        for (const row of effectiveRows) {
+          const key = normalizeDuplicateKey(row.name);
+          if (!key) {
+            unnamedRows.push(row);
+            continue;
+          }
+          if (!dedupedByName.has(key)) {
+            dedupedByName.set(key, row);
+            continue;
+          }
+          skipped.push(`name:${row.name ?? "unknown"}`);
+          if (duplicateStrategy === "update_existing") {
+            dedupedByName.set(key, row);
+          }
+        }
+        if (dedupedByName.size > 0) {
+          effectiveRows = [...Array.from(dedupedByName.values()), ...unnamedRows];
+        }
+      }
+
+      const existing = await fetchExistingAgentIdentities(client, effectiveRows);
+      const existingConflicts: string[] = [];
+      const nextRows: typeof effectiveRows = [];
+
+      for (const row of effectiveRows) {
+        const byAgency = existing.byAgency.get(normalizeDuplicateKey(row.agency_name));
+        const byName = existing.byName.get(normalizeDuplicateKey(row.name));
+        const conflict = byAgency ?? byName;
+
+        if (!conflict) {
+          nextRows.push(row);
+          continue;
+        }
+
+        const key = `${conflict.agency_name || row.agency_name || ""}|${conflict.name || row.name || ""}`;
+        existingConflicts.push(key);
+
+        if (duplicateStrategy === "abort") {
+          continue;
+        }
+        if (duplicateStrategy === "skip_duplicates") {
+          skipped.push(key);
+          continue;
+        }
+
+        const nextEmail = conflict.email?.trim().toLowerCase();
+        nextRows.push({
+          ...row,
+          email: nextEmail || row.email,
+        });
+      }
+
+      if (duplicateStrategy === "abort" && existingConflicts.length > 0) {
+        return fail(
+          `Duplicate agencies already exist: ${Array.from(new Set(existingConflicts)).join(", ")}. ` +
+            "Choose update_existing to overwrite existing rows or skip_duplicates to skip them."
+        );
+      }
+
+      effectiveRows = nextRows;
+      if (effectiveRows.length === 0) {
+        return fail("No rows left to upload after duplicate handling.");
+      }
+
+      let error: { message: string } | null = null;
+
+      for (let attempt = 0; attempt < 15; attempt += 1) {
+        const upsertResult = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
+        error = upsertResult.error;
+
+        if (!error) {
+          break;
+        }
+
+        if (isOnConflictConstraintError(error.message)) {
+          const manual = await manualUpsertAgentsWithoutConflict(client, effectiveRows);
+          error = manual.error;
+          break;
+        }
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+          continue;
+        }
+
+        const notNullColumn = extractNotNullColumnName(error.message);
+        if (notNullColumn) {
+          const applied = applyAgentNotNullFallback(effectiveRows, notNullColumn);
+          if (applied.changed) {
+            effectiveRows = applied.rows;
+            continue;
+          }
+        }
+
+        break;
+      }
+
       if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
       if (error) return fail(error.message, 500);
-      return NextResponse.json({ success: true, inserted: effectiveRows.length });
+      return NextResponse.json({
+        success: true,
+        inserted: effectiveRows.length,
+        skipped: Array.from(new Set(skipped)).length,
+      });
     }
 
-    default:
-      return fail("Unsupported admin action.");
+      default:
+        return fail("Unsupported admin action.");
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected admin action failure." },
+      { status: 500 }
+    );
   }
 }
