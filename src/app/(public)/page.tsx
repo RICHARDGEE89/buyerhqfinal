@@ -37,7 +37,7 @@ const faqs = [
   },
   {
     q: "Is BuyerHQ free for buyers?",
-    a: "Yes. BuyerHQ is free for property buyers. Agents pay to list and maintain their profile, while buyer access to search, compare, and enquire remains free.",
+    a: "BuyerHQ is buyer-first. We aggregate verified review signals across the web, negotiate stronger fee outcomes with participating agencies, and help buyers compare clearly before choosing who to engage.",
   },
   {
     q: "How are agents verified?",
@@ -64,13 +64,13 @@ export default async function HomePage() {
             Find trusted buyer representation in minutes.
           </h1>
           <p className="mt-4 max-w-2xl text-body-lg text-text-secondary">
-            Compare verified advisors by location, specialisation, and proven outcomes through a
-            client-focused, brokered platform.
+            Compare verified advisors by location, specialisation, and proven outcomes using one
+            directory built on collated review intelligence and negotiated buyer fee advantages.
           </p>
           <ul className="mt-4 grid gap-2 text-body-sm text-text-secondary">
-            <li>• Client focused: buyers compare clearly and submit requests through BuyerHQ.</li>
-            <li>• BuyerHQ brokers conversations and operational details as middleman.</li>
-            <li>• No direct buyer-agent contact flow. Everything is tracked internally.</li>
+            <li>• Verified directory model: we compile multi-source reviews into one trusted view.</li>
+            <li>• BuyerHQ brokers all conversations and operational details as middleman.</li>
+            <li>• Negotiated fee outcomes can save buyers thousands compared with going direct.</li>
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild>
@@ -78,12 +78,6 @@ export default async function HomePage() {
             </Button>
             <Button variant="secondary" asChild>
               <Link href="/quiz">Take the Match Quiz</Link>
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link href="/signup">Buyer Sign Up</Link>
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link href="/login">Buyer Login</Link>
             </Button>
           </div>
         </div>
@@ -215,19 +209,17 @@ export default async function HomePage() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-heading">Ready to shortlist your agent?</h2>
+            <h2 className="text-heading">Ready to shortlist verified options?</h2>
             <p className="mt-2 text-body text-text-secondary">
-              Filter by state and specialisation, then submit brokered enquiries while BuyerHQ manages outreach.
+              Filter by suburb, state, and specialisation, then submit brokered enquiries while BuyerHQ manages outreach
+              and fee discussions.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild>
                 <Link href="/agents">Browse Agents</Link>
               </Button>
               <Button variant="secondary" asChild>
-                <Link href="/signup">Create Buyer Account</Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link href="/login">Sign In</Link>
+                <Link href="/quiz">Start Match Quiz</Link>
               </Button>
             </div>
           </Card>

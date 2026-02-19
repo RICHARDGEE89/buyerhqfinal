@@ -58,6 +58,24 @@ export default async function BlogPage({
           </Link>
         ))}
       </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h2 className="text-heading">Create your buyer workspace</h2>
+        <p className="mt-2 text-body text-text-secondary">
+          Save searches, shortlist agents, and track brokered introductions with BuyerHQ.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href="/signup">Buyer Sign Up</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/login">Buyer Login</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/agents">Browse Directory</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

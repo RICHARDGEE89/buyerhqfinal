@@ -25,6 +25,7 @@ export function AgentCard({
   const [saveLoading, setSaveLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const suburbs = useMemo(() => agent.suburbs ?? [], [agent.suburbs]);
   const primarySuburb = useMemo(() => suburbs[0] ?? "Australia-wide", [suburbs]);
@@ -142,12 +143,13 @@ export function AgentCard({
             onClick={async () => {
               setSaveLoading(true);
               setSaveError(null);
+              setShowAuthPrompt(false);
               const {
                 data: { user },
               } = await supabase.auth.getUser();
               if (!user) {
+                setShowAuthPrompt(true);
                 setSaveLoading(false);
-                window.location.href = "/login";
                 return;
               }
               const { error } = await supabase
@@ -165,6 +167,21 @@ export function AgentCard({
             {isSaved ? "Saved" : "Save"}
           </Button>
         </div>
+        {showAuthPrompt ? (
+          <div className="rounded-md border border-border bg-surface-2 px-3 py-3">
+            <p className="text-caption text-text-secondary">
+              Create a buyer account or log in to save this profile to your shortlist.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button size="sm" asChild>
+                <Link href="/signup">Create Buyer Account</Link>
+              </Button>
+              <Button size="sm" variant="secondary" asChild>
+                <Link href="/login">Buyer Login</Link>
+              </Button>
+            </div>
+          </div>
+        ) : null}
         {saveError ? <p className="text-caption text-destructive">{saveError}</p> : null}
       </div>
     </Card>
