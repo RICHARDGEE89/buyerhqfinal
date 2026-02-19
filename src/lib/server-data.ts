@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { agentIsActive, agentIsVerified, normalizeAgents } from "@/lib/agent-compat";
+import { agentIsActive, agentIsVerified, normalizeAgents, sanitizePublicAgents } from "@/lib/agent-compat";
 import type { AgentRow, StateCode } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,7 +39,7 @@ export const getFeaturedAgents = cache(async () => {
   const visible = normalizeAgents((data ?? []) as AgentRow[]).filter(
     (agent) => agentIsActive(agent) && agentIsVerified(agent)
   );
-  return visible.slice(0, 6);
+  return sanitizePublicAgents(visible.slice(0, 6));
 });
 
 export const getStateAgentCounts = cache(async () => {

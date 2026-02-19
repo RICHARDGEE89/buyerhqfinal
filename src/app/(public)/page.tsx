@@ -104,7 +104,7 @@ export default async function HomePage() {
             },
             {
               title: "3. Enquire with confidence",
-              text: "Send a direct enquiry and move forward with a clear shortlist.",
+              text: "Submit a brokered enquiry and let BuyerHQ coordinate next steps with your shortlisted agent.",
             },
           ].map((step) => (
             <Card key={step.title} className="p-4">
@@ -206,7 +206,7 @@ export default async function HomePage() {
           <Card className="p-5">
             <h2 className="text-heading">Ready to shortlist your agent?</h2>
             <p className="mt-2 text-body text-text-secondary">
-              Filter by state and specialisation, then send enquiries directly from each profile.
+              Filter by state and specialisation, then submit brokered enquiries while BuyerHQ manages outreach.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild>

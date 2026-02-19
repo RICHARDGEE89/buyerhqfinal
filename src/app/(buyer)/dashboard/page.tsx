@@ -159,7 +159,7 @@ export default function BuyerDashboardOverview() {
           <div className="space-y-2 text-body-sm text-text-secondary">
             <p>1. Keep your buyer profile updated with budget and target suburbs.</p>
             <p>2. Save at least 3 agents to compare communication and fee structures.</p>
-            <p>3. Send a multi-enquiry from your saved list for faster responses.</p>
+            <p>3. Submit a brokered enquiry from your saved list and let BuyerHQ coordinate outreach.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" asChild>

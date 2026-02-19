@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
 
 import type { AgentRow, ReviewRow } from "@/lib/database.types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Rating } from "@/components/ui/Rating";
-import { Textarea } from "@/components/ui/Textarea";
 
 export default function AgentProfileContent({
   agent,
@@ -19,53 +18,13 @@ export default function AgentProfileContent({
   agent: AgentRow;
   reviews: ReviewRow[];
 }) {
-  const [buyerName, setBuyerName] = useState("");
-  const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerPhone, setBuyerPhone] = useState("");
-  const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const onSubmitEnquiry = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    setSuccess(false);
-
-    if (!buyerName.trim() || !buyerEmail.trim() || !message.trim()) {
-      setError("Name, email and message are required.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const response = await fetch("/api/enquiries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agent_id: agent.id,
-          buyer_name: buyerName,
-          buyer_email: buyerEmail,
-          buyer_phone: buyerPhone,
-          message,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error ?? "Unable to submit enquiry.");
-      } else {
-        setSuccess(true);
-        setBuyerName("");
-        setBuyerEmail("");
-        setBuyerPhone("");
-        setMessage("");
-      }
-    } catch {
-      setError("Unable to submit enquiry.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const suburbs = useMemo(() => agent.suburbs ?? [], [agent.suburbs]);
+  const areaSpecialist = suburbs[0] ?? "Australia-wide";
+  const additionalAreas = Math.max(suburbs.length - 1, 0);
+  const aboutHeading = useMemo(() => {
+    const stateLabel = agent.state ? ` for ${agent.state}` : "";
+    return `Meet ${agent.name} — Your Expert Buyer’s Agent${stateLabel}`;
+  }, [agent.name, agent.state]);
 
   return (
     <div className="container space-y-6 pb-16 pt-10">
@@ -81,17 +40,29 @@ export default function AgentProfileContent({
       </nav>
 
       <section className="rounded-xl border border-border bg-surface p-6 md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar name={agent.name} src={agent.avatar_url} size="lg" />
-            <div>
-              <h1 className="text-display text-text-primary">{agent.name}</h1>
-              <p className="text-body text-text-secondary">{agent.agency_name ?? "Independent Advisor"}</p>
+        <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
+          <Avatar name={agent.name} src={agent.avatar_url} size="lg" />
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="text-display text-text-primary">{agent.name}</h1>
+                <p className="text-body text-text-secondary">{agent.agency_name ?? "Independent Advisor"}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
+                {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
-            {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
+            <Rating value={agent.avg_rating} reviewCount={agent.review_count ?? 0} />
+            <h2 className="text-heading text-text-primary">{aboutHeading}</h2>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="state">Area specialist: {areaSpecialist}</Badge>
+              {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
+              {additionalAreas > 0 ? <Badge variant="state">+{additionalAreas} areas</Badge> : null}
+            </div>
+            <p className="text-body text-text-secondary">
+              BuyerHQ uses brokered introductions only. Enquiries are coordinated via our team before agent handover.
+            </p>
           </div>
         </div>
       </section>
@@ -151,6 +122,9 @@ export default function AgentProfileContent({
           <Card className="p-5">
             <h2 className="text-heading">Reviews</h2>
             <div className="mt-4 space-y-3">
+              {reviews.length === 0 ? (
+                <p className="text-body-sm text-text-secondary">No approved reviews yet.</p>
+              ) : null}
               {reviews.map((review) => (
                 <div key={review.id} className="rounded-md border border-border p-3">
                   <div className="mb-2 flex items-center justify-between gap-3">
@@ -165,40 +139,28 @@ export default function AgentProfileContent({
         </div>
 
         <Card className="h-fit p-5">
-          <h2 className="text-heading">Enquire</h2>
-          <form className="mt-3 space-y-3" onSubmit={onSubmitEnquiry}>
-            <Input label="Name" value={buyerName} onChange={(event) => setBuyerName(event.target.value)} />
-            <Input
-              label="Email"
-              type="email"
-              value={buyerEmail}
-              onChange={(event) => setBuyerEmail(event.target.value)}
-            />
-            <Input
-              label="Phone (optional)"
-              value={buyerPhone}
-              onChange={(event) => setBuyerPhone(event.target.value)}
-            />
-            <Textarea
-              label="Message"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-            />
-
-            <div className="rounded-md border border-border bg-surface-2 p-3">
-              <p className="font-mono text-label uppercase text-text-secondary">Fee Structure</p>
-              <p className="mt-1 text-body-sm text-text-primary">
-                {agent.fee_structure ?? "Fee details shared on enquiry."}
-              </p>
-            </div>
-
-            {error ? <p className="text-caption text-destructive">{error}</p> : null}
-            {success ? <p className="text-caption text-success">Enquiry submitted successfully.</p> : null}
-
-            <Button type="submit" loading={submitting} disabled={submitting}>
-              Send Enquiry
+          <h2 className="text-heading">Enquiry via BuyerHQ</h2>
+          <p className="mt-2 text-body-sm text-text-secondary">
+            For privacy and quality control, BuyerHQ brokers all introductions. Complete the quiz and we&apos;ll handle
+            outreach to this agent on your behalf.
+          </p>
+          <div className="mt-4 rounded-md border border-border bg-surface-2 p-3">
+            <p className="font-mono text-label uppercase text-text-secondary">Fee Structure</p>
+            <p className="mt-1 text-body-sm text-text-primary">
+              {agent.fee_structure ?? "Fee details shared during brokered introduction."}
+            </p>
+          </div>
+          <div className="mt-4 grid gap-2">
+            <Button asChild>
+              <Link href={`/quiz?agent=${encodeURIComponent(agent.id)}`}>
+                Take Match Quiz
+                <ArrowRight size={14} />
+              </Link>
             </Button>
-          </form>
+            <Button variant="secondary" asChild>
+              <Link href="/agents">Back to directory</Link>
+            </Button>
+          </div>
         </Card>
       </section>
     </div>

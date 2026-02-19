@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,22 @@ type ContactSubmission = {
   message: string | null;
   is_resolved: boolean;
 };
+
+function isQuizBrokeredEnquiry(enquiry: EnquiryRow) {
+  const propertyType = (enquiry.property_type ?? "").toLowerCase();
+  const message = enquiry.message ?? "";
+  return propertyType === "quiz match request" || message.includes("Quiz match request via BuyerHQ.");
+}
+
+function extractBuyerMessage(message: string | null) {
+  if (!message) return "No message provided.";
+  const marker = "Buyer message:";
+  const markerIndex = message.indexOf(marker);
+  if (markerIndex === -1) return message;
+  const extracted = message.slice(markerIndex + marker.length).trim();
+  const brokerMarker = extracted.indexOf("Broker workflow:");
+  return brokerMarker === -1 ? extracted : extracted.slice(0, brokerMarker).trim();
+}
 
 export default function AdminDashboardOverview() {
   const [loading, setLoading] = useState(true);
@@ -65,6 +81,14 @@ export default function AdminDashboardOverview() {
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
   const newThisMonth = enquiries.filter((item) => new Date(item.created_at) >= monthStart).length;
+  const quizEnquiries = useMemo(() => enquiries.filter(isQuizBrokeredEnquiry).slice(0, 12), [enquiries]);
+  const agentNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    agents.forEach((agent) => {
+      map.set(agent.id, agent.name);
+    });
+    return map;
+  }, [agents]);
 
   const updateAgent = async (id: string, field: "is_verified" | "is_active", value: boolean) => {
     try {
@@ -166,6 +190,38 @@ export default function AdminDashboardOverview() {
         <Button variant="secondary" asChild>
           <Link href="/admin/settings">Admin settings</Link>
         </Button>
+      </section>
+
+      <section>
+        <Card className="space-y-3 p-4">
+          <h2 className="text-subheading">Quiz enquiries (brokered handoff queue)</h2>
+          <p className="text-body-sm text-text-secondary">
+            These requests come from the final quiz step. BuyerHQ coordinates the agent conversation as middleman.
+          </p>
+          {quizEnquiries.length === 0 ? (
+            <EmptyState title="No quiz enquiries yet" />
+          ) : (
+            <div className="space-y-2">
+              {quizEnquiries.map((enquiry) => (
+                <div key={enquiry.id} className="rounded-md border border-border p-3">
+                  <p className="text-body-sm text-text-primary">
+                    {enquiry.buyer_name} · {enquiry.buyer_email}
+                  </p>
+                  <p className="text-caption text-text-secondary">
+                    Agent: {agentNameById.get(enquiry.agent_id) ?? enquiry.agent_id} · Status: {enquiry.status ?? "new"}
+                  </p>
+                  <p className="text-caption text-text-secondary">
+                    Phone: {enquiry.buyer_phone || "Not provided"} · Submitted{" "}
+                    {new Date(enquiry.created_at).toLocaleString("en-AU")}
+                  </p>
+                  <p className="mt-2 rounded-md border border-border bg-surface-2 p-2 text-caption text-text-secondary">
+                    {extractBuyerMessage(enquiry.message)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </section>
 
       <section className="grid gap-3 lg:grid-cols-2">

@@ -87,8 +87,8 @@ export default function MyEnquiriesPage() {
     setFollowUpTarget(enquiry);
     setFollowUpMessage(
       enquiry.message
-        ? `Following up on my previous request:\n\n"${enquiry.message}"\n\nCould you please share next steps?`
-        : "Following up on my enquiry. Could you please share next steps?"
+        ? `Following up on my previous BuyerHQ request:\n\n"${enquiry.message}"\n\nPlease coordinate the next steps.`
+        : "Following up on my enquiry. Please coordinate the next steps."
     );
     setModalOpen(true);
   };
@@ -130,7 +130,7 @@ export default function MyEnquiriesPage() {
 
     setModalOpen(false);
     setSendingFollowUp(false);
-    setResult("Follow-up enquiry sent successfully.");
+    setResult("Follow-up enquiry submitted. BuyerHQ will coordinate with the agent.");
     void loadEnquiries();
   };
 
@@ -152,7 +152,7 @@ export default function MyEnquiriesPage() {
       <section className="rounded-xl border border-border bg-surface p-6">
         <h1 className="text-heading">My enquiries</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Track enquiry progress, send follow-ups, and close completed threads.
+          Track brokered enquiry progress, send follow-ups to BuyerHQ, and close completed threads.
         </p>
       </section>
 
@@ -177,7 +177,7 @@ export default function MyEnquiriesPage() {
       {filtered.length === 0 ? (
         <EmptyState
           title="No enquiries found"
-          description="Try another filter or start a new enquiry from the agent directory."
+          description="Try another filter or start a new brokered enquiry from the agent directory."
           actionLabel="Browse agents"
           onAction={() => (window.location.href = "/agents")}
         />
@@ -242,7 +242,7 @@ export default function MyEnquiriesPage() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={`Follow up with ${followUpTarget?.agent?.agency_name || followUpTarget?.agent?.name || "agent"}`}
+        title={`Follow up on ${followUpTarget?.agent?.agency_name || followUpTarget?.agent?.name || "agent"}`}
       >
         <div className="space-y-3">
           <Textarea
@@ -251,7 +251,7 @@ export default function MyEnquiriesPage() {
             onChange={(event) => setFollowUpMessage(event.target.value)}
           />
           <Button loading={sendingFollowUp} disabled={sendingFollowUp} fullWidth onClick={sendFollowUp}>
-            Send follow-up
+            Send follow-up to BuyerHQ
           </Button>
         </div>
       </Modal>

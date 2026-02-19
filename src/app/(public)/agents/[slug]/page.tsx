@@ -2,24 +2,39 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import AgentProfileContent from "./AgentProfileContent";
+import { sanitizePublicAgent } from "@/lib/agent-compat";
+import type { AgentRow } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 type Params = { slug: string };
 
-async function getAgentWithReviews(id: string) {
+async function getAgentWithReviews(identifier: string) {
   const supabase = createClient();
-  const { data: agent } = await supabase.from("agents").select("*").eq("id", id).single();
+  let agent: AgentRow | null = null;
+
+  const byIdResult = await supabase.from("agents").select("*").eq("id", identifier).maybeSingle();
+  if (byIdResult.data) {
+    agent = byIdResult.data as AgentRow;
+  }
+
+  if (!agent) {
+    const bySlugResult = await supabase.from("agents").select("*").eq("slug", identifier).maybeSingle();
+    if (!bySlugResult.error && bySlugResult.data) {
+      agent = bySlugResult.data as AgentRow;
+    }
+  }
+
   if (!agent) return null;
 
   const { data: reviews } = await supabase
     .from("reviews")
     .select("*")
-    .eq("agent_id", id)
+    .eq("agent_id", agent.id)
     .eq("is_approved", true)
     .order("created_at", { ascending: false });
 
   return {
-    agent,
+    agent: sanitizePublicAgent(agent),
     reviews: reviews ?? [],
   };
 }
@@ -34,7 +49,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: `${result.agent.name} | BuyerHQ`,
     description:
       result.agent.bio ??
-      `${result.agent.name} profile, specialisations, reviews, and enquiry options on BuyerHQ.`,
+      `${result.agent.name} profile, specialisations, reviews, and brokered enquiry support on BuyerHQ.`,
   };
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sanitizePublicAgent } from "@/lib/agent-compat";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
@@ -32,7 +33,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      agent,
+      agent: sanitizePublicAgent(agent),
       reviews: reviews ?? [],
     });
   } catch {

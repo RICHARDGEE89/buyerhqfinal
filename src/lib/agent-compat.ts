@@ -1,6 +1,7 @@
 import type { AgentRow } from "@/lib/database.types";
 
 type AgentLike = Partial<AgentRow> & Pick<AgentRow, "id" | "name" | "email" | "created_at">;
+const PUBLIC_AGENT_EMAIL_PLACEHOLDER = "hidden@buyerhq.com.au";
 
 export function normalizeAgent(agent: AgentRow): AgentRow {
   const cast = agent as AgentLike;
@@ -27,4 +28,18 @@ export function agentIsVerified(agent: AgentRow) {
 
 export function agentSuburbs(agent: AgentRow) {
   return normalizeAgent(agent).suburbs ?? [];
+}
+
+export function sanitizePublicAgent(agent: AgentRow): AgentRow {
+  const normalized = normalizeAgent(agent);
+  return {
+    ...normalized,
+    // Public surfaces must not expose direct contact channels.
+    email: PUBLIC_AGENT_EMAIL_PLACEHOLDER,
+    phone: null,
+  };
+}
+
+export function sanitizePublicAgents(agents: AgentRow[]) {
+  return agents.map(sanitizePublicAgent);
 }

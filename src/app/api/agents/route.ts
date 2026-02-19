@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { getLocationsByPostcode, getPrimaryPostcodeForSuburb } from "@/lib/australia-locations";
-import { agentIsActive, agentIsVerified, agentSuburbs, normalizeAgents } from "@/lib/agent-compat";
+import {
+  agentIsActive,
+  agentIsVerified,
+  agentSuburbs,
+  normalizeAgents,
+  sanitizePublicAgents,
+} from "@/lib/agent-compat";
 import type { AgentRow, StateCode } from "@/lib/database.types";
 import { isPolicyRecursionError } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/server";
@@ -181,7 +187,6 @@ export async function GET(request: Request) {
 
       const byName = agent.name.toLowerCase().includes(searchTerm);
       const byAgency = (agent.agency_name ?? "").toLowerCase().includes(searchTerm);
-      const byEmail = agent.email.toLowerCase().includes(searchTerm);
       const bySuburb = suburbs.some((suburb) => suburb.includes(searchTerm));
       const byPostcode = searchTermPostcodeLocalities.length
         ? suburbs.some((suburb) =>
@@ -190,7 +195,7 @@ export async function GET(request: Request) {
             )
           )
         : false;
-      return byName || byAgency || byEmail || bySuburb || byPostcode;
+      return byName || byAgency || bySuburb || byPostcode;
     });
 
     filtered.sort((a, b) => {
@@ -216,9 +221,10 @@ export async function GET(request: Request) {
     });
 
     const locationHints = buildLocationHints(filtered);
+    const pagedAgents = sanitizePublicAgents(filtered.slice(from, to));
 
     return NextResponse.json({
-      agents: filtered.slice(from, to),
+      agents: pagedAgents,
       total: filtered.length,
       page: currentPage,
       locationHints,

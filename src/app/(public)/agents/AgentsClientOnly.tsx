@@ -208,7 +208,8 @@ export default function AgentsClientOnly() {
       <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
         <h1 className="text-display text-text-primary md:text-display-lg">Find buyer&apos;s agents</h1>
         <p className="mt-3 max-w-2xl text-body text-text-secondary">
-          Search across Australia by suburb or postcode, then filter by state and specialisation.
+          Search across Australia by suburb or postcode, then filter by state and specialisation. BuyerHQ brokers
+          introductions so your enquiry flow stays managed end-to-end.
         </p>
       </section>
 
@@ -216,7 +217,7 @@ export default function AgentsClientOnly() {
         <aside className="space-y-3 rounded-lg border border-border bg-surface p-4">
           <Input
             label="Search agents"
-            placeholder="Name, agency, email"
+            placeholder="Name, agency, suburb, strategy"
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);

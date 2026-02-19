@@ -106,24 +106,24 @@ export default function SavedAgentsPage() {
     const header = [
       "name",
       "agency",
-      "email",
       "state",
       "specializations",
       "rating",
       "reviews",
       "fee_structure",
+      "introduction_channel",
     ];
     const lines = rows.map((row) => {
       const agent = row.agent!;
       return [
         csvValue(agent.name),
         csvValue(agent.agency_name ?? ""),
-        csvValue(agent.email),
         csvValue(agent.state ?? ""),
         csvValue((agent.specializations ?? []).join("; ")),
         csvValue(agent.avg_rating?.toString() ?? ""),
         csvValue(agent.review_count?.toString() ?? ""),
         csvValue(agent.fee_structure ?? ""),
+        csvValue("BuyerHQ brokered"),
       ].join(",");
     });
 
@@ -174,8 +174,8 @@ export default function SavedAgentsPage() {
     const failCount = responses.length - successCount;
     setBulkResult(
       failCount > 0
-        ? `${successCount} enquiries sent, ${failCount} failed.`
-        : `Successfully sent ${successCount} enquiries.`
+        ? `${successCount} requests submitted, ${failCount} failed.`
+        : `Successfully submitted ${successCount} brokered enquiry request(s).`
     );
     setSendingBulk(false);
   };
@@ -198,7 +198,7 @@ export default function SavedAgentsPage() {
       <section className="rounded-xl border border-border bg-surface p-6">
         <h1 className="text-heading">Saved agents</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Manage your shortlist, export your list, and send one enquiry to multiple agents.
+          Manage your shortlist, export your comparison list, and submit one brokered enquiry to multiple agents.
         </p>
       </section>
 
@@ -209,7 +209,7 @@ export default function SavedAgentsPage() {
         </Button>
         <Button onClick={() => setBulkModalOpen(true)} disabled={selected.length === 0}>
           <MessageSquare size={14} />
-          Send multi-enquiry
+          Submit intro request
         </Button>
         <Button variant="secondary" asChild>
           <Link href="/agents">Browse agents</Link>
@@ -219,7 +219,7 @@ export default function SavedAgentsPage() {
       {savedAgents.length === 0 ? (
         <EmptyState
           title="No saved agents yet"
-          description="Shortlist agents from the directory to compare and send multi-enquiries."
+          description="Shortlist agents from the directory to compare and submit brokered enquiries."
           actionLabel="Browse directory"
           onAction={() => (window.location.href = "/agents")}
         />
@@ -259,7 +259,7 @@ export default function SavedAgentsPage() {
         </p>
       ) : null}
 
-      <Modal isOpen={bulkModalOpen} onClose={() => setBulkModalOpen(false)} title="Send multi-enquiry">
+      <Modal isOpen={bulkModalOpen} onClose={() => setBulkModalOpen(false)} title="Submit brokered intro request">
         <div className="space-y-3">
           <Input label="Your name" value={buyerName} onChange={(event) => setBuyerName(event.target.value)} />
           <Input
@@ -269,7 +269,7 @@ export default function SavedAgentsPage() {
             onChange={(event) => setBuyerEmail(event.target.value)}
           />
           <Input
-            label="Phone (optional)"
+            label="Contact number (optional)"
             value={buyerPhone}
             onChange={(event) => setBuyerPhone(event.target.value)}
           />
@@ -277,10 +277,10 @@ export default function SavedAgentsPage() {
             label="Message"
             value={bulkMessage}
             onChange={(event) => setBulkMessage(event.target.value)}
-            placeholder="Share your budget, location goals, and timeline."
+            placeholder="Share your budget, location goals, and timeline. BuyerHQ will coordinate outreach."
           />
           <Button loading={sendingBulk} disabled={sendingBulk} fullWidth onClick={sendBulkEnquiry}>
-            Send to {selected.length} selected agent(s)
+            Submit brokered request
           </Button>
         </div>
       </Modal>

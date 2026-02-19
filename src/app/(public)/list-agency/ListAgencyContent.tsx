@@ -396,6 +396,8 @@ export default function ListAgencyContent() {
               label="Target Suburbs/Postcodes (comma separated)"
               value={targetSuburbs}
               onChange={(event) => setTargetSuburbs(event.target.value)}
+              placeholder="e.g. Newtown, 2000, South Yarra, 3141"
+              helperText="Autocomplete supports both postcode and suburb name."
             />
             <Input
               label="Fee Structure"
