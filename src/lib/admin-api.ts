@@ -1,8 +1,12 @@
 import type {
   AgentRow,
+  AgencyReviewSourceRow,
   BlogPostRow,
+  BrokerEnquiryNoteRow,
+  BrokerEnquiryStateRow,
   ContactSubmissionRow,
   EnquiryRow,
+  ExternalReviewRow,
   ReviewRow,
   Json,
 } from "@/lib/database.types";
@@ -10,7 +14,11 @@ import type {
 type AdminPanelResponse = {
   agents: AgentRow[];
   enquiries: EnquiryRow[];
+  brokerStates: BrokerEnquiryStateRow[];
+  brokerNotes: BrokerEnquiryNoteRow[];
   reviews: ReviewRow[];
+  reviewSources: AgencyReviewSourceRow[];
+  externalReviews: ExternalReviewRow[];
   posts: BlogPostRow[];
   contacts: ContactSubmissionRow[];
   adminAccount: {

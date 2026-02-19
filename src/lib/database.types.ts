@@ -269,6 +269,189 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["admin_accounts"]["Insert"]>;
         Relationships: [];
       };
+      agency_review_sources: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          agent_id: string;
+          source: "google_places" | "trustpilot" | "rate_my_agent" | "facebook" | "manual";
+          external_id: string;
+          external_url: string | null;
+          source_name: string | null;
+          is_active: boolean;
+          sync_frequency_minutes: number | null;
+          last_synced_at: string | null;
+          last_sync_status: "idle" | "success" | "failed" | null;
+          last_sync_error: string | null;
+          metadata: Json;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          agent_id: string;
+          source: "google_places" | "trustpilot" | "rate_my_agent" | "facebook" | "manual";
+          external_id: string;
+          external_url?: string | null;
+          source_name?: string | null;
+          is_active?: boolean;
+          sync_frequency_minutes?: number | null;
+          last_synced_at?: string | null;
+          last_sync_status?: "idle" | "success" | "failed" | null;
+          last_sync_error?: string | null;
+          metadata?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["agency_review_sources"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "agency_review_sources_agent_id_fkey";
+            columns: ["agent_id"];
+            referencedRelation: "agents";
+            referencedColumns: ["id"];
+            isOneToOne: false;
+          }
+        ];
+      };
+      external_reviews: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          agent_id: string;
+          source_id: string | null;
+          source: "google_places" | "trustpilot" | "rate_my_agent" | "facebook" | "manual";
+          external_review_id: string;
+          reviewer_name: string | null;
+          reviewer_avatar_url: string | null;
+          rating: number;
+          review_text: string | null;
+          review_url: string | null;
+          reviewed_at: string | null;
+          is_approved: boolean;
+          is_hidden: boolean;
+          is_featured: boolean;
+          helpful_count: number | null;
+          trust_weight: number | null;
+          sync_metadata: Json;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          agent_id: string;
+          source_id?: string | null;
+          source: "google_places" | "trustpilot" | "rate_my_agent" | "facebook" | "manual";
+          external_review_id: string;
+          reviewer_name?: string | null;
+          reviewer_avatar_url?: string | null;
+          rating: number;
+          review_text?: string | null;
+          review_url?: string | null;
+          reviewed_at?: string | null;
+          is_approved?: boolean;
+          is_hidden?: boolean;
+          is_featured?: boolean;
+          helpful_count?: number | null;
+          trust_weight?: number | null;
+          sync_metadata?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["external_reviews"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "external_reviews_agent_id_fkey";
+            columns: ["agent_id"];
+            referencedRelation: "agents";
+            referencedColumns: ["id"];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: "external_reviews_source_id_fkey";
+            columns: ["source_id"];
+            referencedRelation: "agency_review_sources";
+            referencedColumns: ["id"];
+            isOneToOne: false;
+          }
+        ];
+      };
+      broker_enquiry_states: {
+        Row: {
+          enquiry_id: string;
+          created_at: string;
+          updated_at: string;
+          owner_email: string | null;
+          priority: "low" | "normal" | "high" | "urgent";
+          stage:
+            | "incoming"
+            | "qualified"
+            | "agent_outreach"
+            | "waiting_agent"
+            | "waiting_buyer"
+            | "handoff"
+            | "closed";
+          sla_due_at: string | null;
+          next_action: string | null;
+          last_touch_at: string | null;
+          metadata: Json;
+        };
+        Insert: {
+          enquiry_id: string;
+          created_at?: string;
+          updated_at?: string;
+          owner_email?: string | null;
+          priority?: "low" | "normal" | "high" | "urgent";
+          stage?:
+            | "incoming"
+            | "qualified"
+            | "agent_outreach"
+            | "waiting_agent"
+            | "waiting_buyer"
+            | "handoff"
+            | "closed";
+          sla_due_at?: string | null;
+          next_action?: string | null;
+          last_touch_at?: string | null;
+          metadata?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["broker_enquiry_states"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "broker_enquiry_states_enquiry_id_fkey";
+            columns: ["enquiry_id"];
+            referencedRelation: "enquiries";
+            referencedColumns: ["id"];
+            isOneToOne: true;
+          }
+        ];
+      };
+      broker_enquiry_notes: {
+        Row: {
+          id: string;
+          created_at: string;
+          enquiry_id: string;
+          author_email: string | null;
+          note: string;
+          is_internal: boolean;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          enquiry_id: string;
+          author_email?: string | null;
+          note: string;
+          is_internal?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["broker_enquiry_notes"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "broker_enquiry_notes_enquiry_id_fkey";
+            columns: ["enquiry_id"];
+            referencedRelation: "enquiries";
+            referencedColumns: ["id"];
+            isOneToOne: false;
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -292,3 +475,7 @@ export type BlogPostRow = Database["public"]["Tables"]["blog_posts"]["Row"];
 export type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 export type SavedAgentRow = Database["public"]["Tables"]["saved_agents"]["Row"];
 export type AgentProfileRow = Database["public"]["Tables"]["agent_profiles"]["Row"];
+export type AgencyReviewSourceRow = Database["public"]["Tables"]["agency_review_sources"]["Row"];
+export type ExternalReviewRow = Database["public"]["Tables"]["external_reviews"]["Row"];
+export type BrokerEnquiryStateRow = Database["public"]["Tables"]["broker_enquiry_states"]["Row"];
+export type BrokerEnquiryNoteRow = Database["public"]["Tables"]["broker_enquiry_notes"]["Row"];

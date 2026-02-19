@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import AgentProfileContent from "./AgentProfileContent";
 import { sanitizePublicAgent } from "@/lib/agent-compat";
-import type { AgentRow } from "@/lib/database.types";
+import type { AgentRow, ExternalReviewRow } from "@/lib/database.types";
+import { isMissingRelationError } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/server";
 
 type Params = { slug: string };
@@ -33,9 +34,23 @@ async function getAgentWithReviews(identifier: string) {
     .eq("is_approved", true)
     .order("created_at", { ascending: false });
 
+  const externalResult = await supabase
+    .from("external_reviews")
+    .select("*")
+    .eq("agent_id", agent.id)
+    .eq("is_approved", true)
+    .eq("is_hidden", false)
+    .order("reviewed_at", { ascending: false, nullsFirst: false });
+
+  const externalReviews =
+    externalResult.error && isMissingRelationError(externalResult.error.message, "external_reviews")
+      ? []
+      : ((externalResult.data ?? []) as ExternalReviewRow[]);
+
   return {
     agent: sanitizePublicAgent(agent),
     reviews: reviews ?? [],
+    externalReviews,
   };
 }
 
@@ -57,5 +72,11 @@ export default async function AgentProfilePage({ params }: { params: Params }) {
   const result = await getAgentWithReviews(params.slug);
   if (!result) notFound();
 
-  return <AgentProfileContent agent={result.agent} reviews={result.reviews} />;
+  return (
+    <AgentProfileContent
+      agent={result.agent}
+      reviews={result.reviews}
+      externalReviews={result.externalReviews}
+    />
+  );
 }

@@ -190,6 +190,12 @@ export default function AdminDashboardOverview() {
         <Button variant="secondary" asChild>
           <Link href="/admin/settings">Admin settings</Link>
         </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/review-sources">Review sources</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/admin/broker-console">Broker console</Link>
+        </Button>
       </section>
 
       <section>

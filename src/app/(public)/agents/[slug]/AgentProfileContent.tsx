@@ -4,19 +4,22 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 
-import type { AgentRow, ReviewRow } from "@/lib/database.types";
+import type { AgentRow, ExternalReviewRow, ReviewRow } from "@/lib/database.types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Rating } from "@/components/ui/Rating";
+import { buildTrustScoreSummary } from "@/lib/review-trust";
 
 export default function AgentProfileContent({
   agent,
   reviews,
+  externalReviews,
 }: {
   agent: AgentRow;
   reviews: ReviewRow[];
+  externalReviews: ExternalReviewRow[];
 }) {
   const suburbs = useMemo(() => agent.suburbs ?? [], [agent.suburbs]);
   const areaSpecialist = suburbs[0] ?? "Australia-wide";
@@ -25,6 +28,15 @@ export default function AgentProfileContent({
     const stateLabel = agent.state ? ` for ${agent.state}` : "";
     return `Meet ${agent.name} — Your Expert Buyer’s Agent${stateLabel}`;
   }, [agent.name, agent.state]);
+  const trustSummary = useMemo(
+    () =>
+      buildTrustScoreSummary({
+        externalReviews,
+        internalReviews: reviews,
+      }),
+    [externalReviews, reviews]
+  );
+  const featuredExternal = useMemo(() => externalReviews.slice(0, 12), [externalReviews]);
 
   return (
     <div className="container space-y-6 pb-16 pt-10">
@@ -54,6 +66,14 @@ export default function AgentProfileContent({
               </div>
             </div>
             <Rating value={agent.avg_rating} reviewCount={agent.review_count ?? 0} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="state">Trust score: {trustSummary.score}/100</Badge>
+              {trustSummary.sourceBadges.slice(0, 4).map((badge) => (
+                <Badge key={badge.source} variant="specialization" className="normal-case">
+                  {badge.label}: {badge.count}
+                </Badge>
+              ))}
+            </div>
             <h2 className="text-heading text-text-primary">{aboutHeading}</h2>
             <div className="flex flex-wrap gap-2">
               <Badge variant="state">Area specialist: {areaSpecialist}</Badge>
@@ -74,7 +94,9 @@ export default function AgentProfileContent({
         </Card>
         <Card className="p-4">
           <p className="font-mono text-label uppercase text-text-secondary">Reviews</p>
-          <p className="text-heading text-text-primary">{agent.review_count ?? 0}</p>
+          <p className="text-heading text-text-primary">
+            {(agent.review_count ?? 0) + trustSummary.approvedExternalCount}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="font-mono text-label uppercase text-text-secondary">Experience</p>
@@ -134,6 +156,53 @@ export default function AgentProfileContent({
                   <p className="text-body-sm text-text-secondary">{review.comment}</p>
                 </div>
               ))}
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-heading">Verified web reviews</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Aggregated from mapped external sources, moderated by BuyerHQ.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {trustSummary.sourceBadges.length === 0 ? (
+                <p className="text-caption text-text-muted">No approved external reviews yet.</p>
+              ) : (
+                trustSummary.sourceBadges.map((badge) => (
+                  <Badge key={`${badge.source}-badge`} variant="state" className="normal-case">
+                    {badge.label} · {badge.count} · {badge.avgRating.toFixed(1)}
+                  </Badge>
+                ))
+              )}
+            </div>
+            <div className="mt-4 space-y-2">
+              {featuredExternal.length === 0 ? (
+                <p className="text-body-sm text-text-secondary">
+                  External sources have not been connected for this profile yet.
+                </p>
+              ) : (
+                featuredExternal.map((review) => (
+                  <div key={review.id} className="rounded-md border border-border p-3">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-body-sm text-text-primary">
+                        {review.reviewer_name || "Verified reviewer"} · {review.source}
+                      </p>
+                      <p className="text-caption text-text-secondary">{review.rating.toFixed(1)}/5</p>
+                    </div>
+                    <p className="text-body-sm text-text-secondary">{review.review_text || "No text provided."}</p>
+                    {review.review_url ? (
+                      <a
+                        href={review.review_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-flex text-caption text-text-primary underline"
+                      >
+                        View source
+                      </a>
+                    ) : null}
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>

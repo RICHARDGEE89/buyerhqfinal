@@ -10,6 +10,8 @@ const adminLinks = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/verifications", label: "Verifications" },
   { href: "/admin/bulk-upload", label: "Bulk Upload" },
+  { href: "/admin/review-sources", label: "Review Sources" },
+  { href: "/admin/broker-console", label: "Broker Console" },
   { href: "/admin/agents", label: "Agents" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/logs", label: "Logs" },

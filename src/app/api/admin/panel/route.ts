@@ -12,6 +12,7 @@ import {
   isOnConflictConstraintError,
   isPolicyRecursionError,
 } from "@/lib/db-errors";
+import { syncExternalReviews } from "@/lib/review-sync";
 import { buildAgentSlug } from "@/lib/slug";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
@@ -292,10 +293,14 @@ export async function GET() {
     const publicClient = createPublicClient();
     const warnings: string[] = [];
 
-    const [agents, enquiries, reviews, posts, contacts, adminAccount] = await Promise.all([
+    const [agents, enquiries, brokerStates, brokerNotes, reviews, reviewSources, externalReviews, posts, contacts, adminAccount] = await Promise.all([
       fetchTableRows(client, "agents", warnings, { fallbackClient: publicClient }),
       fetchTableRows(client, "enquiries", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "broker_enquiry_states", warnings, { fallbackClient: publicClient, orderBy: "updated_at" }),
+      fetchTableRows(client, "broker_enquiry_notes", warnings, { fallbackClient: publicClient }),
       fetchTableRows(client, "reviews", warnings, { fallbackClient: publicClient }),
+      fetchTableRows(client, "agency_review_sources", warnings, { fallbackClient: publicClient, orderBy: "updated_at" }),
+      fetchTableRows(client, "external_reviews", warnings, { fallbackClient: publicClient }),
       fetchTableRows(client, "blog_posts", warnings, { fallbackClient: publicClient }),
       fetchTableRows(client, "contact_submissions", warnings, { fallbackClient: publicClient }),
       fetchAdminAccountRow(client, privileged.user, warnings),
@@ -307,7 +312,11 @@ export async function GET() {
     return NextResponse.json({
       agents: normalizeAgents(agents as Database["public"]["Tables"]["agents"]["Row"][]),
       enquiries,
+      brokerStates,
+      brokerNotes,
       reviews,
+      reviewSources,
+      externalReviews,
       posts,
       contacts,
       adminAccount,
@@ -341,7 +350,29 @@ export async function POST(request: Request) {
     | { type: "resolve_all_contacts" }
     | { type: "close_buyer_enquiries"; buyer_email: string }
     | { type: "update_admin_preferences"; preferences: Json }
-    | { type: "bulk_upsert_agents"; rows: Database["public"]["Tables"]["agents"]["Insert"][] };
+    | { type: "bulk_upsert_agents"; rows: Database["public"]["Tables"]["agents"]["Insert"][] }
+    | { type: "upsert_review_source"; source: Database["public"]["Tables"]["agency_review_sources"]["Insert"] & { id?: string } }
+    | { type: "delete_review_source"; id: string }
+    | {
+      type: "set_external_review_state";
+      id: string;
+      patch: Pick<
+        Database["public"]["Tables"]["external_reviews"]["Update"],
+        "is_approved" | "is_hidden" | "is_featured"
+      >;
+    }
+    | { type: "sync_external_reviews"; sourceId?: string; force?: boolean }
+    | {
+      type: "upsert_broker_state";
+      enquiry_id: string;
+      patch: Partial<
+        Pick<
+          Database["public"]["Tables"]["broker_enquiry_states"]["Insert"],
+          "owner_email" | "priority" | "stage" | "sla_due_at" | "next_action" | "last_touch_at" | "metadata"
+        >
+      >;
+    }
+    | { type: "add_broker_note"; enquiry_id: string; note: string; is_internal?: boolean };
 
     const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
 
@@ -479,6 +510,115 @@ export async function POST(request: Request) {
       if (isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
 
       return fail(error.message, 500);
+    }
+
+    case "upsert_review_source": {
+      if (!payload.source?.agent_id || !payload.source?.source || !payload.source?.external_id) {
+        return fail("agent_id, source, and external_id are required for review sources.");
+      }
+      const nextSource = {
+        ...payload.source,
+        metadata: payload.source.metadata ?? {},
+      };
+
+      const { error } = await client.from("agency_review_sources").upsert(nextSource);
+      if (error && isMissingRelationError(error.message, "agency_review_sources")) {
+        return fail(
+          "Missing table agency_review_sources. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "delete_review_source": {
+      if (!payload.id) return fail("Missing review source id.");
+      const { error } = await client.from("agency_review_sources").delete().eq("id", payload.id);
+      if (error && isMissingRelationError(error.message, "agency_review_sources")) {
+        return fail(
+          "Missing table agency_review_sources. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "set_external_review_state": {
+      if (!payload.id || !payload.patch) return fail("Invalid external review moderation payload.");
+      const allowedFields = new Set(["is_approved", "is_hidden", "is_featured"]);
+      const patch = Object.fromEntries(
+        Object.entries(payload.patch).filter(([key]) => allowedFields.has(key))
+      );
+      if (Object.keys(patch).length === 0) return fail("No moderation fields provided.");
+
+      const { error } = await client.from("external_reviews").update(patch).eq("id", payload.id);
+      if (error && isMissingRelationError(error.message, "external_reviews")) {
+        return fail(
+          "Missing table external_reviews. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "sync_external_reviews": {
+      const result = await syncExternalReviews(client, {
+        sourceId: payload.sourceId,
+        force: Boolean(payload.force),
+      });
+      return NextResponse.json({ success: true, result });
+    }
+
+    case "upsert_broker_state": {
+      if (!payload.enquiry_id) return fail("Missing enquiry_id.");
+      const allowedFields = new Set([
+        "owner_email",
+        "priority",
+        "stage",
+        "sla_due_at",
+        "next_action",
+        "last_touch_at",
+        "metadata",
+      ]);
+      const patch = Object.fromEntries(
+        Object.entries(payload.patch ?? {}).filter(([key]) => allowedFields.has(key))
+      );
+      const nextState = {
+        enquiry_id: payload.enquiry_id,
+        ...patch,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await client.from("broker_enquiry_states").upsert(nextState);
+      if (error && isMissingRelationError(error.message, "broker_enquiry_states")) {
+        return fail(
+          "Missing table broker_enquiry_states. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
+    }
+
+    case "add_broker_note": {
+      if (!payload.enquiry_id || !payload.note?.trim()) return fail("enquiry_id and note are required.");
+      const { error } = await client.from("broker_enquiry_notes").insert({
+        enquiry_id: payload.enquiry_id,
+        note: payload.note.trim(),
+        is_internal: payload.is_internal ?? true,
+        author_email: privileged.user.email ?? null,
+      });
+      if (error && isMissingRelationError(error.message, "broker_enquiry_notes")) {
+        return fail(
+          "Missing table broker_enquiry_notes. Run supabase/add_external_reviews_and_broker_console.sql.",
+          500
+        );
+      }
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({ success: true });
     }
 
       case "bulk_upsert_agents": {
