@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Grid2X2, List } from "lucide-react";
 
@@ -195,6 +196,14 @@ export default function AgentsClientOnly() {
           Search across Australia by suburb or postcode, then filter by state and specialisation. BuyerHQ brokers
           introductions so your enquiry flow stays managed end-to-end.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" asChild>
+            <Link href="/signup">Buyer Sign Up</Link>
+          </Button>
+          <Button size="sm" variant="secondary" asChild>
+            <Link href="/login">Buyer Login</Link>
+          </Button>
+        </div>
       </section>
 
       <section className="grid gap-3 lg:grid-cols-[360px,1fr]">
@@ -458,6 +467,8 @@ export default function AgentsClientOnly() {
             <EmptyState
               title="No agents found"
               description="No agents found in this state yet. Try expanding your search."
+              actionLabel="Sign up to save your search"
+              onAction={() => (window.location.href = "/signup")}
             />
           ) : null}
 

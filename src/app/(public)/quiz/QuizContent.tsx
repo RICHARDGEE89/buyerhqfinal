@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { AgentCard } from "@/components/AgentCard";
@@ -275,6 +276,15 @@ export default function QuizContent() {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
           <div className="h-full bg-accent transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-caption text-text-secondary">Save and track enquiry progress:</span>
+          <Button size="sm" asChild>
+            <Link href="/signup">Buyer Sign Up</Link>
+          </Button>
+          <Button size="sm" variant="secondary" asChild>
+            <Link href="/login">Buyer Login</Link>
+          </Button>
         </div>
       </section>
 

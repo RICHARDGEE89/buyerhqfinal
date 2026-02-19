@@ -62,16 +62,30 @@ export function Header() {
 
         <div className="hidden items-center gap-3 md:flex">
           <Link
+            href="/signup"
+            className="rounded-md bg-accent px-4 py-2 text-body-sm font-semibold text-text-inverse transition-opacity hover:opacity-90"
+          >
+            Get Started
+          </Link>
+          <Link
             href="/login"
             className="rounded-md border border-border px-4 py-2 text-body-sm font-medium text-text-primary transition-colors hover:border-border-light hover:bg-surface-2"
           >
             Sign In
           </Link>
-          <Link
-            href="/list-agency"
-            className="rounded-md bg-accent px-4 py-2 text-body-sm font-semibold text-text-inverse transition-opacity hover:opacity-90"
-          >
-            Create Agent Profile
+        </div>
+        <div className="ml-4 hidden items-center gap-2 text-caption text-text-muted lg:flex">
+          <span className="font-mono uppercase">Role login</span>
+          <Link href="/login" className="hover:text-text-primary">
+            Buyer
+          </Link>
+          <span>·</span>
+          <Link href="/agent-portal/login" className="hover:text-text-primary">
+            Agent
+          </Link>
+          <span>·</span>
+          <Link href="/admin-login" className="hover:text-text-primary">
+            Admin
           </Link>
         </div>
 
@@ -121,17 +135,33 @@ export function Header() {
 
           <div className="mt-auto grid gap-3 pb-8 pt-8">
             <Link
+              href="/signup"
+              className="rounded-md bg-accent px-4 py-3 text-center text-body font-semibold text-text-inverse"
+            >
+              Get Started
+            </Link>
+            <Link
               href="/login"
               className="rounded-md border border-border px-4 py-3 text-center text-body font-medium"
             >
               Sign In
             </Link>
-            <Link
-              href="/list-agency"
-              className="rounded-md bg-accent px-4 py-3 text-center text-body font-semibold text-text-inverse"
-            >
-              Create Agent Profile
-            </Link>
+            <div className="rounded-md border border-border bg-surface p-3 text-center text-caption text-text-secondary">
+              <p className="mb-1 font-mono uppercase text-text-muted">Role login</p>
+              <div className="flex items-center justify-center gap-2">
+                <Link href="/login" className="hover:text-text-primary">
+                  Buyer
+                </Link>
+                <span>·</span>
+                <Link href="/agent-portal/login" className="hover:text-text-primary">
+                  Agent
+                </Link>
+                <span>·</span>
+                <Link href="/admin-login" className="hover:text-text-primary">
+                  Admin
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

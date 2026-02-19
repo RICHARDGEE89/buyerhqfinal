@@ -91,12 +91,26 @@ export default function WhyBuyerHQPage() {
                         </div>
                         <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl border border-stone/5 space-y-8">
                             <h4 className="text-xl font-display font-black text-gray-900">Ready to find your expert?</h4>
-                            <p className="text-stone font-medium leading-relaxed">It takes less than 2 minutes to get matched with your ideal local expert.</p>
+                            <p className="text-stone font-medium leading-relaxed">
+                                It takes less than 2 minutes to get matched, and BuyerHQ keeps every introduction internal and brokered.
+                            </p>
                             <Link href="/get-matched">
                                 <Button className="w-full bg-primary text-white font-black h-16 rounded-2xl flex items-center justify-center text-lg shadow-xl shadow-teal/20">
                                     Match Me Now <Zap className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <Link href="/signup">
+                                    <Button variant="secondary" className="w-full h-12 rounded-xl">
+                                        Buyer Sign Up
+                                    </Button>
+                                </Link>
+                                <Link href="/login">
+                                    <Button variant="secondary" className="w-full h-12 rounded-xl">
+                                        Buyer Login
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>

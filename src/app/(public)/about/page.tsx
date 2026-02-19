@@ -71,6 +71,12 @@ export default function AboutPage() {
           <Button variant="secondary" asChild>
             <Link href="/quiz">Take the Quiz</Link>
           </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/signup">Buyer Sign Up</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/login">Buyer Login</Link>
+          </Button>
         </div>
       </section>
     </div>

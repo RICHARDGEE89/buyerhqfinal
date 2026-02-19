@@ -44,8 +44,8 @@ const faqs = [
     a: "Yes. Many listed professionals specialise in investment strategy. In the directory, select specialisations such as 'Investment Strategy' to narrow your shortlist.",
   },
   {
-    q: "9. How do I list my business?",
-    a: "Use the 'Create Agent Profile' link in the header. Complete onboarding with your licence and profile details. Profiles can also be uploaded directly by BuyerHQ admin. Every listing is reviewed before verification.",
+    q: "9. How are professionals added to BuyerHQ?",
+    a: "BuyerHQ primarily manages professional onboarding internally to keep the buyer experience consistent. Approved professionals access a separate agent area and all buyer introductions remain brokered through BuyerHQ.",
   },
   {
     q: "10. Can't find an agent in my suburb?",

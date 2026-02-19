@@ -1,17 +1,18 @@
 import Link from "next/link";
 
 const footerLinks = {
-  directory: [
+  buyer: [
     { name: "Find Agents", href: "/agents" },
     { name: "Match Quiz", href: "/quiz" },
     { name: "How It Works", href: "/how-it-works" },
+    { name: "Buyer Sign Up", href: "/signup" },
+    { name: "Buyer Login", href: "/login" },
     { name: "Blog", href: "/blog" },
   ],
-  professionals: [
-    { name: "Create Agent Profile", href: "/list-agency" },
-    { name: "Agent Portal", href: "/agent-portal" },
+  roles: [
+    { name: "Buyer Login", href: "/login" },
     { name: "Agent Login", href: "/agent-portal/login" },
-    { name: "Admin Console", href: "/admin" },
+    { name: "Admin Login", href: "/admin-login" },
   ],
   support: [
     { name: "FAQ", href: "/faq" },
@@ -34,10 +35,21 @@ export function Footer() {
               Australia&apos;s verified buyer&apos;s agent directory. Client-focused and brokered by BuyerHQ
               from request to introduction.
             </p>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/signup" className="rounded-md bg-accent px-3 py-2 text-caption font-semibold text-text-inverse">
+                Buyer Sign Up
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-md border border-border px-3 py-2 text-caption text-text-secondary transition-colors hover:text-text-primary"
+              >
+                Buyer Login
+              </Link>
+            </div>
           </div>
 
-          <FooterColumn title="Directory" links={footerLinks.directory} />
-          <FooterColumn title="Professionals" links={footerLinks.professionals} />
+          <FooterColumn title="Buyer Journey" links={footerLinks.buyer} />
+          <FooterColumn title="Role Login" links={footerLinks.roles} />
           <FooterColumn title="Support" links={footerLinks.support} />
         </div>
 

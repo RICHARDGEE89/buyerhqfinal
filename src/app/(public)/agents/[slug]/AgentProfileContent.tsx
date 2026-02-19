@@ -213,6 +213,14 @@ export default function AgentProfileContent({
             For privacy and quality control, BuyerHQ brokers all introductions. Complete the quiz and we&apos;ll handle
             outreach to this agent on your behalf.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" asChild>
+              <Link href="/signup">Buyer Sign Up</Link>
+            </Button>
+            <Button size="sm" variant="secondary" asChild>
+              <Link href="/login">Buyer Login</Link>
+            </Button>
+          </div>
           <div className="mt-4 rounded-md border border-border bg-surface-2 p-3">
             <p className="font-mono text-label uppercase text-text-secondary">Fee Structure</p>
             <p className="mt-1 text-body-sm text-text-primary">
