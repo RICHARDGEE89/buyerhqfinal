@@ -7,50 +7,15 @@ import * as XLSX from "xlsx";
 
 import { runAdminAction } from "@/lib/admin-api";
 import { parseBulkAgentRows, type AgentBulkParseResult } from "@/lib/agent-bulk-upload";
+import {
+  buildSimplifiedBuyerhqrankTemplateRow,
+  simplifiedBuyerhqrankHeadings,
+} from "@/lib/buyerhqrank-simplified";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 
-const starterJson = `[
-  {
-    "agency_name": "Carter Humphries",
-    "state": "VIC",
-    "suburbs": "South Yarra, Toorak",
-    "specialisations": "Commercial, Investment Strategy",
-    "years_of_experience": 8,
-    "properties_purchased": 142,
-    "verified": "Unverified",
-    "profile_status": "Unclaimed",
-    "claimed_at": null,
-    "area_specialist": "South Yarra, VIC",
-    "fee_structure": "Fee details shared on request.",
-    "google_rating": 4.7,
-    "google_reviews": 83,
-    "facebook_rating": 4.6,
-    "facebook_reviews": 22,
-    "productreview_rating": 0,
-    "productreview_reviews": 0,
-    "trustpilot_rating": 4.9,
-    "trustpilot_reviews": 11,
-    "ratemyagent_rating": 4.8,
-    "ratemyagent_reviews": 39,
-    "profile_description": "Specialist buyer representation with a strategy-first approach across local and off-market opportunities.",
-    "about": "Profile bio pending.",
-    "social_media_presence": "D",
-    "total_followers": 0,
-    "authority_score": 0,
-    "instagram_followers": 1200,
-    "facebook_followers": 900,
-    "tiktok_followers": 0,
-    "youtube_subscribers": 0,
-    "linkedin_connections": 500,
-    "linkedin_followers": 350,
-    "pinterest_followers": 0,
-    "x_followers": 0,
-    "snapchat_followers": 0,
-    "last_updated": ""
-  }
-]`;
+const starterJson = JSON.stringify([buildSimplifiedBuyerhqrankTemplateRow()], null, 2);
 
 export default function BulkUploadPage() {
   const [jsonData, setJsonData] = useState(starterJson);
@@ -173,6 +138,23 @@ export default function BulkUploadPage() {
     }
   };
 
+  const downloadCsvTemplate = () => {
+    const templateRow = buildSimplifiedBuyerhqrankTemplateRow();
+    const header = simplifiedBuyerhqrankHeadings.join(",");
+    const row = simplifiedBuyerhqrankHeadings
+      .map((heading) => csvValue(templateRow[heading as keyof typeof templateRow]))
+      .join(",");
+    const csv = `${header}\n${row}\n`;
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "buyerhqrank_bulk_template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-surface p-6">
@@ -210,6 +192,9 @@ export default function BulkUploadPage() {
               <Button variant="secondary" onClick={validateJson}>
                 Validate
               </Button>
+              <Button variant="secondary" onClick={downloadCsvTemplate}>
+                Download CSV template
+              </Button>
               <Button loading={isUploading} onClick={handleUpload} disabled={isUploading}>
                 Upload
               </Button>
@@ -232,8 +217,14 @@ export default function BulkUploadPage() {
               <li>BUYERHQRANK fields are system-calculated and non-manual.</li>
               <li>Company logo fallback uses website favicon when avatar is missing.</li>
               <li>Supports JSON, CSV, TSV, XLSX, and XLS import workflows.</li>
-              <li>Parses your exact headings, including: agency_name, state, suburbs, specialisations, years_of_experience, properties_purchased, verified, profile_status, claimed_at, area_specialist, fee_structure, google_rating, google_reviews, facebook_rating, facebook_reviews, productreview_rating, productreview_reviews, trustpilot_rating, trustpilot_reviews, ratemyagent_rating, ratemyagent_reviews, profile_description, about, social_media_presence, total_followers, authority_score, instagram_followers, facebook_followers, tiktok_followers, youtube_subscribers, linkedin_connections, linkedin_followers, pinterest_followers, x_followers, snapchat_followers, last_updated.</li>
+              <li>Parses your exact simplified headings in snake_case for every user row.</li>
             </ul>
+          </Card>
+          <Card className="space-y-2 p-4">
+            <h2 className="text-subheading">Accepted headings</h2>
+            <p className="overflow-x-auto rounded-md border border-border bg-surface-2 p-2 font-mono text-[11px] leading-5 text-text-secondary">
+              {simplifiedBuyerhqrankHeadings.join(" ")}
+            </p>
           </Card>
 
           <Card className="space-y-2 p-4">
@@ -271,4 +262,10 @@ export default function BulkUploadPage() {
       ) : null}
     </div>
   );
+}
+
+function csvValue(value: unknown) {
+  if (value === null || value === undefined) return "\"\"";
+  const text = String(value).replaceAll("\"", "\"\"");
+  return `"${text}"`;
 }

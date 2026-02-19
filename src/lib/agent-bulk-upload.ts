@@ -1,6 +1,10 @@
 import type { Database } from "@/lib/database.types";
-import { validateAgencyProfilePayload } from "@/lib/agency-json-schema";
-import { applyBuyerhqrankFields, profileStatusValues, verifiedValues } from "@/lib/buyerhqrank";
+import { validateMinimalAgencyRow } from "@/lib/agency-minimal-schema";
+import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
+import {
+  applyBuyerhqrankToSimplifiedRow,
+  normalizeSimplifiedBuyerhqrankRow,
+} from "@/lib/buyerhqrank-simplified";
 
 type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
 
@@ -10,28 +14,57 @@ export type AgentBulkParseResult = {
 };
 
 const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
+
 const keyAliasMap: Record<string, string> = {
   name: "name",
+  agent_name: "name",
+  first_name: "first_name",
+  last_name: "last_name",
   agency: "agency_name",
   agency_name: "agency_name",
-  business_name: "business_name",
+  business_name: "agency_name",
+  email: "email",
+  phone: "phone",
   state: "state",
   suburbs: "suburbs",
+  suburb_coverage: "suburbs",
+  primary_suburb: "suburbs",
   specialisations: "specialisations",
-  specializations: "specializations",
-  years_of_experience: "years_experience",
-  years_experience: "years_experience",
+  specializations: "specialisations",
+  years_of_experience: "years_of_experience",
+  years_experience: "years_of_experience",
   properties_purchased: "properties_purchased",
+  total_properties: "properties_purchased",
   verified: "verified",
-  verified_status: "verified_status",
+  verified_status: "verified",
+  is_verified: "verified",
   status: "profile_status",
   profile_status: "profile_status",
   claimed_at: "claimed_at",
+  active: "is_active",
+  is_active: "is_active",
   area_specialist: "area_specialist",
   fee_structure: "fee_structure",
+  fee_description: "fee_structure",
   website: "website_url",
   website_url: "website_url",
-  active: "is_active",
+  linkedin_url: "linkedin_url",
+  slug: "slug",
+  profile_description: "profile_description",
+  bio: "profile_description",
+  about: "about",
+
+  google_rating: "google_rating",
+  google_reviews: "google_reviews",
+  facebook_rating: "facebook_rating",
+  facebook_reviews: "facebook_reviews",
+  productreview_rating: "productreview_rating",
+  productreview_reviews: "productreview_reviews",
+  trustpilot_rating: "trustpilot_rating",
+  trustpilot_reviews: "trustpilot_reviews",
+  ratemyagent_rating: "ratemyagent_rating",
+  ratemyagent_reviews: "ratemyagent_reviews",
+
   ig: "instagram_followers",
   fb: "facebook_followers",
   tiktok: "tiktok_followers",
@@ -44,24 +77,11 @@ const keyAliasMap: Record<string, string> = {
   pinterest_followers: "pinterest_followers",
   x_followers: "x_followers",
   snapchat_followers: "snapchat_followers",
-  google_rating: "google_rating",
-  google_reviews: "google_reviews",
-  facebook_rating: "facebook_rating",
-  facebook_reviews: "facebook_reviews",
-  productreview_rating: "productreview_rating",
-  productreview_reviews: "productreview_reviews",
-  trustpilot_rating: "trustpilot_rating",
-  trustpilot_reviews: "trustpilot_reviews",
-  ratemyagent_rating: "ratemyagent_rating",
-  ratemyagent_reviews: "ratemyagent_reviews",
-  profile_description: "profile_description",
-  about: "about",
+
   social_media_presence: "social_media_presence",
   total_followers: "total_followers",
   authority_score: "authority_score",
   last_updated: "last_updated",
-  email: "email",
-  phone: "phone",
 };
 
 export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
@@ -76,41 +96,79 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
     }
 
     const raw = normalizeInputRow(rawItem as Record<string, unknown>);
-    const agencyName = toText(raw.agency_name) || toText(raw.business_name);
-    const name =
+
+    const simplified = normalizeSimplifiedBuyerhqrankRow({
+      agency_name: raw.agency_name,
+      state: raw.state,
+      suburbs: raw.suburbs,
+      specialisations: raw.specialisations,
+      years_of_experience: raw.years_of_experience,
+      properties_purchased: raw.properties_purchased,
+      verified: raw.verified,
+      profile_status: raw.profile_status,
+      claimed_at: raw.claimed_at,
+      area_specialist: raw.area_specialist,
+      fee_structure: raw.fee_structure,
+      google_rating: raw.google_rating,
+      google_reviews: raw.google_reviews,
+      facebook_rating: raw.facebook_rating,
+      facebook_reviews: raw.facebook_reviews,
+      productreview_rating: raw.productreview_rating,
+      productreview_reviews: raw.productreview_reviews,
+      trustpilot_rating: raw.trustpilot_rating,
+      trustpilot_reviews: raw.trustpilot_reviews,
+      ratemyagent_rating: raw.ratemyagent_rating,
+      ratemyagent_reviews: raw.ratemyagent_reviews,
+      profile_description: raw.profile_description,
+      about: raw.about,
+      social_media_presence: raw.social_media_presence,
+      total_followers: raw.total_followers,
+      authority_score: raw.authority_score,
+      instagram_followers: raw.instagram_followers,
+      facebook_followers: raw.facebook_followers,
+      tiktok_followers: raw.tiktok_followers,
+      youtube_subscribers: raw.youtube_subscribers,
+      linkedin_connections: raw.linkedin_connections,
+      linkedin_followers: raw.linkedin_followers,
+      pinterest_followers: raw.pinterest_followers,
+      x_followers: raw.x_followers,
+      snapchat_followers: raw.snapchat_followers,
+      last_updated: raw.last_updated,
+    });
+
+    if (!simplified.agency_name) {
+      errors.push(`Row ${index + 1}: "agency_name" is required.`);
+      return;
+    }
+    if (!stateCodes.has(simplified.state)) {
+      errors.push(`Row ${index + 1}: state "${simplified.state}" is invalid.`);
+      return;
+    }
+
+    const validation = validateMinimalAgencyRow(simplified as unknown as Record<string, unknown>);
+    if (!validation.valid) {
+      validation.errors.forEach((error) => errors.push(`Row ${index + 1}: ${error}`));
+      return;
+    }
+
+    const computed = applyBuyerhqrankToSimplifiedRow(simplified);
+    const agentName =
       toText(raw.name) ||
-      toText(raw.agent_name) ||
       `${toText(raw.first_name)} ${toText(raw.last_name)}`.trim() ||
-      agencyName;
-
-    if (!name) {
-      errors.push(`Row ${index + 1}: provide at least one of "name", "agent_name", or "agency_name".`);
-      return;
+      computed.agency_name;
+    const suburbs = csvToArray(computed.suburbs);
+    const areaSpecialist = parseAreaSpecialistSuburb(computed.area_specialist);
+    if (areaSpecialist && !suburbs.some((item) => item.toLowerCase() === areaSpecialist.toLowerCase())) {
+      suburbs.unshift(areaSpecialist);
     }
 
-    const state = (toText(raw.state) || toText(raw.primary_state)).toUpperCase();
-    if (state && !stateCodes.has(state)) {
-      errors.push(`Row ${index + 1}: state "${state}" is invalid.`);
-      return;
-    }
-
-    const suburbs =
-      toStringArrayFlexible(raw.suburbs) ??
-      toStringArrayFlexible(raw.suburb_coverage) ??
-      (toText(raw.primary_suburb) ? [toText(raw.primary_suburb)] : []);
-    const areaSpecialist = toText(raw.area_specialist);
-    const areaSuburb = parseAreaSpecialistSuburb(areaSpecialist);
-    if (areaSuburb && !suburbs.some((item) => item.toLowerCase() === areaSuburb.toLowerCase())) {
-      suburbs.unshift(areaSuburb);
-    }
-
-    const specializations = toStringArrayFlexible(raw.specializations) ?? toStringArrayFlexible(raw.specialisations) ?? [];
+    const specializations = csvToArray(computed.specialisations);
     const email =
       toText(raw.email).toLowerCase() ||
       buildInternalUploadEmail({
-        name,
-        agencyName,
-        state,
+        name: agentName,
+        agencyName: computed.agency_name,
+        state: computed.state,
         primarySuburb: suburbs[0] ?? "",
         rowIndex: index,
       });
@@ -118,77 +176,106 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
     const websiteUrl = normalizeWebsiteUrl(toNullableText(raw.website_url));
     const avatarFromSite = websiteUrl ? buildCompanyLogoUrl(websiteUrl) : null;
     const avatarUrl = toNullableText(raw.avatar_url) || toNullableText(raw.headshot_url) || avatarFromSite;
-
-    const profileDescription = toText(raw.profile_description);
-    const about = toText(raw.about);
-    const mergedBio =
-      [profileDescription, about, toText(raw.bio)]
-        .filter(Boolean)
-        .join("\n\n")
-        .trim() || null;
-
-    const profileStatus = normalizeProfileStatus(raw.profile_status);
-    const verified = normalizeVerified(raw.verified, raw.verified_status, raw.is_verified);
+    const mergedBio = [computed.profile_description, computed.about].filter(Boolean).join("\n\n").trim() || null;
 
     const baseRow: Record<string, unknown> = {
-      name,
+      name: agentName,
       email,
       phone: toNullableText(raw.phone),
-      agency_name: agencyName || null,
+      agency_name: computed.agency_name,
       bio: mergedBio,
-      about: about || null,
+      about: computed.about || null,
       avatar_url: avatarUrl,
       slug: toNullableText(raw.slug),
-      state: state || null,
+      state: computed.state,
       suburbs,
       specializations,
-      years_experience: pickNonNegativeInt(raw.years_experience, raw.years_of_experience),
-      properties_purchased: pickNonNegativeInt(raw.properties_purchased, raw.total_properties),
-      avg_rating: pickRating(raw.avg_rating, raw.google_rating),
-      review_count: pickNonNegativeInt(raw.review_count, raw.google_reviews),
-      is_verified: verified === "Verified",
-      verified,
+      years_experience: computed.years_of_experience,
+      properties_purchased: computed.properties_purchased,
+      avg_rating: computed.google_rating,
+      review_count: computed.google_reviews,
+      is_verified: computed.verified === "Verified",
+      verified: computed.verified,
       is_active: toBoolean(raw.is_active) ?? true,
       licence_number: toNullableText(raw.licence_number),
-      fee_structure: toNullableText(raw.fee_structure) || toNullableText(raw.fee_description),
+      fee_structure: computed.fee_structure || null,
       website_url: websiteUrl,
       linkedin_url: toNullableText(raw.linkedin_url),
-      profile_status: profileStatus,
-      claimed_at: profileStatus === "Claimed" ? toNullableText(raw.claimed_at) : null,
-
-      instagram_followers: toNonNegativeInt(raw.instagram_followers),
-      facebook_followers: toNonNegativeInt(raw.facebook_followers),
-      tiktok_followers: toNonNegativeInt(raw.tiktok_followers),
-      youtube_subscribers: toNonNegativeInt(raw.youtube_subscribers),
-      linkedin_connections: toNonNegativeInt(raw.linkedin_connections),
-      linkedin_followers: toNonNegativeInt(raw.linkedin_followers),
-      pinterest_followers: toNonNegativeInt(raw.pinterest_followers),
-      x_followers: toNonNegativeInt(raw.x_followers),
-      snapchat_followers: toNonNegativeInt(raw.snapchat_followers),
-
-      google_rating: toRating(raw.google_rating),
-      google_reviews: toNonNegativeInt(raw.google_reviews),
-      facebook_rating: toRating(raw.facebook_rating),
-      facebook_reviews: toNonNegativeInt(raw.facebook_reviews),
-      ratemyagent_rating: toRating(raw.ratemyagent_rating),
-      ratemyagent_reviews: toNonNegativeInt(raw.ratemyagent_reviews),
-      trustpilot_rating: toRating(raw.trustpilot_rating),
-      trustpilot_reviews: toNonNegativeInt(raw.trustpilot_reviews),
-      productreview_rating: toRating(raw.productreview_rating),
-      productreview_reviews: toNonNegativeInt(raw.productreview_reviews),
+      profile_status: computed.profile_status,
+      claimed_at: computed.claimed_at,
+      social_media_presence: computed.social_media_presence,
+      total_followers: computed.total_followers,
+      authority_score: computed.authority_score,
+      instagram_followers: computed.instagram_followers,
+      facebook_followers: computed.facebook_followers,
+      tiktok_followers: computed.tiktok_followers,
+      youtube_subscribers: computed.youtube_subscribers,
+      linkedin_connections: computed.linkedin_connections,
+      linkedin_followers: computed.linkedin_followers,
+      pinterest_followers: computed.pinterest_followers,
+      x_followers: computed.x_followers,
+      snapchat_followers: computed.snapchat_followers,
+      google_rating: computed.google_rating,
+      google_reviews: computed.google_reviews,
+      facebook_rating: computed.facebook_rating,
+      facebook_reviews: computed.facebook_reviews,
+      productreview_rating: computed.productreview_rating,
+      productreview_reviews: computed.productreview_reviews,
+      trustpilot_rating: computed.trustpilot_rating,
+      trustpilot_reviews: computed.trustpilot_reviews,
+      ratemyagent_rating: computed.ratemyagent_rating,
+      ratemyagent_reviews: computed.ratemyagent_reviews,
+      last_updated: computed.last_updated || new Date().toISOString(),
     };
 
-    const withDerived = applyBuyerhqrankFields(baseRow);
-    const validation = validateAgencyProfilePayload(withDerived);
-    if (!validation.valid) {
-      validation.errors.forEach((error) => errors.push(`Row ${index + 1}: ${error}`));
-      return;
-    }
-
-    rows.push(validation.row as AgentInsert);
+    const withDerived = applyBuyerhqrankFields(baseRow, computed.last_updated || new Date().toISOString());
+    rows.push(withDerived as AgentInsert);
   });
 
   return { rows, errors };
+}
+
+export function buildCompanyLogoUrl(websiteUrl: string) {
+  try {
+    const normalized = /^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`;
+    const url = new URL(normalized);
+    return `https://www.google.com/s2/favicons?sz=256&domain_url=${encodeURIComponent(url.origin)}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeInputRow(raw: Record<string, unknown>) {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const normalized = normalizeKey(key);
+    const canonical = keyAliasMap[normalized] ?? normalized;
+    if (next[canonical] === undefined) {
+      next[canonical] = value;
+    }
+  }
+  return next;
+}
+
+function normalizeKey(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function csvToArray(value: string) {
+  if (!value.trim()) return [];
+  return value
+    .split(/[,;|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseAreaSpecialistSuburb(value: string) {
+  if (!value.trim()) return "";
+  return value.split(",")[0]?.trim() ?? "";
 }
 
 function toText(value: unknown) {
@@ -200,46 +287,10 @@ function toNullableText(value: unknown) {
   return text || null;
 }
 
-function toStringArray(value: unknown) {
-  if (!Array.isArray(value)) return null;
-  return value
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
-    .filter(Boolean);
-}
-
-function toStringArrayFlexible(value: unknown) {
-  if (Array.isArray(value)) return toStringArray(value);
-  if (typeof value === "string" && value.trim()) {
-    return value
-      .split(/[,;|]/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  return null;
-}
-
-function toNonNegativeInt(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.trunc(value));
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-  }
-  if (value === "" || value === null || value === undefined) return 0;
-  return 0;
-}
-
-function toRating(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return clamp(value, 0, 5);
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? clamp(parsed, 0, 5) : 0;
-  }
-  if (value === "" || value === null || value === undefined) return 0;
-  return 0;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+function normalizeWebsiteUrl(value: string | null) {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
 }
 
 function toBoolean(value: unknown) {
@@ -250,45 +301,6 @@ function toBoolean(value: unknown) {
     if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "inactive") return false;
   }
   return null;
-}
-
-function parseAreaSpecialistSuburb(value: string) {
-  if (!value.trim()) return "";
-  const beforeComma = value.split(",")[0]?.trim() ?? "";
-  return beforeComma;
-}
-
-function normalizeProfileStatus(value: unknown) {
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    if (normalized === "claimed") return "Claimed";
-    if (normalized === "unclaimed") return "Unclaimed";
-  }
-  if (profileStatusValues.includes(value as (typeof profileStatusValues)[number])) {
-    return value as (typeof profileStatusValues)[number];
-  }
-  return "Unclaimed";
-}
-
-function normalizeVerified(...values: unknown[]) {
-  for (const value of values) {
-    if (verifiedValues.includes(value as (typeof verifiedValues)[number])) {
-      return value as (typeof verifiedValues)[number];
-    }
-    if (value === true || value === "true") return "Verified";
-    if (value === false || value === "false") return "Unverified";
-  }
-  return "Unverified";
-}
-
-export function buildCompanyLogoUrl(websiteUrl: string) {
-  try {
-    const normalized = /^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`;
-    const url = new URL(normalized);
-    return `https://www.google.com/s2/favicons?sz=256&domain_url=${encodeURIComponent(url.origin)}`;
-  } catch {
-    return null;
-  }
 }
 
 function buildInternalUploadEmail(input: {
@@ -315,48 +327,4 @@ function buildInternalUploadEmail(input: {
   const statePart = input.state.toLowerCase() || "na";
   const localPart = [slugPart || "agent", statePart, suburbPart || "all"].filter(Boolean).join(".");
   return `${localPart}@profiles.buyerhq.internal`;
-}
-
-function pickNonNegativeInt(...values: unknown[]) {
-  for (const value of values) {
-    if (value !== null && value !== undefined && !(typeof value === "string" && value.trim() === "")) {
-      return toNonNegativeInt(value);
-    }
-  }
-  return 0;
-}
-
-function pickRating(...values: unknown[]) {
-  for (const value of values) {
-    if (value !== null && value !== undefined && !(typeof value === "string" && value.trim() === "")) {
-      return toRating(value);
-    }
-  }
-  return 0;
-}
-
-function normalizeWebsiteUrl(value: string | null) {
-  if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  return `https://${value}`;
-}
-
-function normalizeKey(input: string) {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function normalizeInputRow(raw: Record<string, unknown>) {
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    const normalized = normalizeKey(key);
-    const canonical = keyAliasMap[normalized] ?? normalized;
-    if (next[canonical] === undefined) {
-      next[canonical] = value;
-    }
-  }
-  return next;
 }
