@@ -18,6 +18,9 @@ const sortValues = new Set(["rating_desc", "authority_desc", "experience_desc", 
 const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function parseBoolean(value: string | null) {
   if (value === null) return null;
   if (value === "true") return true;

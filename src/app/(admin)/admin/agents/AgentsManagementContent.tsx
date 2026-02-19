@@ -16,6 +16,7 @@ import type { AgentRow } from "@/lib/database.types";
 
 type FilterValue = "all" | "verified" | "pending" | "inactive" | "claimed";
 type ActionValue = "save" | "claim" | "delete" | null;
+type BulkActionValue = "save" | "claim" | "delete" | null;
 
 type AgentDraft = {
   name: string;
@@ -46,6 +47,8 @@ export default function AgentsManagementContent() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
   const [activeAction, setActiveAction] = useState<Record<string, ActionValue>>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<BulkActionValue>(null);
 
   const hydrateDrafts = useCallback((rows: AgentRow[]) => {
     const next: Record<string, AgentDraft> = {};
@@ -80,6 +83,7 @@ export default function AgentsManagementContent() {
       setAgents(payload.agents);
       setWarning(payload.warning ?? null);
       hydrateDrafts(payload.agents);
+      setSelectedIds([]);
       setLoading(false);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Unable to load agents.");
@@ -115,6 +119,32 @@ export default function AgentsManagementContent() {
     setActiveAction((current) => ({ ...current, [id]: action }));
   };
 
+  const toggleSelected = (agentId: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      if (checked) {
+        if (current.includes(agentId)) return current;
+        return [...current, agentId];
+      }
+      return current.filter((id) => id !== agentId);
+    });
+  };
+
+  const allVisibleSelected =
+    filteredAgents.length > 0 && filteredAgents.every((agent) => selectedIds.includes(agent.id));
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    if (!checked) {
+      const visibleSet = new Set(filteredAgents.map((agent) => agent.id));
+      setSelectedIds((current) => current.filter((id) => !visibleSet.has(id)));
+      return;
+    }
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      filteredAgents.forEach((agent) => next.add(agent.id));
+      return Array.from(next);
+    });
+  };
+
   const updateDraft = <K extends keyof AgentDraft>(id: string, key: K, value: AgentDraft[K]) => {
     setDrafts((current) => ({
       ...current,
@@ -136,23 +166,7 @@ export default function AgentsManagementContent() {
       await runAdminAction({
         type: "update_agent",
         id: agentId,
-        patch: {
-          name: draft.name.trim(),
-          agency_name: draft.agency_name.trim() || null,
-          state: draft.state || null,
-          suburbs: splitCsv(draft.suburbs),
-          specializations: splitCsv(draft.specializations),
-          fee_structure: draft.fee_structure.trim() || null,
-          website_url: draft.website_url.trim() || null,
-          verified: draft.verified,
-          profile_status: draft.profile_status,
-          is_active: draft.is_active === "true",
-          instagram_followers: toInt(draft.instagram_followers),
-          facebook_followers: toInt(draft.facebook_followers),
-          tiktok_followers: toInt(draft.tiktok_followers),
-          google_rating: toFloat(draft.google_rating),
-          google_reviews: toInt(draft.google_reviews),
-        },
+        patch: buildPatchFromDraft(draft),
       });
       await loadAgents();
     } catch (updateError) {
@@ -172,6 +186,77 @@ export default function AgentsManagementContent() {
       setError(claimError instanceof Error ? claimError.message : "Unable to claim profile.");
     } finally {
       setAction(agentId, null);
+    }
+  };
+
+  const bulkSaveSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkAction("save");
+    setError(null);
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map((agentId) => {
+          const draft = drafts[agentId];
+          if (!draft) {
+            return Promise.reject(new Error(`Draft not found for ${agentId}`));
+          }
+          return runAdminAction({
+            type: "update_agent",
+            id: agentId,
+            patch: buildPatchFromDraft(draft),
+          });
+        })
+      );
+      const failed = results.filter((item) => item.status === "rejected").length;
+      if (failed > 0) {
+        setError(`${failed} selected row(s) failed to save. Review and retry.`);
+      }
+      await loadAgents();
+    } finally {
+      setBulkAction(null);
+    }
+  };
+
+  const bulkClaimSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkAction("claim");
+    setError(null);
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map((agentId) => runAdminAction({ type: "claim_agent_profile", id: agentId }))
+      );
+      const failed = results.filter((item) => item.status === "rejected").length;
+      if (failed > 0) {
+        setError(`${failed} selected row(s) failed to claim. Review and retry.`);
+      }
+      await loadAgents();
+    } finally {
+      setBulkAction(null);
+    }
+  };
+
+  const bulkDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    const selectedAgents = agents.filter((agent) => selectedIds.includes(agent.id));
+    if (selectedAgents.length === 0) return;
+    const confirmed = window.confirm(
+      `Delete ${selectedAgents.length} selected profile(s)? This also deletes linked reviews and enquiries.`
+    );
+    if (!confirmed) return;
+
+    setBulkAction("delete");
+    setError(null);
+    try {
+      const results = await Promise.allSettled(
+        selectedAgents.map((agent) => runAdminAction({ type: "delete_agent", id: agent.id }))
+      );
+      const failed = results.filter((item) => item.status === "rejected").length;
+      if (failed > 0) {
+        setError(`${failed} selected row(s) failed to delete. Review and retry.`);
+      }
+      await loadAgents();
+    } finally {
+      setBulkAction(null);
     }
   };
 
@@ -234,6 +319,36 @@ export default function AgentsManagementContent() {
           ]}
         />
       </section>
+      <section className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={bulkAction === "save"}
+          disabled={bulkAction !== null || selectedIds.length === 0}
+          onClick={() => void bulkSaveSelected()}
+        >
+          Save selected
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={bulkAction === "claim"}
+          disabled={bulkAction !== null || selectedIds.length === 0}
+          onClick={() => void bulkClaimSelected()}
+        >
+          Claim selected
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          loading={bulkAction === "delete"}
+          disabled={bulkAction !== null || selectedIds.length === 0}
+          onClick={() => void bulkDeleteSelected()}
+        >
+          Delete selected
+        </Button>
+        <span className="text-caption text-text-secondary">{selectedIds.length} selected</span>
+      </section>
 
       {error ? <ErrorState description={error} onRetry={loadAgents} /> : null}
 
@@ -262,9 +377,17 @@ export default function AgentsManagementContent() {
 
       {!loading && filteredAgents.length > 0 ? (
         <Card className="overflow-x-auto p-0">
-          <table className="min-w-[1700px] border-collapse text-body-sm">
+          <table className="min-w-[1800px] border-collapse text-body-sm">
             <thead>
               <tr className="border-b border-border bg-surface-2 text-left font-mono text-label uppercase text-text-secondary">
+                <th className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                    className="h-4 w-4 rounded border-border bg-surface-2"
+                  />
+                </th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Agency</th>
                 <th className="px-3 py-2">State</th>
@@ -296,6 +419,14 @@ export default function AgentsManagementContent() {
 
                 return (
                   <tr key={agent.id} className="border-b border-border align-top">
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(agent.id)}
+                        onChange={(event) => toggleSelected(agent.id, event.target.checked)}
+                        className="h-4 w-4 rounded border-border bg-surface-2"
+                      />
+                    </td>
                     <td className="px-3 py-2">
                       <input
                         value={draft.name}
@@ -444,7 +575,7 @@ export default function AgentsManagementContent() {
                           size="sm"
                           loading={action === "save"}
                           onClick={() => void saveRow(agent.id)}
-                          disabled={Boolean(action)}
+                          disabled={Boolean(action) || bulkAction !== null}
                         >
                           Save
                         </Button>
@@ -454,7 +585,7 @@ export default function AgentsManagementContent() {
                             size="sm"
                             loading={action === "claim"}
                             onClick={() => void claimProfile(agent.id)}
-                            disabled={Boolean(action)}
+                            disabled={Boolean(action) || bulkAction !== null}
                           >
                             <ShieldCheck size={14} />
                             Claim
@@ -465,7 +596,7 @@ export default function AgentsManagementContent() {
                           size="sm"
                           loading={action === "delete"}
                           onClick={() => void deleteAgent(agent)}
-                          disabled={Boolean(action)}
+                          disabled={Boolean(action) || bulkAction !== null}
                         >
                           <Trash2 size={14} />
                           Delete
@@ -503,4 +634,24 @@ function toFloat(value: string) {
 
 function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function buildPatchFromDraft(draft: AgentDraft) {
+  return {
+    name: draft.name.trim(),
+    agency_name: draft.agency_name.trim() || null,
+    state: draft.state || null,
+    suburbs: splitCsv(draft.suburbs),
+    specializations: splitCsv(draft.specializations),
+    fee_structure: draft.fee_structure.trim() || null,
+    website_url: draft.website_url.trim() || null,
+    verified: draft.verified,
+    profile_status: draft.profile_status,
+    is_active: draft.is_active === "true",
+    instagram_followers: toInt(draft.instagram_followers),
+    facebook_followers: toInt(draft.facebook_followers),
+    tiktok_followers: toInt(draft.tiktok_followers),
+    google_rating: toFloat(draft.google_rating),
+    google_reviews: toInt(draft.google_reviews),
+  };
 }

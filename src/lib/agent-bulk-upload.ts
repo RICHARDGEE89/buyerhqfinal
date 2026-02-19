@@ -10,6 +10,59 @@ export type AgentBulkParseResult = {
 };
 
 const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
+const keyAliasMap: Record<string, string> = {
+  name: "name",
+  agency: "agency_name",
+  agency_name: "agency_name",
+  business_name: "business_name",
+  state: "state",
+  suburbs: "suburbs",
+  specialisations: "specialisations",
+  specializations: "specializations",
+  years_of_experience: "years_experience",
+  years_experience: "years_experience",
+  properties_purchased: "properties_purchased",
+  verified: "verified",
+  verified_status: "verified_status",
+  status: "profile_status",
+  profile_status: "profile_status",
+  claimed_at: "claimed_at",
+  area_specialist: "area_specialist",
+  fee_structure: "fee_structure",
+  website: "website_url",
+  website_url: "website_url",
+  active: "is_active",
+  ig: "instagram_followers",
+  fb: "facebook_followers",
+  tiktok: "tiktok_followers",
+  instagram_followers: "instagram_followers",
+  facebook_followers: "facebook_followers",
+  tiktok_followers: "tiktok_followers",
+  youtube_subscribers: "youtube_subscribers",
+  linkedin_connections: "linkedin_connections",
+  linkedin_followers: "linkedin_followers",
+  pinterest_followers: "pinterest_followers",
+  x_followers: "x_followers",
+  snapchat_followers: "snapchat_followers",
+  google_rating: "google_rating",
+  google_reviews: "google_reviews",
+  facebook_rating: "facebook_rating",
+  facebook_reviews: "facebook_reviews",
+  productreview_rating: "productreview_rating",
+  productreview_reviews: "productreview_reviews",
+  trustpilot_rating: "trustpilot_rating",
+  trustpilot_reviews: "trustpilot_reviews",
+  ratemyagent_rating: "ratemyagent_rating",
+  ratemyagent_reviews: "ratemyagent_reviews",
+  profile_description: "profile_description",
+  about: "about",
+  social_media_presence: "social_media_presence",
+  total_followers: "total_followers",
+  authority_score: "authority_score",
+  last_updated: "last_updated",
+  email: "email",
+  phone: "phone",
+};
 
 export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
   const sourceRows = Array.isArray(input) ? input : [input];
@@ -22,7 +75,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       return;
     }
 
-    const raw = rawItem as Record<string, unknown>;
+    const raw = normalizeInputRow(rawItem as Record<string, unknown>);
     const agencyName = toText(raw.agency_name) || toText(raw.business_name);
     const name =
       toText(raw.name) ||
@@ -42,8 +95,8 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
     }
 
     const suburbs =
-      toStringArray(raw.suburbs) ??
-      toStringArray(raw.suburb_coverage) ??
+      toStringArrayFlexible(raw.suburbs) ??
+      toStringArrayFlexible(raw.suburb_coverage) ??
       (toText(raw.primary_suburb) ? [toText(raw.primary_suburb)] : []);
     const areaSpecialist = toText(raw.area_specialist);
     const areaSuburb = parseAreaSpecialistSuburb(areaSpecialist);
@@ -51,7 +104,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       suburbs.unshift(areaSuburb);
     }
 
-    const specializations = toStringArray(raw.specializations) ?? toStringArray(raw.specialisations) ?? [];
+    const specializations = toStringArrayFlexible(raw.specializations) ?? toStringArrayFlexible(raw.specialisations) ?? [];
     const email =
       toText(raw.email).toLowerCase() ||
       buildInternalUploadEmail({
@@ -89,7 +142,7 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       state: state || null,
       suburbs,
       specializations,
-      years_experience: pickNonNegativeInt(raw.years_experience),
+      years_experience: pickNonNegativeInt(raw.years_experience, raw.years_of_experience),
       properties_purchased: pickNonNegativeInt(raw.properties_purchased, raw.total_properties),
       avg_rating: pickRating(raw.avg_rating, raw.google_rating),
       review_count: pickNonNegativeInt(raw.review_count, raw.google_reviews),
@@ -154,6 +207,17 @@ function toStringArray(value: unknown) {
     .filter(Boolean);
 }
 
+function toStringArrayFlexible(value: unknown) {
+  if (Array.isArray(value)) return toStringArray(value);
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(/[,;|]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return null;
+}
+
 function toNonNegativeInt(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.trunc(value));
   if (typeof value === "string" && value.trim()) {
@@ -181,8 +245,9 @@ function clamp(value: number, min: number, max: number) {
 function toBoolean(value: unknown) {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
-    if (value.toLowerCase() === "true") return true;
-    if (value.toLowerCase() === "false") return false;
+    const normalized = value.toLowerCase().trim();
+    if (normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "active") return true;
+    if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "inactive") return false;
   }
   return null;
 }
@@ -194,6 +259,11 @@ function parseAreaSpecialistSuburb(value: string) {
 }
 
 function normalizeProfileStatus(value: unknown) {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "claimed") return "Claimed";
+    if (normalized === "unclaimed") return "Unclaimed";
+  }
   if (profileStatusValues.includes(value as (typeof profileStatusValues)[number])) {
     return value as (typeof profileStatusValues)[number];
   }
@@ -269,4 +339,24 @@ function normalizeWebsiteUrl(value: string | null) {
   if (!value) return null;
   if (/^https?:\/\//i.test(value)) return value;
   return `https://${value}`;
+}
+
+function normalizeKey(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function normalizeInputRow(raw: Record<string, unknown>) {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const normalized = normalizeKey(key);
+    const canonical = keyAliasMap[normalized] ?? normalized;
+    if (next[canonical] === undefined) {
+      next[canonical] = value;
+    }
+  }
+  return next;
 }

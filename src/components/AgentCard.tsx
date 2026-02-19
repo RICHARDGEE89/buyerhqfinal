@@ -77,6 +77,14 @@ export function AgentCard({
               </span>
               <span className="text-body-sm text-text-secondary">Authority {agent.authority_score ?? 0}/100</span>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="state" className="normal-case">
+                Social: {agent.social_media_presence ?? "D"}
+              </Badge>
+              <Badge variant="state" className="normal-case">
+                Followers: {(agent.total_followers ?? 0).toLocaleString("en-AU")}
+              </Badge>
+            </div>
           </div>
         </div>
 

@@ -115,6 +115,28 @@ export default function AgentProfileContent({
         </Card>
       </section>
 
+      <section className="grid gap-3 md:grid-cols-3">
+        <Card className="p-4">
+          <p className="font-mono text-label uppercase text-text-secondary">Social presence</p>
+          <p className="text-heading text-text-primary">{agent.social_media_presence ?? "D"}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="font-mono text-label uppercase text-text-secondary">Total followers</p>
+          <p className="text-heading text-text-primary">{(agent.total_followers ?? 0).toLocaleString("en-AU")}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="font-mono text-label uppercase text-text-secondary">External signals</p>
+          <p className="text-body-sm text-text-secondary">
+            Google {formatRating(agent.google_rating)} ({agent.google_reviews ?? 0}) · Facebook{" "}
+            {formatRating(agent.facebook_rating)} ({agent.facebook_reviews ?? 0})
+          </p>
+          <p className="text-body-sm text-text-secondary">
+            Trustpilot {formatRating(agent.trustpilot_rating)} ({agent.trustpilot_reviews ?? 0}) · RateMyAgent{" "}
+            {formatRating(agent.ratemyagent_rating)} ({agent.ratemyagent_reviews ?? 0})
+          </p>
+        </Card>
+      </section>
+
       <section className="grid gap-3 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
           <Card className="p-5">
@@ -249,4 +271,8 @@ export default function AgentProfileContent({
       </section>
     </div>
   );
+}
+
+function formatRating(value: number | null) {
+  return typeof value === "number" ? value.toFixed(1) : "0.0";
 }

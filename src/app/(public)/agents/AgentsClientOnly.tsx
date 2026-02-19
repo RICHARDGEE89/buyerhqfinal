@@ -128,7 +128,7 @@ export default function AgentsClientOnly() {
         if (page === 1) setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/agents?${queryString}`);
+        const response = await fetch(`/api/agents?${queryString}`, { cache: "no-store" });
         const data = (await response.json()) as AgentsResponse & { error?: string };
         if (!response.ok) throw new Error(data.error ?? "Unable to fetch agents");
 

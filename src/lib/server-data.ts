@@ -1,10 +1,8 @@
-import { cache } from "react";
-
 import { agentIsActive, agentIsVerified, normalizeAgents, sanitizePublicAgents } from "@/lib/agent-compat";
 import type { AgentRow, StateCode } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
-export const getHomepageStats = cache(async () => {
+export async function getHomepageStats() {
   const supabase = createClient();
   const { data: agentsData } = await supabase.from("agents").select("*");
 
@@ -26,9 +24,9 @@ export const getHomepageStats = cache(async () => {
     enquiriesMtd: enquiriesMtd ?? 0,
     avgResponseTime: "< 2hrs",
   };
-});
+}
 
-export const getFeaturedAgents = cache(async () => {
+export async function getFeaturedAgents() {
   const supabase = createClient();
   const { data } = await supabase
     .from("agents")
@@ -40,9 +38,9 @@ export const getFeaturedAgents = cache(async () => {
     (agent) => agentIsActive(agent) && agentIsVerified(agent)
   );
   return sanitizePublicAgents(visible.slice(0, 6));
-});
+}
 
-export const getStateAgentCounts = cache(async () => {
+export async function getStateAgentCounts() {
   const supabase = createClient();
   const states: StateCode[] = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
   const { data } = await supabase.from("agents").select("*");
@@ -56,9 +54,9 @@ export const getStateAgentCounts = cache(async () => {
     }
   });
   return counts;
-});
+}
 
-export const getPublishedBlogPosts = cache(async () => {
+export async function getPublishedBlogPosts() {
   const supabase = createClient();
   const { data } = await supabase
     .from("blog_posts")
@@ -66,9 +64,9 @@ export const getPublishedBlogPosts = cache(async () => {
     .eq("is_published", true)
     .order("published_at", { ascending: false, nullsFirst: false });
   return data ?? [];
-});
+}
 
-export const getPublishedBlogPostBySlug = cache(async (slug: string) => {
+export async function getPublishedBlogPostBySlug(slug: string) {
   const supabase = createClient();
   const { data } = await supabase
     .from("blog_posts")
@@ -77,4 +75,4 @@ export const getPublishedBlogPostBySlug = cache(async (slug: string) => {
     .eq("is_published", true)
     .single();
   return data;
-});
+}
