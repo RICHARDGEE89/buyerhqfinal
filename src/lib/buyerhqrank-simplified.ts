@@ -1,4 +1,4 @@
-import { applyBuyerhqrankFields, profileStatusValues, verifiedValues } from "@/lib/buyerhqrank";
+import { applyBuyerhqrankFields, profileStatusValues, socialMediaPresenceValues, verifiedValues } from "@/lib/buyerhqrank";
 
 export const simplifiedBuyerhqrankHeadings = [
   "agency_name",
@@ -16,18 +16,27 @@ export const simplifiedBuyerhqrankHeadings = [
   "google_reviews",
   "facebook_rating",
   "facebook_reviews",
+  "productreview_rating",
+  "productreview_reviews",
+  "trustpilot_rating",
+  "trustpilot_reviews",
+  "ratemyagent_rating",
+  "ratemyagent_reviews",
   "profile_description",
   "about",
-  "social_platforms",
+  "social_media_presence",
+  "total_followers",
+  "authority_score",
   "instagram_followers",
   "facebook_followers",
   "tiktok_followers",
   "youtube_subscribers",
+  "linkedin_connections",
   "linkedin_followers",
+  "pinterest_followers",
   "x_followers",
-  "total_followers",
-  "authority_score",
-  "buyerhqrank",
+  "snapchat_followers",
+  "last_updated",
 ] as const;
 
 export type SimplifiedBuyerhqrankHeading = (typeof simplifiedBuyerhqrankHeadings)[number];
@@ -48,18 +57,27 @@ export type SimplifiedBuyerhqrankRow = {
   google_reviews: number;
   facebook_rating: number;
   facebook_reviews: number;
+  productreview_rating: number;
+  productreview_reviews: number;
+  trustpilot_rating: number;
+  trustpilot_reviews: number;
+  ratemyagent_rating: number;
+  ratemyagent_reviews: number;
   profile_description: string;
   about: string;
-  social_platforms: string;
+  social_media_presence: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D+" | "D";
+  total_followers: number;
+  authority_score: number;
   instagram_followers: number;
   facebook_followers: number;
   tiktok_followers: number;
   youtube_subscribers: number;
+  linkedin_connections: number;
   linkedin_followers: number;
+  pinterest_followers: number;
   x_followers: number;
-  total_followers: number;
-  authority_score: number;
-  buyerhqrank: string;
+  snapchat_followers: number;
+  last_updated: string;
 };
 
 export function buildSimplifiedBuyerhqrankTemplateRow(): SimplifiedBuyerhqrankRow {
@@ -79,18 +97,27 @@ export function buildSimplifiedBuyerhqrankTemplateRow(): SimplifiedBuyerhqrankRo
     google_reviews: 0,
     facebook_rating: 0,
     facebook_reviews: 0,
+    productreview_rating: 0,
+    productreview_reviews: 0,
+    trustpilot_rating: 0,
+    trustpilot_reviews: 0,
+    ratemyagent_rating: 0,
+    ratemyagent_reviews: 0,
     profile_description: "",
     about: "",
-    social_platforms: "",
+    social_media_presence: "D",
+    total_followers: 0,
+    authority_score: 0,
     instagram_followers: 0,
     facebook_followers: 0,
     tiktok_followers: 0,
     youtube_subscribers: 0,
+    linkedin_connections: 0,
     linkedin_followers: 0,
+    pinterest_followers: 0,
     x_followers: 0,
-    total_followers: 0,
-    authority_score: 0,
-    buyerhqrank: "STARTER",
+    snapchat_followers: 0,
+    last_updated: "",
   };
 }
 
@@ -113,18 +140,27 @@ export function normalizeSimplifiedBuyerhqrankRow(raw: Record<string, unknown>):
   row.google_reviews = toNonNegativeInt(raw.google_reviews);
   row.facebook_rating = toRating(raw.facebook_rating);
   row.facebook_reviews = toNonNegativeInt(raw.facebook_reviews);
+  row.productreview_rating = toRating(raw.productreview_rating);
+  row.productreview_reviews = toNonNegativeInt(raw.productreview_reviews);
+  row.trustpilot_rating = toRating(raw.trustpilot_rating);
+  row.trustpilot_reviews = toNonNegativeInt(raw.trustpilot_reviews);
+  row.ratemyagent_rating = toRating(raw.ratemyagent_rating);
+  row.ratemyagent_reviews = toNonNegativeInt(raw.ratemyagent_reviews);
   row.profile_description = toText(raw.profile_description);
   row.about = toText(raw.about);
-  row.social_platforms = toText(raw.social_platforms);
+  row.social_media_presence = normalizeSocialPresence(raw.social_media_presence);
+  row.total_followers = toNonNegativeInt(raw.total_followers);
+  row.authority_score = clamp(toNonNegativeInt(raw.authority_score), 0, 100);
   row.instagram_followers = toNonNegativeInt(raw.instagram_followers);
   row.facebook_followers = toNonNegativeInt(raw.facebook_followers);
   row.tiktok_followers = toNonNegativeInt(raw.tiktok_followers);
   row.youtube_subscribers = toNonNegativeInt(raw.youtube_subscribers);
+  row.linkedin_connections = toNonNegativeInt(raw.linkedin_connections);
   row.linkedin_followers = toNonNegativeInt(raw.linkedin_followers);
+  row.pinterest_followers = toNonNegativeInt(raw.pinterest_followers);
   row.x_followers = toNonNegativeInt(raw.x_followers);
-  row.total_followers = toNonNegativeInt(raw.total_followers);
-  row.authority_score = clamp(toNonNegativeInt(raw.authority_score), 0, 100);
-  row.buyerhqrank = toText(raw.buyerhqrank) || "STARTER";
+  row.snapchat_followers = toNonNegativeInt(raw.snapchat_followers);
+  row.last_updated = toText(raw.last_updated);
 
   return row;
 }
@@ -143,60 +179,35 @@ export function applyBuyerhqrankToSimplifiedRow(row: SimplifiedBuyerhqrankRow, n
       facebook_followers: row.facebook_followers,
       tiktok_followers: row.tiktok_followers,
       youtube_subscribers: row.youtube_subscribers,
-      linkedin_connections: 0,
+      linkedin_connections: row.linkedin_connections,
       linkedin_followers: row.linkedin_followers,
-      pinterest_followers: 0,
+      pinterest_followers: row.pinterest_followers,
       x_followers: row.x_followers,
-      snapchat_followers: 0,
+      snapchat_followers: row.snapchat_followers,
       google_rating: row.google_rating,
       google_reviews: row.google_reviews,
       facebook_rating: row.facebook_rating,
       facebook_reviews: row.facebook_reviews,
-      ratemyagent_rating: 0,
-      ratemyagent_reviews: 0,
-      trustpilot_rating: 0,
-      trustpilot_reviews: 0,
-      productreview_rating: 0,
-      productreview_reviews: 0,
+      ratemyagent_rating: row.ratemyagent_rating,
+      ratemyagent_reviews: row.ratemyagent_reviews,
+      trustpilot_rating: row.trustpilot_rating,
+      trustpilot_reviews: row.trustpilot_reviews,
+      productreview_rating: row.productreview_rating,
+      productreview_reviews: row.productreview_reviews,
     },
     nowIso
   );
 
   return {
     ...row,
-    social_platforms: buildSocialPlatformsLabel({
-      instagram_followers: row.instagram_followers,
-      facebook_followers: row.facebook_followers,
-      tiktok_followers: row.tiktok_followers,
-      youtube_subscribers: row.youtube_subscribers,
-      linkedin_followers: row.linkedin_followers,
-      x_followers: row.x_followers,
-    }),
+    social_media_presence: computed.social_media_presence,
     total_followers: computed.total_followers,
     authority_score: computed.authority_score,
-    buyerhqrank: computed.buyerhqrank,
     profile_status: computed.profile_status,
     verified: computed.verified,
     claimed_at: computed.claimed_at,
+    last_updated: computed.last_updated,
   };
-}
-
-function buildSocialPlatformsLabel(input: {
-  instagram_followers: number;
-  facebook_followers: number;
-  tiktok_followers: number;
-  youtube_subscribers: number;
-  linkedin_followers: number;
-  x_followers: number;
-}) {
-  const labels: string[] = [];
-  if (input.instagram_followers > 0) labels.push("Instagram");
-  if (input.facebook_followers > 0) labels.push("Facebook");
-  if (input.tiktok_followers > 0) labels.push("TikTok");
-  if (input.youtube_subscribers > 0) labels.push("YouTube");
-  if (input.linkedin_followers > 0) labels.push("LinkedIn");
-  if (input.x_followers > 0) labels.push("X");
-  return labels.join(", ");
 }
 
 function toText(value: unknown) {
@@ -240,6 +251,14 @@ function normalizeProfileStatus(value: unknown) {
     return normalized as "Claimed" | "Unclaimed";
   }
   return "Unclaimed";
+}
+
+function normalizeSocialPresence(value: unknown) {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (socialMediaPresenceValues.includes(normalized as (typeof socialMediaPresenceValues)[number])) {
+    return normalized as SimplifiedBuyerhqrankRow["social_media_presence"];
+  }
+  return "D";
 }
 
 function csvToArray(value: string) {

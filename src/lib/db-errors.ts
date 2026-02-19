@@ -1,6 +1,9 @@
 export function isMissingColumnError(message: string, column: string, table?: string) {
   const lower = message.toLowerCase();
-  const hasMissingColumnShape = lower.includes("column") && lower.includes("does not exist");
+  const hasMissingColumnShape =
+    (lower.includes("column") && lower.includes("does not exist")) ||
+    (lower.includes("could not find the") && lower.includes("column of")) ||
+    lower.includes("schema cache");
   if (!hasMissingColumnShape) return false;
 
   const columnMatch = lower.includes(column.toLowerCase());
@@ -38,6 +41,8 @@ export function extractMissingColumnName(message: string, tableName?: string) {
     new RegExp(`${tableToken}\\.([a-zA-Z0-9_]+)`, "i"),
     /column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/i,
     /could not find the '([a-zA-Z0-9_]+)' column of/i,
+    /could not find the "([a-zA-Z0-9_]+)" column of/i,
+    /could not find the [‘’]([a-zA-Z0-9_]+)[‘’] column of/i,
     /column\s+([a-zA-Z0-9_]+)\s+of relation/i,
   ];
 

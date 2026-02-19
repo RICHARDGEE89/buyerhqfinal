@@ -271,7 +271,7 @@ async function manualUpsertAgentsWithoutConflict(
       return { error: { message: "Each uploaded row requires email." } as { message: string } };
     }
 
-    for (let attempt = 0; attempt < 12; attempt += 1) {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
       const { data: existing, error: existingError } = await client
         .from("agents")
         .select("id")
@@ -941,7 +941,7 @@ export async function POST(request: Request) {
 
       let error: { message: string } | null = null;
 
-      for (let attempt = 0; attempt < 15; attempt += 1) {
+      for (let attempt = 0; attempt < 60; attempt += 1) {
         const upsertResult = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
         error = upsertResult.error;
 
