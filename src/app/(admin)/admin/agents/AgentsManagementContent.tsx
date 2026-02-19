@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -14,17 +14,62 @@ import { StatCard } from "@/components/ui/StatCard";
 import { fetchAdminPanelData, runAdminAction } from "@/lib/admin-api";
 import type { AgentRow } from "@/lib/database.types";
 
-type FilterValue = "all" | "verified" | "pending" | "inactive";
-type ActionValue = "verify" | "active" | "delete" | null;
+type FilterValue = "all" | "verified" | "pending" | "inactive" | "claimed";
+type ActionValue = "save" | "claim" | "delete" | null;
+
+type AgentDraft = {
+  name: string;
+  agency_name: string;
+  state: string;
+  suburbs: string;
+  specializations: string;
+  fee_structure: string;
+  website_url: string;
+  verified: "Verified" | "Unverified";
+  profile_status: "Claimed" | "Unclaimed";
+  is_active: "true" | "false";
+  instagram_followers: string;
+  facebook_followers: string;
+  tiktok_followers: string;
+  google_rating: string;
+  google_reviews: string;
+};
+
+const stateOptions = ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 
 export default function AgentsManagementContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, AgentDraft>>({});
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
   const [activeAction, setActiveAction] = useState<Record<string, ActionValue>>({});
+
+  const hydrateDrafts = useCallback((rows: AgentRow[]) => {
+    const next: Record<string, AgentDraft> = {};
+    rows.forEach((agent) => {
+      next[agent.id] = {
+        name: agent.name,
+        agency_name: agent.agency_name ?? "",
+        state: agent.state ?? "",
+        suburbs: (agent.suburbs ?? []).join(", "),
+        specializations: (agent.specializations ?? []).join(", "),
+        fee_structure: agent.fee_structure ?? "",
+        website_url: agent.website_url ?? "",
+        verified: agent.verified ?? (agent.is_verified ? "Verified" : "Unverified"),
+        profile_status: agent.profile_status ?? "Unclaimed",
+        is_active: agent.is_active ? "true" : "false",
+        instagram_followers: String(agent.instagram_followers ?? 0),
+        facebook_followers: String(agent.facebook_followers ?? 0),
+        tiktok_followers: String(agent.tiktok_followers ?? 0),
+        google_rating: String(agent.google_rating ?? 0),
+        google_reviews: String(agent.google_reviews ?? 0),
+      };
+    });
+    setDrafts(next);
+  }, []);
 
   const loadAgents = useCallback(async () => {
     setLoading(true);
@@ -34,69 +79,100 @@ export default function AgentsManagementContent() {
       const payload = await fetchAdminPanelData();
       setAgents(payload.agents);
       setWarning(payload.warning ?? null);
+      hydrateDrafts(payload.agents);
       setLoading(false);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Unable to load agents.");
       setAgents([]);
+      setDrafts({});
       setLoading(false);
     }
-  }, []);
+  }, [hydrateDrafts]);
 
   useEffect(() => {
     void loadAgents();
   }, [loadAgents]);
 
-  const filteredAgents = agents.filter((agent) => {
-    if (filter === "verified" && !agent.is_verified) return false;
-    if (filter === "pending" && agent.is_verified) return false;
-    if (filter === "inactive" && agent.is_active) return false;
+  const filteredAgents = useMemo(() => {
+    return agents.filter((agent) => {
+      if (filter === "verified" && agent.verified !== "Verified") return false;
+      if (filter === "pending" && agent.verified === "Verified") return false;
+      if (filter === "inactive" && agent.is_active) return false;
+      if (filter === "claimed" && agent.profile_status !== "Claimed") return false;
 
-    if (!search.trim()) return true;
-    const term = search.trim().toLowerCase();
-    return (
-      agent.name.toLowerCase().includes(term) ||
-      (agent.agency_name ?? "").toLowerCase().includes(term) ||
-      agent.email.toLowerCase().includes(term) ||
-      (agent.state ?? "").toLowerCase().includes(term)
-    );
-  });
+      if (!search.trim()) return true;
+      const term = search.trim().toLowerCase();
+      return (
+        agent.name.toLowerCase().includes(term) ||
+        (agent.agency_name ?? "").toLowerCase().includes(term) ||
+        agent.email.toLowerCase().includes(term) ||
+        (agent.state ?? "").toLowerCase().includes(term)
+      );
+    });
+  }, [agents, filter, search]);
 
   const setAction = (id: string, action: ActionValue) => {
     setActiveAction((current) => ({ ...current, [id]: action }));
   };
 
-  const toggleVerified = async (agent: AgentRow) => {
-    setAction(agent.id, "verify");
-    const payload = {
-      is_verified: !agent.is_verified,
-      licence_verified_at: !agent.is_verified ? new Date().toISOString() : null,
-    };
-    try {
-      await runAdminAction({ type: "update_agent", id: agent.id, patch: payload });
-      setAgents((current) =>
-        current.map((item) => (item.id === agent.id ? { ...item, ...payload } : item))
-      );
-    } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Unable to update verification.");
-    }
-    setAction(agent.id, null);
+  const updateDraft = <K extends keyof AgentDraft>(id: string, key: K, value: AgentDraft[K]) => {
+    setDrafts((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        [key]: value,
+      },
+    }));
   };
 
-  const toggleActive = async (agent: AgentRow) => {
-    setAction(agent.id, "active");
+  const saveRow = async (agentId: string) => {
+    const draft = drafts[agentId];
+    if (!draft) return;
+
+    setAction(agentId, "save");
+    setError(null);
+
     try {
       await runAdminAction({
         type: "update_agent",
-        id: agent.id,
-        patch: { is_active: !agent.is_active },
+        id: agentId,
+        patch: {
+          name: draft.name.trim(),
+          agency_name: draft.agency_name.trim() || null,
+          state: draft.state || null,
+          suburbs: splitCsv(draft.suburbs),
+          specializations: splitCsv(draft.specializations),
+          fee_structure: draft.fee_structure.trim() || null,
+          website_url: draft.website_url.trim() || null,
+          verified: draft.verified,
+          profile_status: draft.profile_status,
+          is_active: draft.is_active === "true",
+          instagram_followers: toInt(draft.instagram_followers),
+          facebook_followers: toInt(draft.facebook_followers),
+          tiktok_followers: toInt(draft.tiktok_followers),
+          google_rating: toFloat(draft.google_rating),
+          google_reviews: toInt(draft.google_reviews),
+        },
       });
-      setAgents((current) =>
-        current.map((item) => (item.id === agent.id ? { ...item, is_active: !agent.is_active } : item))
-      );
+      await loadAgents();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Unable to update agent status.");
+      setError(updateError instanceof Error ? updateError.message : "Unable to save row.");
+    } finally {
+      setAction(agentId, null);
     }
-    setAction(agent.id, null);
+  };
+
+  const claimProfile = async (agentId: string) => {
+    setAction(agentId, "claim");
+    setError(null);
+    try {
+      await runAdminAction({ type: "claim_agent_profile", id: agentId });
+      await loadAgents();
+    } catch (claimError) {
+      setError(claimError instanceof Error ? claimError.message : "Unable to claim profile.");
+    } finally {
+      setAction(agentId, null);
+    }
   };
 
   const deleteAgent = async (agent: AgentRow) => {
@@ -106,21 +182,23 @@ export default function AgentsManagementContent() {
     if (!confirmed) return;
 
     setAction(agent.id, "delete");
+    setError(null);
     try {
       await runAdminAction({ type: "delete_agent", id: agent.id });
-      setAgents((current) => current.filter((item) => item.id !== agent.id));
+      await loadAgents();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Unable to delete agent.");
+    } finally {
+      setAction(agent.id, null);
     }
-    setAction(agent.id, null);
   };
 
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-surface p-6">
-        <h1 className="text-heading">Agent management</h1>
+        <h1 className="text-heading">Agent management spreadsheet</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Manage directory eligibility, verification state, and account activity for all agents.
+          Edit profile data inline, claim profiles, and keep BUYERHQRANK metrics up to date automatically.
         </p>
         {warning ? (
           <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
@@ -131,8 +209,8 @@ export default function AgentsManagementContent() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total" value={agents.length} />
-        <StatCard label="Verified" value={agents.filter((agent) => agent.is_verified).length} />
-        <StatCard label="Pending verification" value={agents.filter((agent) => !agent.is_verified).length} />
+        <StatCard label="Verified" value={agents.filter((agent) => agent.verified === "Verified").length} />
+        <StatCard label="Claimed" value={agents.filter((agent) => agent.profile_status === "Claimed").length} />
         <StatCard label="Inactive" value={agents.filter((agent) => !agent.is_active).length} />
       </section>
 
@@ -150,7 +228,8 @@ export default function AgentsManagementContent() {
           options={[
             { value: "all", label: "All agents" },
             { value: "verified", label: "Verified" },
-            { value: "pending", label: "Pending verification" },
+            { value: "pending", label: "Unverified" },
+            { value: "claimed", label: "Claimed profile" },
             { value: "inactive", label: "Inactive" },
           ]}
         />
@@ -182,77 +261,246 @@ export default function AgentsManagementContent() {
       ) : null}
 
       {!loading && filteredAgents.length > 0 ? (
-        <div className="space-y-2">
-          {filteredAgents.map((agent) => {
-            const action = activeAction[agent.id];
-            return (
-              <Card key={agent.id} className="p-4">
-                <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-subheading">{agent.name}</h2>
-                      {agent.is_verified ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-1 font-mono text-caption uppercase text-success">
-                          <ShieldCheck size={12} />
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="rounded-full border border-border-light bg-surface-2 px-2 py-1 font-mono text-caption uppercase text-text-secondary">
-                          Pending
-                        </span>
-                      )}
-                      <span
-                        className={`rounded-full border px-2 py-1 font-mono text-caption uppercase ${
-                          agent.is_active
-                            ? "border-border-light bg-surface-2 text-text-secondary"
-                            : "border-destructive/30 bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {agent.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-body-sm text-text-secondary">
-                      {agent.agency_name ?? "Independent advisor"} · {agent.email}
-                    </p>
-                    <p className="text-caption text-text-muted">
-                      {agent.state ?? "No state"} · Created{" "}
-                      {new Date(agent.created_at).toLocaleDateString("en-AU")}
-                    </p>
-                  </div>
+        <Card className="overflow-x-auto p-0">
+          <table className="min-w-[1700px] border-collapse text-body-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface-2 text-left font-mono text-label uppercase text-text-secondary">
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Agency</th>
+                <th className="px-3 py-2">State</th>
+                <th className="px-3 py-2">Suburbs</th>
+                <th className="px-3 py-2">Specialisations</th>
+                <th className="px-3 py-2">Fee structure</th>
+                <th className="px-3 py-2">Website</th>
+                <th className="px-3 py-2">Verified</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Active</th>
+                <th className="px-3 py-2">IG</th>
+                <th className="px-3 py-2">FB</th>
+                <th className="px-3 py-2">TikTok</th>
+                <th className="px-3 py-2">Google rating</th>
+                <th className="px-3 py-2">Google reviews</th>
+                <th className="px-3 py-2">Followers</th>
+                <th className="px-3 py-2">Authority</th>
+                <th className="px-3 py-2">BUYERHQRANK</th>
+                <th className="px-3 py-2">Claimed at</th>
+                <th className="px-3 py-2">Last updated</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAgents.map((agent) => {
+                const draft = drafts[agent.id];
+                const action = activeAction[agent.id];
+                if (!draft) return null;
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      loading={action === "verify"}
-                      onClick={() => toggleVerified(agent)}
-                      disabled={Boolean(action)}
-                    >
-                      {agent.is_verified ? "Unverify" : "Verify"}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      loading={action === "active"}
-                      onClick={() => toggleActive(agent)}
-                      disabled={Boolean(action)}
-                    >
-                      {agent.is_active ? "Deactivate" : "Activate"}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      loading={action === "delete"}
-                      onClick={() => deleteAgent(agent)}
-                      disabled={Boolean(action)}
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                return (
+                  <tr key={agent.id} className="border-b border-border align-top">
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.name}
+                        onChange={(event) => updateDraft(agent.id, "name", event.target.value)}
+                        className="w-44 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.agency_name}
+                        onChange={(event) => updateDraft(agent.id, "agency_name", event.target.value)}
+                        className="w-44 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={draft.state}
+                        onChange={(event) => updateDraft(agent.id, "state", event.target.value)}
+                        className="w-24 rounded-md border border-border bg-surface px-2 py-1"
+                      >
+                        {stateOptions.map((state) => (
+                          <option key={`state-${state || "blank"}`} value={state}>
+                            {state || "All"}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.suburbs}
+                        onChange={(event) => updateDraft(agent.id, "suburbs", event.target.value)}
+                        className="w-56 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.specializations}
+                        onChange={(event) => updateDraft(agent.id, "specializations", event.target.value)}
+                        className="w-56 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.fee_structure}
+                        onChange={(event) => updateDraft(agent.id, "fee_structure", event.target.value)}
+                        className="w-56 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.website_url}
+                        onChange={(event) => updateDraft(agent.id, "website_url", event.target.value)}
+                        className="w-52 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={draft.verified}
+                        onChange={(event) =>
+                          updateDraft(agent.id, "verified", event.target.value as AgentDraft["verified"])
+                        }
+                        className="w-28 rounded-md border border-border bg-surface px-2 py-1"
+                      >
+                        <option value="Verified">Verified</option>
+                        <option value="Unverified">Unverified</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={draft.profile_status}
+                        onChange={(event) =>
+                          updateDraft(agent.id, "profile_status", event.target.value as AgentDraft["profile_status"])
+                        }
+                        className="w-28 rounded-md border border-border bg-surface px-2 py-1"
+                      >
+                        <option value="Unclaimed">Unclaimed</option>
+                        <option value="Claimed">Claimed</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={draft.is_active}
+                        onChange={(event) => updateDraft(agent.id, "is_active", event.target.value as AgentDraft["is_active"])}
+                        className="w-24 rounded-md border border-border bg-surface px-2 py-1"
+                      >
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.instagram_followers}
+                        onChange={(event) => updateDraft(agent.id, "instagram_followers", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.facebook_followers}
+                        onChange={(event) => updateDraft(agent.id, "facebook_followers", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.tiktok_followers}
+                        onChange={(event) => updateDraft(agent.id, "tiktok_followers", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.google_rating}
+                        onChange={(event) => updateDraft(agent.id, "google_rating", event.target.value)}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={draft.google_reviews}
+                        onChange={(event) => updateDraft(agent.id, "google_reviews", digitsOnly(event.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-text-primary">{agent.total_followers ?? 0}</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-text-primary">{agent.authority_score ?? 0}</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center rounded-full border border-border px-2 py-1 font-mono text-caption text-text-secondary">
+                        {agent.buyerhqrank ?? "STARTER"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-caption text-text-secondary">
+                      {agent.claimed_at ? new Date(agent.claimed_at).toLocaleDateString("en-AU") : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-caption text-text-secondary">
+                      {agent.last_updated ? new Date(agent.last_updated).toLocaleDateString("en-AU") : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          loading={action === "save"}
+                          onClick={() => void saveRow(agent.id)}
+                          disabled={Boolean(action)}
+                        >
+                          Save
+                        </Button>
+                        {agent.profile_status !== "Claimed" ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            loading={action === "claim"}
+                            onClick={() => void claimProfile(agent.id)}
+                            disabled={Boolean(action)}
+                          >
+                            <ShieldCheck size={14} />
+                            Claim
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          loading={action === "delete"}
+                          onClick={() => void deleteAgent(agent)}
+                          disabled={Boolean(action)}
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
       ) : null}
     </div>
   );
+}
+
+function splitCsv(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function toInt(value: string) {
+  const parsed = Number.parseInt(value || "0", 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function toFloat(value: string) {
+  const parsed = Number.parseFloat(value || "0");
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(5, parsed));
+}
+
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "");
 }

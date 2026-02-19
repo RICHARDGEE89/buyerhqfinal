@@ -1,22 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, CircleAlert, FileJson, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CircleAlert, FileSpreadsheet, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
 
 import { runAdminAction } from "@/lib/admin-api";
+import { parseBulkAgentRows, type AgentBulkParseResult } from "@/lib/agent-bulk-upload";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
-import type { Database } from "@/lib/database.types";
-
-type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
-type ParseResult = {
-  rows: AgentInsert[];
-  errors: string[];
-};
-
-const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
 
 const starterJson = `[
   {
@@ -26,11 +19,12 @@ const starterJson = `[
     "specializations": ["Commercial"],
     "years_experience": 0,
     "properties_purchased": 0,
-    "verified_status": true,
+    "verified_status": false,
+    "profile_status": "Unclaimed",
     "area_specialist": "South Yarra, VIC",
     "fee_structure": "Fee details shared on request.",
-    "google_rating": 0.0,
-    "google_reviews": 0,
+    "google_rating": 4.7,
+    "google_reviews": 83,
     "profile_description": "Specialist buyer representation with a strategy-first approach across local and off-market opportunities.",
     "about": "Profile bio pending."
   }
@@ -40,116 +34,79 @@ export default function BulkUploadPage() {
   const [jsonData, setJsonData] = useState(starterJson);
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [preview, setPreview] = useState<ParseResult | null>(null);
+  const [preview, setPreview] = useState<AgentBulkParseResult | null>(null);
 
-  const buildRows = (): ParseResult => {
-    const parsed = JSON.parse(jsonData) as unknown;
-    const inputRows = Array.isArray(parsed) ? parsed : [parsed];
-
-    const rows: AgentInsert[] = [];
-    const errors: string[] = [];
-
-    inputRows.forEach((rawItem, index) => {
-      if (!rawItem || typeof rawItem !== "object") {
-        errors.push(`Row ${index + 1}: must be an object.`);
-        return;
-      }
-
-      const raw = rawItem as Record<string, unknown>;
-      const agencyName = toText(raw.agency_name) || toText(raw.business_name);
-      const name =
-        toText(raw.name) ||
-        toText(raw.agent_name) ||
-        `${toText(raw.first_name)} ${toText(raw.last_name)}`.trim() ||
-        agencyName;
-
-      if (!name) {
-        errors.push(`Row ${index + 1}: provide at least one of "name", "agent_name", or "agency_name".`);
-        return;
-      }
-
-      const state = (toText(raw.state) || toText(raw.primary_state)).toUpperCase();
-      if (state && !stateCodes.has(state)) {
-        errors.push(`Row ${index + 1}: state "${state}" is invalid.`);
-        return;
-      }
-
-      const suburbs =
-        toStringArray(raw.suburbs) ??
-        toStringArray(raw.suburb_coverage) ??
-        (toText(raw.primary_suburb) ? [toText(raw.primary_suburb)] : []);
-      const areaSpecialist = toText(raw.area_specialist);
-      const areaSuburb = parseAreaSpecialistSuburb(areaSpecialist);
-      if (areaSuburb && !suburbs.some((item) => item.toLowerCase() === areaSuburb.toLowerCase())) {
-        suburbs.unshift(areaSuburb);
-      }
-
-      const specializations = toStringArray(raw.specializations) ?? toStringArray(raw.specialisations) ?? [];
-      const email =
-        toText(raw.email).toLowerCase() ||
-        buildInternalUploadEmail({
-          name,
-          agencyName,
-          state,
-          primarySuburb: suburbs[0] ?? "",
-          rowIndex: index,
-        });
-      const profileDescription = toText(raw.profile_description);
-      const about = toText(raw.about);
-      const mergedBio =
-        [profileDescription, about, toText(raw.bio)]
-          .filter(Boolean)
-          .join("\n\n")
-          .trim() || null;
-
-      rows.push({
-        name,
-        email,
-        phone: toText(raw.phone) || null,
-        agency_name: agencyName || null,
-        bio: mergedBio,
-        avatar_url: toText(raw.avatar_url) || toText(raw.headshot_url) || null,
-        state: state ? (state as AgentInsert["state"]) : null,
-        suburbs,
-        specializations,
-        years_experience: toInt(raw.years_experience),
-        properties_purchased: toInt(raw.properties_purchased) ?? toInt(raw.total_properties),
-        avg_rating: toFloat(raw.avg_rating) ?? toFloat(raw.google_rating),
-        review_count: toInt(raw.review_count) ?? toInt(raw.google_reviews),
-        is_verified: toBoolean(raw.is_verified) ?? toBoolean(raw.verified_status) ?? false,
-        is_active: toBoolean(raw.is_active) ?? true,
-        licence_number: toText(raw.licence_number) || null,
-        fee_structure: toText(raw.fee_structure) || toText(raw.fee_description) || null,
-        website_url: toText(raw.website_url) || null,
-        linkedin_url: toText(raw.linkedin_url) || null,
-      });
-    });
-
-    return { rows, errors };
-  };
+  const previewSummary = useMemo(() => {
+    return {
+      validRows: preview?.rows.length ?? 0,
+      errorCount: preview?.errors.length ?? 0,
+    };
+  }, [preview]);
 
   const validateJson = () => {
     setResult(null);
     try {
-      const parsed = buildRows();
-      setPreview(parsed);
-      if (parsed.errors.length > 0) {
+      const parsed = JSON.parse(jsonData) as unknown;
+      const nextPreview = parseBulkAgentRows(parsed);
+      setPreview(nextPreview);
+
+      if (nextPreview.errors.length > 0) {
         setResult({
           success: false,
-          message: `Validation found ${parsed.errors.length} issue(s).`,
+          message: `Validation found ${nextPreview.errors.length} issue(s).`,
         });
-      } else {
-        setResult({
-          success: true,
-          message: `Validation passed. ${parsed.rows.length} row(s) ready for upload.`,
-        });
+        return;
       }
+
+      setResult({
+        success: true,
+        message: `Validation passed. ${nextPreview.rows.length} row(s) ready for upload.`,
+      });
     } catch (parseError) {
       setPreview(null);
       setResult({
         success: false,
-        message: parseError instanceof Error ? parseError.message : "Invalid JSON payload.",
+        message: parseError instanceof Error ? parseError.message : "Invalid payload.",
       });
+    }
+  };
+
+  const handleSpreadsheetFile = async (file: File) => {
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (extension === "json") {
+      const text = await file.text();
+      setJsonData(text);
+      return;
+    }
+
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) throw new Error("No worksheet found in uploaded file.");
+
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+    setJsonData(JSON.stringify(rows, null, 2));
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setResult(null);
+
+    try {
+      await handleSpreadsheetFile(file);
+      setResult({
+        success: true,
+        message: `${file.name} loaded. Review and validate before upload.`,
+      });
+    } catch (error) {
+      setResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to parse file.",
+      });
+    } finally {
+      event.currentTarget.value = "";
     }
   };
 
@@ -158,7 +115,7 @@ export default function BulkUploadPage() {
     setResult(null);
 
     try {
-      const parsed = buildRows();
+      const parsed = parseBulkAgentRows(JSON.parse(jsonData) as unknown);
       setPreview(parsed);
 
       if (parsed.rows.length === 0) {
@@ -203,25 +160,35 @@ export default function BulkUploadPage() {
             Back to dashboard
           </Link>
         </div>
-        <h1 className="text-heading">Bulk agent upload</h1>
+        <h1 className="text-heading">Bulk agency upload</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Paste JSON records to create or update agent profiles in one operation.
+          Upload JSON, CSV, or XLSX and let BuyerHQ parse, validate, enrich, and calculate BUYERHQRANK fields
+          automatically.
         </p>
       </section>
 
       <section className="grid gap-3 lg:grid-cols-[1fr_360px]">
         <Card className="p-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="inline-flex items-center gap-2 font-mono text-label uppercase text-text-secondary">
-              <FileJson size={14} />
-              JSON payload
+              <FileSpreadsheet size={14} />
+              Spreadsheet / JSON payload
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-body-sm text-text-secondary hover:text-text-primary">
+                <Upload size={14} />
+                Import file
+                <input
+                  type="file"
+                  accept=".json,.csv,.tsv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={(event) => void handleFileUpload(event)}
+                />
+              </label>
               <Button variant="secondary" onClick={validateJson}>
                 Validate
               </Button>
               <Button loading={isUploading} onClick={handleUpload} disabled={isUploading}>
-                <Upload size={16} />
                 Upload
               </Button>
             </div>
@@ -229,33 +196,33 @@ export default function BulkUploadPage() {
           <Textarea
             value={jsonData}
             onChange={(event) => setJsonData(event.target.value)}
-            className="min-h-[360px] font-mono text-caption"
+            className="min-h-[380px] font-mono text-caption"
             placeholder={starterJson}
           />
         </Card>
 
         <div className="space-y-3">
           <Card className="space-y-2 p-4">
-            <h2 className="text-subheading">Schema notes</h2>
+            <h2 className="text-subheading">Validation engine</h2>
             <ul className="space-y-1 text-caption text-text-secondary">
-              <li>Required fields: name/agency_name and state (email is auto-generated if omitted)</li>
-              <li>Supports alias keys: verified_status, google_rating, google_reviews, area_specialist, about</li>
-              <li>All generated emails use internal placeholders (not public contact emails)</li>
-              <li>Upsert key: email (existing records will be updated)</li>
-              <li>State must be one of NSW, VIC, QLD, WA, SA, TAS, ACT, NT</li>
+              <li>Draft 2020-12 JSON schema enforcement on every row.</li>
+              <li>Blank numeric values auto-normalize to 0 safely.</li>
+              <li>BUYERHQRANK fields are system-calculated and non-manual.</li>
+              <li>Company logo fallback uses website favicon when avatar is missing.</li>
+              <li>Supports JSON, CSV, TSV, XLSX, and XLS import workflows.</li>
             </ul>
           </Card>
 
           <Card className="space-y-2 p-4">
-            <h2 className="text-subheading">Validation preview</h2>
+            <h2 className="text-subheading">Preview</h2>
             <p className="text-caption text-text-secondary">
-              Valid rows: <span className="text-text-primary">{preview?.rows.length ?? 0}</span>
+              Valid rows: <span className="text-text-primary">{previewSummary.validRows}</span>
             </p>
             <p className="text-caption text-text-secondary">
-              Errors: <span className="text-text-primary">{preview?.errors.length ?? 0}</span>
+              Errors: <span className="text-text-primary">{previewSummary.errorCount}</span>
             </p>
             {preview?.errors.length ? (
-              <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-destructive/30 bg-destructive/10 p-2">
+              <div className="max-h-40 space-y-1 overflow-auto rounded-md border border-destructive/30 bg-destructive/10 p-2">
                 {preview.errors.map((item) => (
                   <p key={item} className="text-caption text-destructive">
                     {item}
@@ -281,74 +248,4 @@ export default function BulkUploadPage() {
       ) : null}
     </div>
   );
-}
-
-function toText(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function toStringArray(value: unknown) {
-  if (!Array.isArray(value)) return null;
-  return value
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
-    .filter(Boolean);
-}
-
-function toInt(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function toFloat(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function toBoolean(value: unknown) {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    if (value.toLowerCase() === "true") return true;
-    if (value.toLowerCase() === "false") return false;
-  }
-  return null;
-}
-
-function parseAreaSpecialistSuburb(value: string) {
-  if (!value.trim()) return "";
-  const beforeComma = value.split(",")[0]?.trim() ?? "";
-  return beforeComma;
-}
-
-function buildInternalUploadEmail(input: {
-  name: string;
-  agencyName: string;
-  state: string;
-  primarySuburb: string;
-  rowIndex: number;
-}) {
-  const slugPart = (
-    input.agencyName ||
-    input.name ||
-    `agent-${input.rowIndex + 1}`
-  )
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/^\.+|\.+$/g, "")
-    .slice(0, 40);
-  const suburbPart = input.primarySuburb
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/^\.+|\.+$/g, "")
-    .slice(0, 20);
-  const statePart = input.state.toLowerCase() || "na";
-  const localPart = [slugPart || "agent", statePart, suburbPart || "all"].filter(Boolean).join(".");
-  return `${localPart}@profiles.buyerhq.internal`;
 }

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser, toStateCode } from "@/lib/agent-profile";
+import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
 import type { Database } from "@/lib/database.types";
 import { extractMissingColumnName, isOnConflictConstraintError } from "@/lib/db-errors";
 import { buildAgentSlug } from "@/lib/slug";
@@ -148,7 +149,7 @@ export default function ListAgencyContent() {
         }
       }
 
-      const baseAgentPayload: AgentInsert = {
+      const baseAgentPayload = applyBuyerhqrankFields({
         name: `${firstName} ${lastName}`.trim(),
         email: normalizedEmail,
         phone: phone || null,
@@ -165,7 +166,7 @@ export default function ListAgencyContent() {
         website_url: website || null,
         is_verified: false,
         is_active: true,
-      };
+      }) as AgentInsert;
 
       const withoutActive: AgentInsert = { ...baseAgentPayload };
       delete withoutActive.is_active;

@@ -63,6 +63,9 @@ export default function AgentProfileContent({
               <div className="flex flex-wrap gap-2">
                 {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
                 {agent.state ? <Badge variant="state">{agent.state}</Badge> : null}
+                <Badge variant="state" className="normal-case">
+                  BUYERHQRANK {agent.buyerhqrank ?? "STARTER"}
+                </Badge>
               </div>
             </div>
             <Rating value={agent.avg_rating} reviewCount={agent.review_count ?? 0} />
@@ -87,7 +90,7 @@ export default function AgentProfileContent({
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-5">
         <Card className="p-4">
           <p className="font-mono text-label uppercase text-text-secondary">Rating</p>
           <Rating value={agent.avg_rating} reviewCount={agent.review_count ?? 0} />
@@ -101,6 +104,10 @@ export default function AgentProfileContent({
         <Card className="p-4">
           <p className="font-mono text-label uppercase text-text-secondary">Experience</p>
           <p className="text-heading text-text-primary">{agent.years_experience ?? 0} years</p>
+        </Card>
+        <Card className="p-4">
+          <p className="font-mono text-label uppercase text-text-secondary">Authority</p>
+          <p className="text-heading text-text-primary">{agent.authority_score ?? 0}/100</p>
         </Card>
         <Card className="p-4">
           <p className="font-mono text-label uppercase text-text-secondary">Properties Purchased</p>

@@ -206,7 +206,7 @@ export default function AgentPortalContent() {
               <Link href="/agent-portal/profile">Edit Profile</Link>
             </Button>
             <Button asChild>
-              <Link href="/agent-portal/billing">Upgrade Plan</Link>
+              <Link href="/agent-portal/settings">Portal Settings</Link>
             </Button>
           </div>
         </Card>

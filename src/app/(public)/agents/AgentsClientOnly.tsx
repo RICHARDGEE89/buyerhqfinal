@@ -26,7 +26,7 @@ const specializations = [
 ];
 
 type ViewMode = "grid" | "list";
-type SortValue = "rating_desc" | "experience_desc" | "reviews_desc" | "newest_desc" | "name_asc";
+type SortValue = "rating_desc" | "authority_desc" | "experience_desc" | "reviews_desc" | "newest_desc" | "name_asc";
 
 type LocationSuggestion = {
   suburb: string;
@@ -347,6 +347,7 @@ export default function AgentsClientOnly() {
             }}
             options={[
               { value: "rating_desc", label: "Top rated" },
+              { value: "authority_desc", label: "Highest BUYERHQRANK score" },
               { value: "experience_desc", label: "Most experience" },
               { value: "reviews_desc", label: "Most reviews" },
               { value: "newest_desc", label: "Newest profiles" },

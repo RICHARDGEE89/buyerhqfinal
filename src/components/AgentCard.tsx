@@ -60,7 +60,12 @@ export function AgentCard({
                 <h3 className="text-subheading text-text-primary">{agent.name}</h3>
                 <p className="text-body-sm text-text-secondary">{agent.agency_name ?? "Independent Advisor"}</p>
               </div>
-              {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
+              <div className="flex flex-wrap gap-2">
+                {agent.is_verified ? <Badge variant="verified">Verified</Badge> : null}
+                <Badge variant="state" className="normal-case">
+                  BUYERHQRANK {agent.buyerhqrank ?? "STARTER"}
+                </Badge>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-1 text-body-sm text-text-primary">
@@ -70,6 +75,7 @@ export function AgentCard({
               <span className="text-body-sm text-text-secondary">
                 ({agent.review_count ?? 0} review{agent.review_count === 1 ? "" : "s"})
               </span>
+              <span className="text-body-sm text-text-secondary">Authority {agent.authority_score ?? 0}/100</span>
             </div>
           </div>
         </div>

@@ -60,7 +60,7 @@ export default function LoginContent() {
       <Card className="w-full max-w-md p-6">
         <h1 className="text-heading text-text-primary">Agent Portal Login</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
-          Sign in to manage your profile, leads, and enquiries.
+          Sign in to update your profile and respond to BuyerHQ admin requests.
         </p>
 
         <form className="mt-5 space-y-3" onSubmit={onSubmit}>

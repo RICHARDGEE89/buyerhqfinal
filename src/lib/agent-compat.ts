@@ -11,6 +11,14 @@ export function normalizeAgent(agent: AgentRow): AgentRow {
     is_verified: typeof cast.is_verified === "boolean" ? cast.is_verified : true,
     suburbs: Array.isArray(cast.suburbs) ? cast.suburbs : [],
     specializations: Array.isArray(cast.specializations) ? cast.specializations : [],
+    total_followers: typeof (agent as AgentRow).total_followers === "number" ? agent.total_followers : 0,
+    authority_score: typeof (agent as AgentRow).authority_score === "number" ? agent.authority_score : 0,
+    social_media_presence: (agent.social_media_presence ?? "D") as AgentRow["social_media_presence"],
+    buyerhqrank: (agent.buyerhqrank ?? "STARTER") as AgentRow["buyerhqrank"],
+    profile_status: (agent.profile_status ?? "Unclaimed") as AgentRow["profile_status"],
+    verified: (agent.verified ?? (agent.is_verified ? "Verified" : "Unverified")) as AgentRow["verified"],
+    claimed_at: agent.profile_status === "Claimed" ? agent.claimed_at ?? null : null,
+    last_updated: agent.last_updated ?? agent.created_at,
   };
 }
 

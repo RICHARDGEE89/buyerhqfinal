@@ -4,7 +4,7 @@ import AgentsManagementContent from "./AgentsManagementContent";
 
 export const metadata: Metadata = {
   title: "Admin Agents | BuyerHQ",
-  description: "Manage verification, active status, and lifecycle of all agent profiles.",
+  description: "Spreadsheet-style operations for agent lifecycle, claim status, and BUYERHQRANK quality control.",
 };
 
 export default function AdminAgentsPage() {

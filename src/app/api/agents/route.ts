@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const stateCodes: StateCode[] = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 const postcodePattern = /^\d{4}$/;
-const sortValues = new Set(["rating_desc", "experience_desc", "reviews_desc", "newest_desc", "name_asc"]);
+const sortValues = new Set(["rating_desc", "authority_desc", "experience_desc", "reviews_desc", "newest_desc", "name_asc"]);
 const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
 
@@ -204,6 +204,11 @@ export async function GET(request: Request) {
         const yearsA = typeof a.years_experience === "number" ? a.years_experience : -1;
         const yearsB = typeof b.years_experience === "number" ? b.years_experience : -1;
         if (yearsA !== yearsB) return yearsB - yearsA;
+      }
+      if (sort === "authority_desc") {
+        const authorityA = typeof a.authority_score === "number" ? a.authority_score : -1;
+        const authorityB = typeof b.authority_score === "number" ? b.authority_score : -1;
+        if (authorityA !== authorityB) return authorityB - authorityA;
       }
       if (sort === "reviews_desc") {
         const reviewsA = typeof a.review_count === "number" ? a.review_count : -1;

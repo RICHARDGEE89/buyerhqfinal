@@ -1,56 +1,19 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { BuyerPortalShell } from "@/components/portal/BuyerPortalShell";
+import { createClient } from "@/lib/supabase/server";
 
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
+export const dynamic = "force-dynamic";
 
-const links = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/profile", label: "Profile" },
-  { href: "/dashboard/saved", label: "Saved Agents" },
-  { href: "/dashboard/enquiries", label: "Enquiries" },
-];
+export default async function BuyerLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function BuyerLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const { signOut } = useAuth();
+  if (!user) {
+    redirect("/login?next=/dashboard");
+  }
 
-  return (
-    <ProtectedRoute redirectTo="/login">
-      <div className="container py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-          <div className="flex flex-wrap gap-2">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-body-sm text-text-secondary transition-colors",
-                  pathname === link.href
-                    ? "border-border-light bg-surface-2 text-text-primary"
-                    : "border-border hover:text-text-primary"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await signOut();
-              window.location.href = "/";
-            }}
-          >
-            Sign Out
-          </Button>
-        </div>
-        {children}
-      </div>
-    </ProtectedRoute>
-  );
+  return <BuyerPortalShell>{children}</BuyerPortalShell>;
 }

@@ -2,7 +2,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseBulkAgentRows } from "@/lib/agent-bulk-upload";
+import { isAdminEmail } from "@/lib/admin-access";
 import { normalizeAgents } from "@/lib/agent-compat";
+import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
 import type { Database, Json } from "@/lib/database.types";
 import {
   extractMissingColumnName,
@@ -18,7 +21,6 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const adminAllowList = new Set(["richardgoodwin@live.com", "cam.dirtymack@gmail.com"]);
 const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
 type DbTables = Database["public"]["Tables"];
@@ -35,8 +37,7 @@ async function getPrivilegedClient() {
     return { error: "Unauthorized", status: 401 as const, client: null };
   }
 
-  const email = user.email.toLowerCase();
-  if (!adminAllowList.has(email)) {
+  if (!isAdminEmail(user.email)) {
     return { error: "Forbidden", status: 403 as const, client: null };
   }
 
@@ -230,6 +231,34 @@ function applyAgentNotNullFallback(
   return { rows: mutated, changed };
 }
 
+function stripColumnFromAgentPatch(
+  patch: Database["public"]["Tables"]["agents"]["Update"],
+  column: string
+) {
+  const next = { ...patch } as Record<string, unknown>;
+  delete next[column];
+  return next as Database["public"]["Tables"]["agents"]["Update"];
+}
+
+function deriveAgentSystemPatch(
+  current: Database["public"]["Tables"]["agents"]["Row"],
+  patch: Database["public"]["Tables"]["agents"]["Update"]
+) {
+  const merged = { ...current, ...patch } as Record<string, unknown>;
+  const derived = applyBuyerhqrankFields(merged);
+  return {
+    total_followers: derived.total_followers,
+    social_media_presence: derived.social_media_presence,
+    authority_score: derived.authority_score,
+    buyerhqrank: derived.buyerhqrank,
+    profile_status: derived.profile_status,
+    verified: derived.verified,
+    claimed_at: derived.claimed_at,
+    last_updated: derived.last_updated,
+    is_verified: derived.is_verified,
+  } as Database["public"]["Tables"]["agents"]["Update"];
+}
+
 async function manualUpsertAgentsWithoutConflict(
   client: SupabaseClient<Database>,
   rows: Database["public"]["Tables"]["agents"]["Insert"][]
@@ -350,7 +379,8 @@ export async function POST(request: Request) {
     | { type: "resolve_all_contacts" }
     | { type: "close_buyer_enquiries"; buyer_email: string }
     | { type: "update_admin_preferences"; preferences: Json }
-    | { type: "bulk_upsert_agents"; rows: Database["public"]["Tables"]["agents"]["Insert"][] }
+    | { type: "bulk_upsert_agents"; rows: unknown[] }
+    | { type: "claim_agent_profile"; id: string }
     | { type: "upsert_review_source"; source: Database["public"]["Tables"]["agency_review_sources"]["Insert"] & { id?: string } }
     | { type: "delete_review_source"; id: string }
     | {
@@ -381,43 +411,164 @@ export async function POST(request: Request) {
       const allowedFields = new Set([
         "is_verified",
         "is_active",
-        "licence_verified_at",
         "name",
         "agency_name",
         "phone",
         "state",
         "bio",
+        "about",
+        "avatar_url",
         "suburbs",
         "specializations",
         "fee_structure",
+        "website_url",
+        "linkedin_url",
+        "years_experience",
+        "properties_purchased",
+        "avg_rating",
+        "review_count",
+        "licence_number",
+        "licence_verified_at",
+        "instagram_followers",
+        "facebook_followers",
+        "tiktok_followers",
+        "youtube_subscribers",
+        "linkedin_connections",
+        "linkedin_followers",
+        "pinterest_followers",
+        "x_followers",
+        "snapchat_followers",
+        "google_rating",
+        "google_reviews",
+        "facebook_rating",
+        "facebook_reviews",
+        "ratemyagent_rating",
+        "ratemyagent_reviews",
+        "trustpilot_rating",
+        "trustpilot_reviews",
+        "productreview_rating",
+        "productreview_reviews",
+        "profile_status",
+        "verified",
       ]);
       const patch = Object.fromEntries(
         Object.entries(payload.patch ?? {}).filter(([key]) => allowedFields.has(key))
-      );
+      ) as Database["public"]["Tables"]["agents"]["Update"];
+      if (typeof patch.is_verified === "boolean" && !patch.verified) {
+        patch.verified = patch.is_verified ? "Verified" : "Unverified";
+      }
       if (!payload.id || Object.keys(patch).length === 0) return fail("Invalid agent update payload.");
 
-      const effectivePatch = { ...patch };
-      let { error } = await client.from("agents").update(effectivePatch).eq("id", payload.id);
+      const { data: currentAgent, error: currentAgentError } = await client
+        .from("agents")
+        .select("*")
+        .eq("id", payload.id)
+        .maybeSingle();
+      if (currentAgentError) return fail(currentAgentError.message, 500);
+      if (!currentAgent) return fail("Agent not found.", 404);
 
-      if (error && isMissingColumnError(error.message, "is_active", "agents")) {
-        delete effectivePatch.is_active;
-        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
-      }
-      if (error && isMissingColumnError(error.message, "is_verified", "agents")) {
-        delete effectivePatch.is_verified;
-        delete effectivePatch.licence_verified_at;
-        ({ error } = await client.from("agents").update(effectivePatch).eq("id", payload.id));
-      }
+      let effectivePatch = {
+        ...patch,
+        ...deriveAgentSystemPatch(currentAgent, patch),
+      } as Database["public"]["Tables"]["agents"]["Update"];
+      const strippedColumns = new Set<string>();
+      let error: { message: string } | null = null;
 
-      if (Object.keys(effectivePatch).length === 0) {
-        return NextResponse.json({ success: true, schemaFallback: true });
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (Object.keys(effectivePatch).length === 0) {
+          return NextResponse.json({
+            success: true,
+            schemaFallback: true,
+            strippedColumns: Array.from(strippedColumns),
+          });
+        }
+
+        const updateResult = await client.from("agents").update(effectivePatch).eq("id", payload.id);
+        error = updateResult.error;
+        if (!error) break;
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          strippedColumns.add(missingColumn);
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, missingColumn);
+          continue;
+        }
+
+        if (isMissingColumnError(error.message, "is_active", "agents")) {
+          strippedColumns.add("is_active");
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, "is_active");
+          continue;
+        }
+        if (isMissingColumnError(error.message, "is_verified", "agents")) {
+          strippedColumns.add("is_verified");
+          effectivePatch = stripColumnFromAgentPatch(effectivePatch, "is_verified");
+          continue;
+        }
+
+        break;
       }
 
       if (error && isPolicyRecursionError(error.message)) {
         return fail(policyFixHint, 500);
       }
       if (error) return fail(error.message, 500);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({
+        success: true,
+        schemaFallback: strippedColumns.size > 0,
+        strippedColumns: Array.from(strippedColumns),
+      });
+    }
+
+    case "claim_agent_profile": {
+      if (!payload.id) return fail("Missing agent id.");
+
+      const { data: currentAgent, error: currentError } = await client
+        .from("agents")
+        .select("*")
+        .eq("id", payload.id)
+        .maybeSingle();
+      if (currentError) return fail(currentError.message, 500);
+      if (!currentAgent) return fail("Agent not found.", 404);
+
+      const claimedAt = new Date().toISOString();
+      let patch = deriveAgentSystemPatch(currentAgent, {
+        profile_status: "Claimed",
+        verified: "Verified",
+        is_verified: true,
+        claimed_at: claimedAt,
+      });
+      const strippedColumns = new Set<string>();
+      let error: { message: string } | null = null;
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (Object.keys(patch).length === 0) {
+          return NextResponse.json({
+            success: true,
+            schemaFallback: true,
+            strippedColumns: Array.from(strippedColumns),
+          });
+        }
+
+        const updateResult = await client.from("agents").update(patch).eq("id", payload.id);
+        error = updateResult.error;
+        if (!error) break;
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          strippedColumns.add(missingColumn);
+          patch = stripColumnFromAgentPatch(patch, missingColumn);
+          continue;
+        }
+
+        break;
+      }
+
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({
+        success: true,
+        schemaFallback: strippedColumns.size > 0,
+        strippedColumns: Array.from(strippedColumns),
+      });
     }
 
     case "delete_agent": {
@@ -626,7 +777,15 @@ export async function POST(request: Request) {
           return fail("No rows provided for bulk upload.");
         }
 
-        let effectiveRows = addSlugToAgentRows(payload.rows.map((row) => ({ ...row })));
+        const parsedRows = parseBulkAgentRows(payload.rows);
+        if (parsedRows.rows.length === 0) {
+          return fail("No valid rows found to upload.");
+        }
+        if (parsedRows.errors.length > 0) {
+          return fail(`Validation failed: ${parsedRows.errors.slice(0, 10).join(" | ")}`);
+        }
+
+        let effectiveRows = addSlugToAgentRows(parsedRows.rows.map((row) => ({ ...row })));
         let error: { message: string } | null = null;
 
         for (let attempt = 0; attempt < 15; attempt += 1) {

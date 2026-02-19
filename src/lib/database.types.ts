@@ -7,6 +7,18 @@ export type Json =
   | Json[];
 
 export type StateCode = "NSW" | "VIC" | "QLD" | "WA" | "SA" | "TAS" | "ACT" | "NT";
+export type SocialMediaPresenceCode = "A+" | "A" | "B+" | "B" | "C+" | "C" | "D+" | "D";
+export type BuyerhqRankBadge =
+  | "ELITE+"
+  | "ELITE"
+  | "PREMIER"
+  | "ADVANCED"
+  | "ESTABLISHED"
+  | "ACTIVE"
+  | "DEVELOPING"
+  | "STARTER";
+export type ProfileStatusCode = "Claimed" | "Unclaimed";
+export type VerifiedCode = "Verified" | "Unverified";
 
 export interface Database {
   public: {
@@ -35,6 +47,35 @@ export interface Database {
           website_url: string | null;
           linkedin_url: string | null;
           fee_structure: string | null;
+          about: string | null;
+          slug: string | null;
+          instagram_followers: number | null;
+          facebook_followers: number | null;
+          tiktok_followers: number | null;
+          youtube_subscribers: number | null;
+          linkedin_connections: number | null;
+          linkedin_followers: number | null;
+          pinterest_followers: number | null;
+          x_followers: number | null;
+          snapchat_followers: number | null;
+          google_rating: number | null;
+          google_reviews: number | null;
+          facebook_rating: number | null;
+          facebook_reviews: number | null;
+          ratemyagent_rating: number | null;
+          ratemyagent_reviews: number | null;
+          trustpilot_rating: number | null;
+          trustpilot_reviews: number | null;
+          productreview_rating: number | null;
+          productreview_reviews: number | null;
+          total_followers: number;
+          social_media_presence: SocialMediaPresenceCode;
+          authority_score: number;
+          buyerhqrank: BuyerhqRankBadge;
+          profile_status: ProfileStatusCode;
+          verified: VerifiedCode;
+          claimed_at: string | null;
+          last_updated: string;
         };
         Insert: {
           id?: string;
@@ -59,6 +100,35 @@ export interface Database {
           website_url?: string | null;
           linkedin_url?: string | null;
           fee_structure?: string | null;
+          about?: string | null;
+          slug?: string | null;
+          instagram_followers?: number | null;
+          facebook_followers?: number | null;
+          tiktok_followers?: number | null;
+          youtube_subscribers?: number | null;
+          linkedin_connections?: number | null;
+          linkedin_followers?: number | null;
+          pinterest_followers?: number | null;
+          x_followers?: number | null;
+          snapchat_followers?: number | null;
+          google_rating?: number | null;
+          google_reviews?: number | null;
+          facebook_rating?: number | null;
+          facebook_reviews?: number | null;
+          ratemyagent_rating?: number | null;
+          ratemyagent_reviews?: number | null;
+          trustpilot_rating?: number | null;
+          trustpilot_reviews?: number | null;
+          productreview_rating?: number | null;
+          productreview_reviews?: number | null;
+          total_followers?: number;
+          social_media_presence?: SocialMediaPresenceCode;
+          authority_score?: number;
+          buyerhqrank?: BuyerhqRankBadge;
+          profile_status?: ProfileStatusCode;
+          verified?: VerifiedCode;
+          claimed_at?: string | null;
+          last_updated?: string;
         };
         Update: Partial<Database["public"]["Tables"]["agents"]["Insert"]>;
         Relationships: [];
