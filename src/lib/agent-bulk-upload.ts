@@ -242,7 +242,8 @@ export function buildCompanyLogoUrl(websiteUrl: string) {
   }
 }
 
-export function buildDuplicateAgencyKey(agencyName: string, _state: string) {
+export function buildDuplicateAgencyKey(agencyName: string, state: string) {
+  void state;
   return agencyName.trim().toLowerCase();
 }
 
