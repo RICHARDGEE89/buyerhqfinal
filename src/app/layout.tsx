@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { StickyBuyerCtaBar } from "@/components/layout/StickyBuyerCtaBar";
 import { AuthProvider } from "@/context/AuthContext";
 
 import "./globals.css";
@@ -52,6 +53,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <main className="min-h-screen bg-background text-text-primary">{children}</main>
+          <StickyBuyerCtaBar />
           <Footer />
         </AuthProvider>
       </body>

@@ -60,18 +60,21 @@ export function Header() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 text-caption text-text-secondary md:flex">
           <Link
             href="/login"
-            className="rounded-md border border-border px-4 py-2 text-body-sm font-medium text-text-primary transition-colors hover:border-border-light hover:bg-surface-2"
+            className="rounded-md border border-border px-3 py-2 transition-colors hover:border-border-light hover:text-text-primary"
           >
-            Sign In
+            Buyer
           </Link>
+          <span aria-hidden="true" className="text-text-muted">
+            ·
+          </span>
           <Link
-            href="/list-agency"
-            className="rounded-md bg-accent px-4 py-2 text-body-sm font-semibold text-text-inverse transition-opacity hover:opacity-90"
+            href="/agent-portal/login"
+            className="rounded-md border border-border px-3 py-2 transition-colors hover:border-border-light hover:text-text-primary"
           >
-            List Your Agency
+            Agent
           </Link>
         </div>
 
@@ -119,19 +122,21 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="mt-auto grid gap-3 pb-8 pt-8">
-            <Link
-              href="/login"
-              className="rounded-md border border-border px-4 py-3 text-center text-body font-medium"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/list-agency"
-              className="rounded-md bg-accent px-4 py-3 text-center text-body font-semibold text-text-inverse"
-            >
-              List Your Agency
-            </Link>
+          <div className="mt-auto pb-8 pt-8">
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/login"
+                className="rounded-md border border-border px-4 py-3 text-center text-body font-medium"
+              >
+                Buyer
+              </Link>
+              <Link
+                href="/agent-portal/login"
+                className="rounded-md border border-border px-4 py-3 text-center text-body font-medium"
+              >
+                Agent
+              </Link>
+            </div>
           </div>
         </div>
       </div>

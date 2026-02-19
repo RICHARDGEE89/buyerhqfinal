@@ -88,13 +88,19 @@ export default async function BlogPostPage({ params }: { params: Params }) {
       ) : null}
 
       <section className="rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-heading">Ready to find your agent?</h2>
+        <h2 className="text-heading">Turn this strategy into action</h2>
         <p className="mt-2 text-body text-text-secondary">
-          Explore verified specialists and enquire directly from the directory.
+          Compare verified specialists with BuyerHQ&apos;s collated review intelligence, then submit a brokered enquiry.
         </p>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button asChild>
             <Link href="/agents">Browse Agents</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/signup">Buyer Sign Up</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/login">Buyer Login</Link>
           </Button>
         </div>
       </section>

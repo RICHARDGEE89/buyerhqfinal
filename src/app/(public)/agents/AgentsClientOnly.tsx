@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Grid2X2, List, MapPinned, Search } from "lucide-react";
+import { Grid2X2, List } from "lucide-react";
 
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { AgentCardSkeleton } from "@/components/ui/Skeleton";
 import type { AgentRow } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
 
 const states = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
 const specializations = [
@@ -23,7 +25,7 @@ const specializations = [
   "Negotiation",
 ];
 
-type ViewMode = "grid" | "list" | "map";
+type ViewMode = "grid" | "list";
 type SortValue = "rating_desc" | "experience_desc" | "reviews_desc" | "newest_desc" | "name_asc";
 
 type LocationSuggestion = {
@@ -46,7 +48,15 @@ type AgentsResponse = {
   locationHints?: LocationHint[];
 };
 
+type SavedSearchSnapshot = {
+  createdAt: string;
+  query: string;
+  label: string;
+  filtersApplied: number;
+};
+
 export default function AgentsClientOnly() {
+  const supabase = useMemo(() => createClient(), []);
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -68,6 +78,9 @@ export default function AgentsClientOnly() {
   const [minExperience, setMinExperience] = useState("0");
   const [sortBy, setSortBy] = useState<SortValue>("rating_desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [saveSearchLoading, setSaveSearchLoading] = useState(false);
+  const [showSaveSearchGate, setShowSaveSearchGate] = useState(false);
+  const [saveSearchNotice, setSaveSearchNotice] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const limit = 12;
@@ -185,30 +198,66 @@ export default function AgentsClientOnly() {
   };
 
   const hasMore = agents.length < total;
-  const stateBreakdown = useMemo(() => {
-    const map = new Map<string, number>();
-    states.forEach((state) => map.set(state, 0));
-    locationHints.forEach((hint) => {
-      const key = hint.state ?? "Unknown";
-      map.set(key, (map.get(key) ?? 0) + hint.count);
-    });
-    if (locationHints.length === 0) {
-      agents.forEach((agent) => {
-        const key = agent.state ?? "Unknown";
-        map.set(key, (map.get(key) ?? 0) + 1);
-      });
-    }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [agents, locationHints]);
-
   const topSuburbs = useMemo(() => locationHints.slice(0, 20), [locationHints]);
+  const activeSearchLabel = useMemo(() => {
+    if (selectedLocation) {
+      return `${selectedLocation.suburb}, ${selectedLocation.state} ${selectedLocation.postcode}`.trim();
+    }
+    if (locationInput.trim()) {
+      return locationInput.trim();
+    }
+    if (stateFilter) {
+      return stateFilter;
+    }
+    return "Australia-wide";
+  }, [locationInput, selectedLocation, stateFilter]);
+
+  const handleSaveSearch = async () => {
+    setSaveSearchLoading(true);
+    setShowSaveSearchGate(false);
+    setSaveSearchNotice(null);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setShowSaveSearchGate(true);
+        return;
+      }
+
+      const queryParams = new URLSearchParams(queryString);
+      queryParams.delete("page");
+      queryParams.delete("limit");
+      const query = queryParams.toString();
+      const filtersApplied = query ? query.split("&").length : 0;
+      const snapshot: SavedSearchSnapshot = {
+        createdAt: new Date().toISOString(),
+        query,
+        label: activeSearchLabel,
+        filtersApplied,
+      };
+
+      const storageKey = `buyerhq_saved_searches_${user.id}`;
+      const currentRaw = window.localStorage.getItem(storageKey);
+      const current = currentRaw ? (JSON.parse(currentRaw) as SavedSearchSnapshot[]) : [];
+      const deduped = current.filter((item) => item.query !== snapshot.query);
+      window.localStorage.setItem(storageKey, JSON.stringify([snapshot, ...deduped].slice(0, 20)));
+      setSaveSearchNotice("Search saved. You can revisit it from your buyer workflow.");
+    } catch {
+      setSaveSearchNotice("Unable to save this search right now.");
+    } finally {
+      setSaveSearchLoading(false);
+    }
+  };
 
   return (
     <div className="container space-y-6 pb-16 pt-10">
       <section className="rounded-xl border border-border bg-surface p-8 md:p-12">
         <h1 className="text-display text-text-primary md:text-display-lg">Find buyer&apos;s agents</h1>
         <p className="mt-3 max-w-2xl text-body text-text-secondary">
-          Search across Australia by suburb or postcode, then filter by state and specialisation.
+          Search a verified directory built from collated review signals and negotiated fee outcomes, then let BuyerHQ
+          broker the next step.
         </p>
       </section>
 
@@ -216,7 +265,7 @@ export default function AgentsClientOnly() {
         <aside className="space-y-3 rounded-lg border border-border bg-surface p-4">
           <Input
             label="Search agents"
-            placeholder="Name, agency, email"
+            placeholder="Name, agency, suburb, strategy"
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -433,7 +482,10 @@ export default function AgentsClientOnly() {
             <p className="text-body-sm text-text-secondary">
               Showing <span className="text-text-primary">{total}</span> agents
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" loading={saveSearchLoading} onClick={() => void handleSaveSearch()}>
+                Save search
+              </Button>
               <Button variant={viewMode === "grid" ? "primary" : "secondary"} onClick={() => setViewMode("grid")}>
                 <Grid2X2 size={14} />
                 Grid
@@ -442,15 +494,28 @@ export default function AgentsClientOnly() {
                 <List size={14} />
                 List
               </Button>
-              <Button
-                variant={viewMode === "map" ? "primary" : "secondary"}
-                onClick={() => setViewMode("map")}
-              >
-                <MapPinned size={14} />
-                Map
-              </Button>
             </div>
           </div>
+          {showSaveSearchGate ? (
+            <div className="rounded-md border border-border bg-surface-2 px-3 py-3">
+              <p className="text-body-sm text-text-secondary">
+                Sign up or log in to save this search and keep your shortlist synced across your buyer workflow.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button size="sm" asChild>
+                  <Link href="/signup">Create Buyer Account</Link>
+                </Button>
+                <Button size="sm" variant="secondary" asChild>
+                  <Link href="/login">Buyer Login</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {saveSearchNotice ? (
+            <p className="rounded-md border border-border-light bg-surface-2 px-3 py-2 text-caption text-text-secondary">
+              {saveSearchNotice}
+            </p>
+          ) : null}
 
           {loading && page === 1 ? (
             <div className={viewMode === "list" ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
@@ -464,85 +529,6 @@ export default function AgentsClientOnly() {
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-caption text-destructive">
               {warning}
             </p>
-          ) : null}
-
-          {viewMode === "map" ? (
-            <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr]">
-              <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-                <div className="flex items-center gap-2">
-                  <MapPinned size={16} className="text-text-secondary" />
-                  <h2 className="text-subheading">Australia coverage map</h2>
-                </div>
-                <p className="text-body-sm text-text-secondary">
-                  Click a state to instantly filter results. Coverage updates as filters change.
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  {stateBreakdown
-                    .filter(([state]) => state !== "Unknown")
-                    .map(([stateName, count]) => {
-                      const intensity =
-                        count >= 20
-                          ? "bg-accent text-text-inverse border-accent"
-                          : count >= 8
-                            ? "bg-surface-3 text-text-primary border-border-light"
-                            : count >= 1
-                              ? "bg-surface-2 text-text-secondary border-border"
-                              : "bg-surface text-text-muted border-border";
-                      return (
-                        <button
-                          key={stateName}
-                          type="button"
-                          className={`rounded-md border px-3 py-3 text-left transition-colors ${intensity}`}
-                          onClick={() => {
-                            setStateFilter((current) => (current === stateName ? "" : stateName));
-                            resetPagination();
-                          }}
-                        >
-                          <p className="font-mono text-caption uppercase">{stateName}</p>
-                          <p className="text-body-sm">{count} agents</p>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-
-              <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-                <div className="flex items-center gap-2">
-                  <Search size={16} className="text-text-secondary" />
-                  <h2 className="text-subheading">Suburb + postcode quick picks</h2>
-                </div>
-                <p className="text-body-sm text-text-secondary">
-                  Tap any suburb chip to prefill search with both suburb and postcode.
-                </p>
-                {topSuburbs.length === 0 ? (
-                  <p className="text-caption text-text-muted">No suburb coverage available yet for these filters.</p>
-                ) : (
-                  <div className="flex max-h-[360px] flex-wrap gap-2 overflow-auto">
-                    {topSuburbs.map((hint) => (
-                      <button
-                        key={`${hint.suburb}-${hint.state ?? "NA"}-${hint.postcode ?? "NA"}`}
-                        type="button"
-                        className="rounded-full border border-border-light bg-surface-2 px-3 py-1 text-caption text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
-                        onClick={() => {
-                          setSelectedLocation({
-                            suburb: hint.suburb,
-                            state: hint.state ?? "",
-                            postcode: hint.postcode ?? "",
-                          });
-                          setLocationInput(
-                            `${hint.suburb}${hint.postcode ? ` ${hint.postcode}` : ""}`.trim()
-                          );
-                          resetPagination();
-                        }}
-                      >
-                        {hint.suburb}
-                        {hint.postcode ? ` (${hint.postcode})` : ""} · {hint.count}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           ) : null}
 
           {!loading && error ? (
@@ -559,6 +545,8 @@ export default function AgentsClientOnly() {
             <EmptyState
               title="No agents found"
               description="No agents found in this state yet. Try expanding your search."
+              actionLabel="Sign up to save your search"
+              onAction={() => (window.location.href = "/signup")}
             />
           ) : null}
 
