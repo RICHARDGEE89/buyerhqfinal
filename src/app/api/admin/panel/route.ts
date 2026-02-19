@@ -2,7 +2,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { parseBulkAgentRows } from "@/lib/agent-bulk-upload";
+import { buildDuplicateAgencyKey, parseBulkAgentRows } from "@/lib/agent-bulk-upload";
 import { isAdminEmail } from "@/lib/admin-access";
 import { normalizeAgents } from "@/lib/agent-compat";
 import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
@@ -25,6 +25,7 @@ const policyFixHint =
   "Detected legacy recursive RLS policy on public.users. Run supabase/fix_live_schema_compatibility.sql.";
 type DbTables = Database["public"]["Tables"];
 type TableName = keyof DbTables;
+type DuplicateResolutionStrategy = "abort" | "update_existing" | "skip_duplicates";
 
 async function getPrivilegedClient() {
   const serverClient = createServerClient();
@@ -311,6 +312,59 @@ async function manualUpsertAgentsWithoutConflict(
   return { error: null };
 }
 
+function normalizeDuplicateKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+type ExistingAgentIdentity = Pick<
+  Database["public"]["Tables"]["agents"]["Row"],
+  "id" | "email" | "name" | "agency_name"
+>;
+
+async function fetchExistingAgentIdentities(
+  client: SupabaseClient<Database>,
+  rows: Database["public"]["Tables"]["agents"]["Insert"][]
+) {
+  const byAgency = new Map<string, ExistingAgentIdentity>();
+  const byName = new Map<string, ExistingAgentIdentity>();
+
+  const agencyNames = Array.from(
+    new Set(
+      rows
+        .map((row) => (typeof row.agency_name === "string" ? row.agency_name.trim() : ""))
+        .filter(Boolean)
+    )
+  );
+  const names = Array.from(
+    new Set(rows.map((row) => (typeof row.name === "string" ? row.name.trim() : "")).filter(Boolean))
+  );
+
+  if (agencyNames.length > 0) {
+    const { data, error } = await client
+      .from("agents")
+      .select("id,email,name,agency_name")
+      .in("agency_name", agencyNames);
+    if (!error) {
+      (data ?? []).forEach((row) => {
+        const key = normalizeDuplicateKey(row.agency_name);
+        if (key && !byAgency.has(key)) byAgency.set(key, row);
+      });
+    }
+  }
+
+  if (names.length > 0) {
+    const { data, error } = await client.from("agents").select("id,email,name,agency_name").in("name", names);
+    if (!error) {
+      (data ?? []).forEach((row) => {
+        const key = normalizeDuplicateKey(row.name);
+        if (key && !byName.has(key)) byName.set(key, row);
+      });
+    }
+  }
+
+  return { byAgency, byName };
+}
+
 export async function GET() {
   try {
     const privileged = await getPrivilegedClient();
@@ -379,7 +433,7 @@ export async function POST(request: Request) {
     | { type: "resolve_all_contacts" }
     | { type: "close_buyer_enquiries"; buyer_email: string }
     | { type: "update_admin_preferences"; preferences: Json }
-    | { type: "bulk_upsert_agents"; rows: unknown[] }
+    | { type: "bulk_upsert_agents"; rows: unknown[]; duplicate_strategy?: DuplicateResolutionStrategy }
     | { type: "claim_agent_profile"; id: string }
     | { type: "upsert_review_source"; source: Database["public"]["Tables"]["agency_review_sources"]["Insert"] & { id?: string } }
     | { type: "delete_review_source"; id: string }
@@ -772,58 +826,161 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-      case "bulk_upsert_agents": {
-        if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
-          return fail("No rows provided for bulk upload.");
+    case "bulk_upsert_agents": {
+      if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
+        return fail("No rows provided for bulk upload.");
+      }
+
+      const duplicateStrategy: DuplicateResolutionStrategy = payload.duplicate_strategy ?? "abort";
+      const parsedRows = parseBulkAgentRows(payload.rows);
+      if (parsedRows.rows.length === 0) {
+        return fail("No valid rows found to upload.");
+      }
+      if (parsedRows.errors.length > 0) {
+        return fail(`Validation failed: ${parsedRows.errors.slice(0, 10).join(" | ")}`);
+      }
+
+      let effectiveRows = addSlugToAgentRows(parsedRows.rows.map((row) => ({ ...row })));
+      const skipped: string[] = [];
+
+      if (parsedRows.duplicateAgencyKeys.length > 0 || parsedRows.duplicateAgentNames.length > 0) {
+        if (duplicateStrategy === "abort") {
+          const duplicateSummary = [
+            parsedRows.duplicateAgencyKeys.length
+              ? `agencies: ${parsedRows.duplicateAgencyKeys.join(", ")}`
+              : "",
+            parsedRows.duplicateAgentNames.length ? `agents: ${parsedRows.duplicateAgentNames.join(", ")}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | ");
+          return fail(
+            `Duplicate records found in upload (${duplicateSummary}). ` +
+              "Choose a duplicate strategy: update_existing or skip_duplicates."
+          );
         }
 
-        const parsedRows = parseBulkAgentRows(payload.rows);
-        if (parsedRows.rows.length === 0) {
-          return fail("No valid rows found to upload.");
-        }
-        if (parsedRows.errors.length > 0) {
-          return fail(`Validation failed: ${parsedRows.errors.slice(0, 10).join(" | ")}`);
-        }
-
-        let effectiveRows = addSlugToAgentRows(parsedRows.rows.map((row) => ({ ...row })));
-        let error: { message: string } | null = null;
-
-        for (let attempt = 0; attempt < 15; attempt += 1) {
-          const upsertResult = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
-          error = upsertResult.error;
-
-          if (!error) {
-            break;
-          }
-
-          if (isOnConflictConstraintError(error.message)) {
-            const manual = await manualUpsertAgentsWithoutConflict(client, effectiveRows);
-            error = manual.error;
-            break;
-          }
-
-          const missingColumn = extractMissingColumnName(error.message, "agents");
-          if (missingColumn) {
-            effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+        const deduped = new Map<string, (typeof effectiveRows)[number]>();
+        for (const row of effectiveRows) {
+          const key = buildDuplicateAgencyKey(row.agency_name ?? "", row.state ?? "");
+          if (!deduped.has(key)) {
+            deduped.set(key, row);
             continue;
           }
-
-          const notNullColumn = extractNotNullColumnName(error.message);
-          if (notNullColumn) {
-            const applied = applyAgentNotNullFallback(effectiveRows, notNullColumn);
-            if (applied.changed) {
-              effectiveRows = applied.rows;
-              continue;
-            }
+          skipped.push(key);
+          if (duplicateStrategy === "update_existing") {
+            deduped.set(key, row);
           }
+        }
+        effectiveRows = Array.from(deduped.values());
 
+        const dedupedByName = new Map<string, (typeof effectiveRows)[number]>();
+        const unnamedRows: typeof effectiveRows = [];
+        for (const row of effectiveRows) {
+          const key = normalizeDuplicateKey(row.name);
+          if (!key) {
+            unnamedRows.push(row);
+            continue;
+          }
+          if (!dedupedByName.has(key)) {
+            dedupedByName.set(key, row);
+            continue;
+          }
+          skipped.push(`name:${row.name ?? "unknown"}`);
+          if (duplicateStrategy === "update_existing") {
+            dedupedByName.set(key, row);
+          }
+        }
+        if (dedupedByName.size > 0) {
+          effectiveRows = [...Array.from(dedupedByName.values()), ...unnamedRows];
+        }
+      }
+
+      const existing = await fetchExistingAgentIdentities(client, effectiveRows);
+      const existingConflicts: string[] = [];
+      const nextRows: typeof effectiveRows = [];
+
+      for (const row of effectiveRows) {
+        const byAgency = existing.byAgency.get(normalizeDuplicateKey(row.agency_name));
+        const byName = existing.byName.get(normalizeDuplicateKey(row.name));
+        const conflict = byAgency ?? byName;
+
+        if (!conflict) {
+          nextRows.push(row);
+          continue;
+        }
+
+        const key = `${conflict.agency_name || row.agency_name || ""}|${conflict.name || row.name || ""}`;
+        existingConflicts.push(key);
+
+        if (duplicateStrategy === "abort") {
+          continue;
+        }
+        if (duplicateStrategy === "skip_duplicates") {
+          skipped.push(key);
+          continue;
+        }
+
+        const nextEmail = conflict.email?.trim().toLowerCase();
+        nextRows.push({
+          ...row,
+          email: nextEmail || row.email,
+        });
+      }
+
+      if (duplicateStrategy === "abort" && existingConflicts.length > 0) {
+        return fail(
+          `Duplicate agencies already exist: ${Array.from(new Set(existingConflicts)).join(", ")}. ` +
+            "Choose update_existing to overwrite existing rows or skip_duplicates to skip them."
+        );
+      }
+
+      effectiveRows = nextRows;
+      if (effectiveRows.length === 0) {
+        return fail("No rows left to upload after duplicate handling.");
+      }
+
+      let error: { message: string } | null = null;
+
+      for (let attempt = 0; attempt < 15; attempt += 1) {
+        const upsertResult = await client.from("agents").upsert(effectiveRows, { onConflict: "email" });
+        error = upsertResult.error;
+
+        if (!error) {
           break;
         }
 
-        if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
-        if (error) return fail(error.message, 500);
-        return NextResponse.json({ success: true, inserted: effectiveRows.length });
+        if (isOnConflictConstraintError(error.message)) {
+          const manual = await manualUpsertAgentsWithoutConflict(client, effectiveRows);
+          error = manual.error;
+          break;
+        }
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          effectiveRows = stripColumnFromAgentRows(effectiveRows, missingColumn);
+          continue;
+        }
+
+        const notNullColumn = extractNotNullColumnName(error.message);
+        if (notNullColumn) {
+          const applied = applyAgentNotNullFallback(effectiveRows, notNullColumn);
+          if (applied.changed) {
+            effectiveRows = applied.rows;
+            continue;
+          }
+        }
+
+        break;
       }
+
+      if (error && isPolicyRecursionError(error.message)) return fail(policyFixHint, 500);
+      if (error) return fail(error.message, 500);
+      return NextResponse.json({
+        success: true,
+        inserted: effectiveRows.length,
+        skipped: Array.from(new Set(skipped)).length,
+      });
+    }
 
       default:
         return fail("Unsupported admin action.");

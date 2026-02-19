@@ -6,7 +6,11 @@ import { ArrowLeft, CheckCircle2, CircleAlert, FileSpreadsheet, Upload } from "l
 import * as XLSX from "xlsx";
 
 import { runAdminAction } from "@/lib/admin-api";
-import { parseBulkAgentRows, type AgentBulkParseResult } from "@/lib/agent-bulk-upload";
+import {
+  parseBulkAgentRows,
+  type AgentBulkParseResult,
+  type DuplicateResolutionStrategy,
+} from "@/lib/agent-bulk-upload";
 import {
   buildSimplifiedBuyerhqrankTemplateRow,
   simplifiedBuyerhqrankHeadings,
@@ -16,17 +20,20 @@ import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 
 const starterJson = JSON.stringify([buildSimplifiedBuyerhqrankTemplateRow()], null, 2);
+type UploadDuplicateStrategy = DuplicateResolutionStrategy | "ask";
 
 export default function BulkUploadPage() {
   const [jsonData, setJsonData] = useState(starterJson);
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [preview, setPreview] = useState<AgentBulkParseResult | null>(null);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<UploadDuplicateStrategy>("ask");
 
   const previewSummary = useMemo(() => {
     return {
       validRows: preview?.rows.length ?? 0,
       errorCount: preview?.errors.length ?? 0,
+      duplicateCount: (preview?.duplicateAgencyKeys.length ?? 0) + (preview?.duplicateAgentNames.length ?? 0),
     };
   }, [preview]);
 
@@ -120,11 +127,51 @@ export default function BulkUploadPage() {
         return;
       }
 
-      await runAdminAction({ type: "bulk_upsert_agents", rows: parsed.rows });
+      let strategyToUse: DuplicateResolutionStrategy = duplicateStrategy === "ask" ? "abort" : duplicateStrategy;
+      if (duplicateStrategy === "ask" && hasInlineDuplicates(parsed)) {
+        const promptChoice = promptDuplicateChoice(parsed);
+        if (!promptChoice) {
+          setResult({
+            success: false,
+            message: "Upload cancelled. Resolve duplicate agencies or choose a duplicate strategy.",
+          });
+          setIsUploading(false);
+          return;
+        }
+        strategyToUse = promptChoice;
+      }
+
+      try {
+        await runAdminAction({
+          type: "bulk_upsert_agents",
+          rows: parsed.rows,
+          duplicate_strategy: strategyToUse,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Upload failed.";
+        if (duplicateStrategy === "ask" && isDuplicateErrorMessage(message)) {
+          const promptChoice = promptDuplicateChoice(parsed, message);
+          if (!promptChoice) {
+            setResult({
+              success: false,
+              message: "Upload cancelled because duplicate handling was not selected.",
+            });
+            setIsUploading(false);
+            return;
+          }
+          await runAdminAction({
+            type: "bulk_upsert_agents",
+            rows: parsed.rows,
+            duplicate_strategy: promptChoice,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       setResult({
         success: true,
-        message: `Upload complete. ${parsed.rows.length} profile(s) upserted.`,
+        message: `Upload complete. ${parsed.rows.length} profile(s) processed.`,
       });
       setJsonData(starterJson);
       setPreview(null);
@@ -200,6 +247,22 @@ export default function BulkUploadPage() {
               </Button>
             </div>
           </div>
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-2 p-2">
+            <label htmlFor="duplicate-strategy" className="text-caption text-text-secondary">
+              Duplicate handling
+            </label>
+            <select
+              id="duplicate-strategy"
+              value={duplicateStrategy}
+              onChange={(event) => setDuplicateStrategy(event.target.value as UploadDuplicateStrategy)}
+              className="rounded-md border border-border bg-surface px-2 py-1 text-caption text-text-primary"
+            >
+              <option value="ask">Ask me when duplicates are detected</option>
+              <option value="abort">Block upload if duplicates exist</option>
+              <option value="update_existing">Update matching existing agency records</option>
+              <option value="skip_duplicates">Skip duplicate rows</option>
+            </select>
+          </div>
           <Textarea
             value={jsonData}
             onChange={(event) => setJsonData(event.target.value)}
@@ -235,11 +298,28 @@ export default function BulkUploadPage() {
             <p className="text-caption text-text-secondary">
               Errors: <span className="text-text-primary">{previewSummary.errorCount}</span>
             </p>
+            <p className="text-caption text-text-secondary">
+              Duplicates: <span className="text-text-primary">{previewSummary.duplicateCount}</span>
+            </p>
             {preview?.errors.length ? (
               <div className="max-h-40 space-y-1 overflow-auto rounded-md border border-destructive/30 bg-destructive/10 p-2">
                 {preview.errors.map((item) => (
                   <p key={item} className="text-caption text-destructive">
                     {item}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+            {preview && hasInlineDuplicates(preview) ? (
+              <div className="max-h-40 space-y-1 overflow-auto rounded-md border border-border bg-surface-2 p-2">
+                {preview.duplicateAgencyKeys.map((item) => (
+                  <p key={`agency-${item}`} className="text-caption text-text-secondary">
+                    agency: {item}
+                  </p>
+                ))}
+                {preview.duplicateAgentNames.map((item) => (
+                  <p key={`agent-${item}`} className="text-caption text-text-secondary">
+                    agent: {item}
                   </p>
                 ))}
               </div>
@@ -268,4 +348,35 @@ function csvValue(value: unknown) {
   if (value === null || value === undefined) return "\"\"";
   const text = String(value).replaceAll("\"", "\"\"");
   return `"${text}"`;
+}
+
+function isDuplicateErrorMessage(message: string) {
+  return message.toLowerCase().includes("duplicate");
+}
+
+function hasInlineDuplicates(result: AgentBulkParseResult) {
+  return result.duplicateAgencyKeys.length > 0 || result.duplicateAgentNames.length > 0;
+}
+
+function promptDuplicateChoice(
+  result: AgentBulkParseResult,
+  contextMessage?: string
+): DuplicateResolutionStrategy | null {
+  const duplicateKeys = [
+    ...result.duplicateAgencyKeys.map((item) => `agency:${item}`),
+    ...result.duplicateAgentNames.map((item) => `agent:${item}`),
+  ];
+  const preview = duplicateKeys.slice(0, 6).join(", ");
+  const rawChoice = window.prompt(
+    `${contextMessage ? `${contextMessage}\n` : ""}` +
+      `Duplicate agents/agencies detected (${duplicateKeys.length || "existing"}). ` +
+      `Examples: ${preview || "n/a"}.\n` +
+      'Type "update" to update existing records, "skip" to skip duplicates, or "cancel" to stop upload.',
+    "update"
+  );
+  if (!rawChoice) return null;
+  const normalized = rawChoice.trim().toLowerCase();
+  if (normalized.startsWith("update")) return "update_existing";
+  if (normalized.startsWith("skip")) return "skip_duplicates";
+  return null;
 }

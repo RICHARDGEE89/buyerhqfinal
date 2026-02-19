@@ -1,69 +1,57 @@
 import type { Database } from "@/lib/database.types";
 import { validateMinimalAgencyRow } from "@/lib/agency-minimal-schema";
 import { applyBuyerhqrankFields } from "@/lib/buyerhqrank";
-import {
-  applyBuyerhqrankToSimplifiedRow,
-  normalizeSimplifiedBuyerhqrankRow,
-} from "@/lib/buyerhqrank-simplified";
+import { applyBuyerhqrankToSimplifiedRow, normalizeSimplifiedBuyerhqrankRow } from "@/lib/buyerhqrank-simplified";
 
 type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
+
+export type DuplicateResolutionStrategy = "abort" | "update_existing" | "skip_duplicates";
 
 export type AgentBulkParseResult = {
   rows: AgentInsert[];
   errors: string[];
+  duplicateAgencyKeys: string[];
+  duplicateAgentNames: string[];
 };
 
 const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
 
 const keyAliasMap: Record<string, string> = {
+  agency_name: "agency_name",
+  agency: "agency_name",
+  business_name: "agency_name",
   name: "name",
   agent_name: "name",
   first_name: "first_name",
   last_name: "last_name",
-  agency: "agency_name",
-  agency_name: "agency_name",
-  business_name: "agency_name",
   email: "email",
   phone: "phone",
   state: "state",
   suburbs: "suburbs",
-  suburb_coverage: "suburbs",
-  primary_suburb: "suburbs",
   specialisations: "specialisations",
   specializations: "specialisations",
   years_of_experience: "years_of_experience",
   years_experience: "years_of_experience",
   properties_purchased: "properties_purchased",
-  total_properties: "properties_purchased",
   verified: "verified",
   verified_status: "verified",
-  is_verified: "verified",
-  status: "profile_status",
   profile_status: "profile_status",
+  status: "profile_status",
   claimed_at: "claimed_at",
-  active: "is_active",
-  is_active: "is_active",
   area_specialist: "area_specialist",
   fee_structure: "fee_structure",
-  fee_description: "fee_structure",
   website: "website_url",
   website_url: "website_url",
   linkedin_url: "linkedin_url",
-  slug: "slug",
   profile_description: "profile_description",
   bio: "profile_description",
   about: "about",
+  social_platforms: "social_platforms",
 
   google_rating: "google_rating",
   google_reviews: "google_reviews",
   facebook_rating: "facebook_rating",
   facebook_reviews: "facebook_reviews",
-  productreview_rating: "productreview_rating",
-  productreview_reviews: "productreview_reviews",
-  trustpilot_rating: "trustpilot_rating",
-  trustpilot_reviews: "trustpilot_reviews",
-  ratemyagent_rating: "ratemyagent_rating",
-  ratemyagent_reviews: "ratemyagent_reviews",
 
   ig: "instagram_followers",
   fb: "facebook_followers",
@@ -72,22 +60,24 @@ const keyAliasMap: Record<string, string> = {
   facebook_followers: "facebook_followers",
   tiktok_followers: "tiktok_followers",
   youtube_subscribers: "youtube_subscribers",
-  linkedin_connections: "linkedin_connections",
   linkedin_followers: "linkedin_followers",
-  pinterest_followers: "pinterest_followers",
   x_followers: "x_followers",
-  snapchat_followers: "snapchat_followers",
-
-  social_media_presence: "social_media_presence",
   total_followers: "total_followers",
   authority_score: "authority_score",
-  last_updated: "last_updated",
+  buyerhqrank: "buyerhqrank",
+  active: "is_active",
+  is_active: "is_active",
+  slug: "slug",
 };
 
 export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
   const sourceRows = Array.isArray(input) ? input : [input];
   const rows: AgentInsert[] = [];
   const errors: string[] = [];
+  const keyCount = new Map<string, number>();
+  const nameCount = new Map<string, number>();
+  const duplicateAgencyKeys = new Set<string>();
+  const duplicateAgentNames = new Set<string>();
 
   sourceRows.forEach((rawItem, index) => {
     if (!rawItem || typeof rawItem !== "object") {
@@ -113,27 +103,18 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       google_reviews: raw.google_reviews,
       facebook_rating: raw.facebook_rating,
       facebook_reviews: raw.facebook_reviews,
-      productreview_rating: raw.productreview_rating,
-      productreview_reviews: raw.productreview_reviews,
-      trustpilot_rating: raw.trustpilot_rating,
-      trustpilot_reviews: raw.trustpilot_reviews,
-      ratemyagent_rating: raw.ratemyagent_rating,
-      ratemyagent_reviews: raw.ratemyagent_reviews,
       profile_description: raw.profile_description,
       about: raw.about,
-      social_media_presence: raw.social_media_presence,
-      total_followers: raw.total_followers,
-      authority_score: raw.authority_score,
+      social_platforms: raw.social_platforms,
       instagram_followers: raw.instagram_followers,
       facebook_followers: raw.facebook_followers,
       tiktok_followers: raw.tiktok_followers,
       youtube_subscribers: raw.youtube_subscribers,
-      linkedin_connections: raw.linkedin_connections,
       linkedin_followers: raw.linkedin_followers,
-      pinterest_followers: raw.pinterest_followers,
       x_followers: raw.x_followers,
-      snapchat_followers: raw.snapchat_followers,
-      last_updated: raw.last_updated,
+      total_followers: raw.total_followers,
+      authority_score: raw.authority_score,
+      buyerhqrank: raw.buyerhqrank,
     });
 
     if (!simplified.agency_name) {
@@ -151,11 +132,22 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       return;
     }
 
+    const duplicateKey = buildDuplicateAgencyKey(simplified.agency_name, simplified.state);
+    const seenCount = keyCount.get(duplicateKey) ?? 0;
+    keyCount.set(duplicateKey, seenCount + 1);
+    if (seenCount > 0) duplicateAgencyKeys.add(duplicateKey);
+
     const computed = applyBuyerhqrankToSimplifiedRow(simplified);
     const agentName =
       toText(raw.name) ||
       `${toText(raw.first_name)} ${toText(raw.last_name)}`.trim() ||
       computed.agency_name;
+    const nameKey = normalizeDuplicateText(agentName);
+    if (nameKey) {
+      const seenNameCount = nameCount.get(nameKey) ?? 0;
+      nameCount.set(nameKey, seenNameCount + 1);
+      if (seenNameCount > 0) duplicateAgentNames.add(agentName);
+    }
     const suburbs = csvToArray(computed.suburbs);
     const areaSpecialist = parseAreaSpecialistSuburb(computed.area_specialist);
     if (areaSpecialist && !suburbs.some((item) => item.toLowerCase() === areaSpecialist.toLowerCase())) {
@@ -197,42 +189,47 @@ export function parseBulkAgentRows(input: unknown): AgentBulkParseResult {
       is_verified: computed.verified === "Verified",
       verified: computed.verified,
       is_active: toBoolean(raw.is_active) ?? true,
-      licence_number: toNullableText(raw.licence_number),
       fee_structure: computed.fee_structure || null,
       website_url: websiteUrl,
       linkedin_url: toNullableText(raw.linkedin_url),
       profile_status: computed.profile_status,
       claimed_at: computed.claimed_at,
-      social_media_presence: computed.social_media_presence,
+      social_media_presence: buildSocialPresenceFallback(computed.social_platforms),
       total_followers: computed.total_followers,
       authority_score: computed.authority_score,
+      buyerhqrank: computed.buyerhqrank,
       instagram_followers: computed.instagram_followers,
       facebook_followers: computed.facebook_followers,
       tiktok_followers: computed.tiktok_followers,
       youtube_subscribers: computed.youtube_subscribers,
-      linkedin_connections: computed.linkedin_connections,
+      linkedin_connections: 0,
       linkedin_followers: computed.linkedin_followers,
-      pinterest_followers: computed.pinterest_followers,
+      pinterest_followers: 0,
       x_followers: computed.x_followers,
-      snapchat_followers: computed.snapchat_followers,
+      snapchat_followers: 0,
       google_rating: computed.google_rating,
       google_reviews: computed.google_reviews,
       facebook_rating: computed.facebook_rating,
       facebook_reviews: computed.facebook_reviews,
-      productreview_rating: computed.productreview_rating,
-      productreview_reviews: computed.productreview_reviews,
-      trustpilot_rating: computed.trustpilot_rating,
-      trustpilot_reviews: computed.trustpilot_reviews,
-      ratemyagent_rating: computed.ratemyagent_rating,
-      ratemyagent_reviews: computed.ratemyagent_reviews,
-      last_updated: computed.last_updated || new Date().toISOString(),
+      productreview_rating: 0,
+      productreview_reviews: 0,
+      trustpilot_rating: 0,
+      trustpilot_reviews: 0,
+      ratemyagent_rating: 0,
+      ratemyagent_reviews: 0,
+      last_updated: new Date().toISOString(),
     };
 
-    const withDerived = applyBuyerhqrankFields(baseRow, computed.last_updated || new Date().toISOString());
+    const withDerived = applyBuyerhqrankFields(baseRow);
     rows.push(withDerived as AgentInsert);
   });
 
-  return { rows, errors };
+  return {
+    rows,
+    errors,
+    duplicateAgencyKeys: Array.from(duplicateAgencyKeys),
+    duplicateAgentNames: Array.from(duplicateAgentNames),
+  };
 }
 
 export function buildCompanyLogoUrl(websiteUrl: string) {
@@ -243,6 +240,11 @@ export function buildCompanyLogoUrl(websiteUrl: string) {
   } catch {
     return null;
   }
+}
+
+export function buildDuplicateAgencyKey(agencyName: string, state: string) {
+  void state;
+  return agencyName.trim().toLowerCase();
 }
 
 function normalizeInputRow(raw: Record<string, unknown>) {
@@ -293,6 +295,10 @@ function normalizeWebsiteUrl(value: string | null) {
   return `https://${value}`;
 }
 
+function normalizeDuplicateText(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function toBoolean(value: unknown) {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
@@ -327,4 +333,9 @@ function buildInternalUploadEmail(input: {
   const statePart = input.state.toLowerCase() || "na";
   const localPart = [slugPart || "agent", statePart, suburbPart || "all"].filter(Boolean).join(".");
   return `${localPart}@profiles.buyerhq.internal`;
+}
+
+function buildSocialPresenceFallback(platforms: string) {
+  if (!platforms.trim()) return "D";
+  return "D+";
 }
