@@ -29,6 +29,7 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const sessionInitKey = "buyerhq_session_initialized";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
@@ -40,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const bootstrap = async () => {
+      // Prevent silent carry-over between browser sessions/tabs.
+      if (typeof window !== "undefined") {
+        const hasInit = window.sessionStorage.getItem(sessionInitKey) === "1";
+        if (!hasInit) {
+          window.sessionStorage.setItem(sessionInitKey, "1");
+          await supabase.auth.signOut({ scope: "local" });
+        }
+      }
+
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
@@ -66,6 +76,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase]);
 
+  useEffect(() => {
+    const onPageClose = () => {
+      void supabase.auth.signOut({ scope: "local" });
+    };
+
+    window.addEventListener("beforeunload", onPageClose);
+    window.addEventListener("pagehide", onPageClose);
+    return () => {
+      window.removeEventListener("beforeunload", onPageClose);
+      window.removeEventListener("pagehide", onPageClose);
+    };
+  }, [supabase]);
+
   const signIn = useCallback(
     async ({ email, password }: SignInArgs) => {
       const { error } = await supabase.auth.signInWithPassword({
@@ -78,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
   }, [supabase]);
 
   const resetPassword = useCallback(

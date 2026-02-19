@@ -20,14 +20,19 @@ const stateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
 
 const starterJson = `[
   {
-    "name": "Jordan Walsh",
-    "email": "jordan.walsh@example.com",
-    "agency_name": "Harbour Buyer Advisory",
-    "state": "NSW",
-    "suburbs": ["Bondi", "Coogee"],
-    "specializations": ["Luxury", "Negotiation"],
-    "years_experience": 8,
-    "fee_structure": "Fixed fee from $12,500"
+    "agency_name": "Carter Humphries",
+    "state": "VIC",
+    "suburbs": ["South Yarra"],
+    "specializations": ["Commercial"],
+    "years_experience": 0,
+    "properties_purchased": 0,
+    "verified_status": true,
+    "area_specialist": "South Yarra, VIC",
+    "fee_structure": "Fee details shared on request.",
+    "google_rating": 0.0,
+    "google_reviews": 0,
+    "profile_description": "Specialist buyer representation with a strategy-first approach across local and off-market opportunities.",
+    "about": "Profile bio pending."
   }
 ]`;
 
@@ -51,15 +56,15 @@ export default function BulkUploadPage() {
       }
 
       const raw = rawItem as Record<string, unknown>;
-      const name = toText(raw.name) || `${toText(raw.first_name)} ${toText(raw.last_name)}`.trim();
-      const email = toText(raw.email).toLowerCase();
+      const agencyName = toText(raw.agency_name) || toText(raw.business_name);
+      const name =
+        toText(raw.name) ||
+        toText(raw.agent_name) ||
+        `${toText(raw.first_name)} ${toText(raw.last_name)}`.trim() ||
+        agencyName;
 
       if (!name) {
-        errors.push(`Row ${index + 1}: missing required field "name".`);
-        return;
-      }
-      if (!email) {
-        errors.push(`Row ${index + 1}: missing required field "email".`);
+        errors.push(`Row ${index + 1}: provide at least one of "name", "agent_name", or "agency_name".`);
         return;
       }
 
@@ -73,22 +78,45 @@ export default function BulkUploadPage() {
         toStringArray(raw.suburbs) ??
         toStringArray(raw.suburb_coverage) ??
         (toText(raw.primary_suburb) ? [toText(raw.primary_suburb)] : []);
+      const areaSpecialist = toText(raw.area_specialist);
+      const areaSuburb = parseAreaSpecialistSuburb(areaSpecialist);
+      if (areaSuburb && !suburbs.some((item) => item.toLowerCase() === areaSuburb.toLowerCase())) {
+        suburbs.unshift(areaSuburb);
+      }
 
       const specializations = toStringArray(raw.specializations) ?? toStringArray(raw.specialisations) ?? [];
+      const email =
+        toText(raw.email).toLowerCase() ||
+        buildInternalUploadEmail({
+          name,
+          agencyName,
+          state,
+          primarySuburb: suburbs[0] ?? "",
+          rowIndex: index,
+        });
+      const profileDescription = toText(raw.profile_description);
+      const about = toText(raw.about);
+      const mergedBio =
+        [profileDescription, about, toText(raw.bio)]
+          .filter(Boolean)
+          .join("\n\n")
+          .trim() || null;
 
       rows.push({
         name,
         email,
         phone: toText(raw.phone) || null,
-        agency_name: toText(raw.agency_name) || toText(raw.business_name) || null,
-        bio: toText(raw.bio) || null,
+        agency_name: agencyName || null,
+        bio: mergedBio,
         avatar_url: toText(raw.avatar_url) || toText(raw.headshot_url) || null,
         state: state ? (state as AgentInsert["state"]) : null,
         suburbs,
         specializations,
         years_experience: toInt(raw.years_experience),
         properties_purchased: toInt(raw.properties_purchased) ?? toInt(raw.total_properties),
-        is_verified: toBoolean(raw.is_verified) ?? false,
+        avg_rating: toFloat(raw.avg_rating) ?? toFloat(raw.google_rating),
+        review_count: toInt(raw.review_count) ?? toInt(raw.google_reviews),
+        is_verified: toBoolean(raw.is_verified) ?? toBoolean(raw.verified_status) ?? false,
         is_active: toBoolean(raw.is_active) ?? true,
         licence_number: toText(raw.licence_number) || null,
         fee_structure: toText(raw.fee_structure) || toText(raw.fee_description) || null,
@@ -210,8 +238,9 @@ export default function BulkUploadPage() {
           <Card className="space-y-2 p-4">
             <h2 className="text-subheading">Schema notes</h2>
             <ul className="space-y-1 text-caption text-text-secondary">
-              <li>Required fields: name, email</li>
-              <li>Supports legacy keys: business_name, primary_state, specialisations</li>
+              <li>Required fields: name/agency_name and state (email is auto-generated if omitted)</li>
+              <li>Supports alias keys: verified_status, google_rating, google_reviews, area_specialist, about</li>
+              <li>All generated emails use internal placeholders (not public contact emails)</li>
               <li>Upsert key: email (existing records will be updated)</li>
               <li>State must be one of NSW, VIC, QLD, WA, SA, TAS, ACT, NT</li>
             </ul>
@@ -274,6 +303,15 @@ function toInt(value: unknown) {
   return null;
 }
 
+function toFloat(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function toBoolean(value: unknown) {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
@@ -281,4 +319,36 @@ function toBoolean(value: unknown) {
     if (value.toLowerCase() === "false") return false;
   }
   return null;
+}
+
+function parseAreaSpecialistSuburb(value: string) {
+  if (!value.trim()) return "";
+  const beforeComma = value.split(",")[0]?.trim() ?? "";
+  return beforeComma;
+}
+
+function buildInternalUploadEmail(input: {
+  name: string;
+  agencyName: string;
+  state: string;
+  primarySuburb: string;
+  rowIndex: number;
+}) {
+  const slugPart = (
+    input.agencyName ||
+    input.name ||
+    `agent-${input.rowIndex + 1}`
+  )
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 40);
+  const suburbPart = input.primarySuburb
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 20);
+  const statePart = input.state.toLowerCase() || "na";
+  const localPart = [slugPart || "agent", statePart, suburbPart || "all"].filter(Boolean).join(".");
+  return `${localPart}@profiles.buyerhq.internal`;
 }

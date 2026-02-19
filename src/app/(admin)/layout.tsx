@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 const adminLinks = [
@@ -20,6 +22,7 @@ const adminLinks = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   return (
     <ProtectedRoute requireAdmin>
@@ -48,6 +51,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               ))}
             </nav>
+            <Button
+              className="mt-4"
+              variant="secondary"
+              fullWidth
+              onClick={async () => {
+                await signOut();
+                window.location.href = "/login?next=/admin";
+              }}
+            >
+              Sign Out
+            </Button>
           </aside>
 
           <div>{children}</div>
@@ -69,6 +83,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {link.label}
             </Link>
           ))}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={async () => {
+              await signOut();
+              window.location.href = "/login?next=/admin";
+            }}
+          >
+            Sign Out
+          </Button>
         </div>
       </div>
     </ProtectedRoute>
