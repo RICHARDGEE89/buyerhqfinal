@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   description: "Sign in to the BuyerHQ agent portal.",
 };
 
-export default function AgentPortalLoginPage() {
-  return <LoginContent />;
+export default function AgentPortalLoginPage({
+  searchParams,
+}: {
+  searchParams?: { next?: string };
+}) {
+  return <LoginContent nextPath={searchParams?.next} />;
 }
