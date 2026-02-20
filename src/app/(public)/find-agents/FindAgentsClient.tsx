@@ -18,6 +18,7 @@ import { DirectAgentCard } from "@/components/DirectAgentCard";
 import { DirectCompareBar } from "@/components/DirectCompareBar";
 import type { AgentRow } from "@/lib/database.types";
 import { toPublicAgentView, type PublicAgentView } from "@/lib/public-agent";
+import { cn } from "@/lib/utils";
 
 type LocationSuggestion = {
   suburb: string;
