@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import AgentsClientOnly from "./AgentsClientOnly";
+import FindAgentsClient from "../find-agents/FindAgentsClient";
 
 export const metadata: Metadata = {
   title: "Find Agents | BuyerHQ",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function AgentsPage() {
-  return <AgentsClientOnly />;
+  return <FindAgentsClient />;
 }

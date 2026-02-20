@@ -1,89 +1,77 @@
 import Link from "next/link";
+import { Home, Mail } from "lucide-react";
 
 const footerLinks = {
-  buyer: [
-    { name: "Find Agents", href: "/agents" },
-    { name: "Match Quiz", href: "/quiz" },
-    { name: "How It Works", href: "/how-it-works" },
-    { name: "Blog", href: "/blog" },
+  "Buyer Journey": [
+    { label: "Find Agents", href: "/find-agents" },
+    { label: "Take Match Quiz", href: "/match-quiz" },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Property Journey", href: "/journey" },
+    { label: "Buyer DNA Profile", href: "/buyer-profile" },
   ],
-  resources: [
-    { name: "Why BuyerHQ", href: "/why-buyerhq" },
-    { name: "About", href: "/about" },
-    { name: "Buyer Sign Up", href: "/signup" },
-    { name: "Buyer Login", href: "/login" },
+  "Tools & Resources": [
+    { label: "Calculator Suite", href: "/tools" },
+    { label: "Suburb Directory", href: "/suburbs" },
+    { label: "Blog", href: "/blog" },
+    { label: "FAQ", href: "/faq" },
+    { label: "About BuyerHQ", href: "/about" },
   ],
-  support: [
-    { name: "FAQ", href: "/faq" },
-    { name: "Contact", href: "/contact" },
-    { name: "About", href: "/about" },
-    { name: "Privacy", href: "/privacy" },
+  Support: [
+    { label: "Contact Us", href: "/contact" },
+    { label: "Buyer Login", href: "/login" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
   ],
 };
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-surface">
-      <div className="container py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="bg-navy text-white">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
-            <Link href="/" className="font-mono text-heading font-semibold text-text-primary">
-              BuyerHQ
-            </Link>
-            <p className="max-w-xs text-body-sm text-text-secondary">
-              Verified directory intelligence with collated review signals and negotiated fee outcomes,
-              brokered by BuyerHQ from request to introduction.
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-white/15">
+                <Home className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-display text-xl font-bold">
+                Buyer<span className="text-white/45">HQ</span>
+              </span>
+            </div>
+            <p className="max-w-[240px] text-sm leading-relaxed text-white/55">
+              Verified review intelligence and negotiated fee outcomes in one place.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/signup" className="rounded-md bg-accent px-3 py-2 text-caption font-semibold text-text-inverse">
-                Buyer Sign Up
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-md border border-border px-3 py-2 text-caption text-text-secondary transition-colors hover:text-text-primary"
-              >
-                Buyer Login
-              </Link>
+            <div className="space-y-2 text-sm text-white/55">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-white/40" />
+                <span>hello@buyerhq.com.au</span>
+              </div>
             </div>
           </div>
 
-          <FooterColumn title="Buyer Journey" links={footerLinks.buyer} />
-          <FooterColumn title="Resources" links={footerLinks.resources} />
-          <FooterColumn title="Support" links={footerLinks.support} />
+          {Object.entries(footerLinks).map(([category, links]) => (
+            <div key={category} className="space-y-4">
+              <h4 className="font-display text-xs font-semibold uppercase tracking-widest text-white/50">
+                {category}
+              </h4>
+              <ul className="space-y-2.5">
+                {links.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href} className="text-sm text-white/55 transition-colors hover:text-white">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
-          <p className="font-mono text-caption text-text-muted">
-            © {new Date().getFullYear()} BuyerHQ. All rights reserved.
-          </p>
-          <span className="inline-flex w-fit items-center rounded-full border border-border-light px-3 py-1 font-mono text-caption text-text-secondary">
-            Built in Australia
-          </span>
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-white/35 md:flex-row">
+          <span>© {new Date().getFullYear()} BuyerHQ Pty Ltd. All rights reserved.</span>
+          <span>Australian Property Advisory Platform</span>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: Array<{ name: string; href: string }>;
-}) {
-  return (
-    <div className="space-y-3">
-      <h3 className="font-mono text-label uppercase text-text-secondary">{title}</h3>
-      <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link href={link.href} className="text-body-sm text-text-secondary transition-colors hover:text-text-primary">
-              {link.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

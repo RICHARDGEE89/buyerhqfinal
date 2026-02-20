@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
-import { StickyBuyerCtaBar } from "@/components/layout/StickyBuyerCtaBar";
 import { AuthProvider } from "@/context/AuthContext";
 
 import "./globals.css";
@@ -50,12 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <Header />
-          <main className="min-h-screen bg-background text-text-primary">{children}</main>
-          <StickyBuyerCtaBar />
-          <Footer />
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
