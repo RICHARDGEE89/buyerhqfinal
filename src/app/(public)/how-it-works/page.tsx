@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CheckCircle, MessageSquare, Search, Shield, Star } from "lucide-react";
+import { ArrowRight, CheckCircle, MessageSquare, Search, Star } from "lucide-react";
 
 import { CTABanner } from "@/components/CTABanner";
 
