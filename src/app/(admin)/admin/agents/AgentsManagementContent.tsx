@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ShieldCheck, Trash2 } from "lucide-react";
+import { ShieldCheck, Trash2, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -49,6 +49,19 @@ const specialistOptions = [
   "Off-Market Access",
   "Negotiation",
 ];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type QuickAddDraft = {
+  name: string;
+  email: string;
+  agency_name: string;
+  state: string;
+  phone: string;
+  suburbs: string;
+  specializations: string;
+  fee_structure: string;
+  website_url: string;
+};
 
 export default function AgentsManagementContent() {
   const [loading, setLoading] = useState(true);
@@ -61,6 +74,19 @@ export default function AgentsManagementContent() {
   const [activeAction, setActiveAction] = useState<Record<string, ActionValue>>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState<BulkActionValue>(null);
+  const [quickAdd, setQuickAdd] = useState<QuickAddDraft>({
+    name: "",
+    email: "",
+    agency_name: "",
+    state: "",
+    phone: "",
+    suburbs: "",
+    specializations: "",
+    fee_structure: "",
+    website_url: "",
+  });
+  const [quickAddBusy, setQuickAddBusy] = useState(false);
+  const [quickAddResult, setQuickAddResult] = useState<string | null>(null);
 
   const hydrateDrafts = useCallback((rows: AgentRow[]) => {
     const next: Record<string, AgentDraft> = {};
@@ -170,6 +196,66 @@ export default function AgentsManagementContent() {
         [key]: value,
       },
     }));
+  };
+
+  const updateQuickAdd = <K extends keyof QuickAddDraft>(key: K, value: QuickAddDraft[K]) => {
+    setQuickAdd((current) => ({ ...current, [key]: value }));
+  };
+
+  const createQuickAgent = async () => {
+    const name = quickAdd.name.trim();
+    const email = quickAdd.email.trim().toLowerCase();
+    const agencyName = quickAdd.agency_name.trim();
+    const state = quickAdd.state.trim().toUpperCase();
+
+    if (!name || !email || !agencyName || !state) {
+      setQuickAddResult("Name, email, agency, and state are required.");
+      return;
+    }
+    if (!emailPattern.test(email)) {
+      setQuickAddResult("Enter a valid email address.");
+      return;
+    }
+
+    setQuickAddBusy(true);
+    setQuickAddResult(null);
+    setError(null);
+
+    try {
+      await runAdminAction({
+        type: "create_agent",
+        agent: {
+          name,
+          email,
+          agency_name: agencyName,
+          state,
+          phone: quickAdd.phone.trim() || null,
+          suburbs: splitCsv(quickAdd.suburbs),
+          specializations: splitCsv(quickAdd.specializations),
+          fee_structure: quickAdd.fee_structure.trim() || null,
+          website_url: quickAdd.website_url.trim() || null,
+          is_active: true,
+          is_verified: false,
+        },
+      });
+      setQuickAddResult("Agent added successfully.");
+      setQuickAdd({
+        name: "",
+        email: "",
+        agency_name: "",
+        state: "",
+        phone: "",
+        suburbs: "",
+        specializations: "",
+        fee_structure: "",
+        website_url: "",
+      });
+      await loadAgents();
+    } catch (createError) {
+      setQuickAddResult(createError instanceof Error ? createError.message : "Unable to add agent.");
+    } finally {
+      setQuickAddBusy(false);
+    }
   };
 
   const saveRow = async (agentId: string) => {
@@ -298,7 +384,7 @@ export default function AgentsManagementContent() {
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-surface p-6">
-        <h1 className="text-heading">Agent management spreadsheet</h1>
+        <h1 className="text-heading">Agent management</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
           Edit profile data inline, claim profiles, and keep BUYERHQRANK metrics up to date automatically.
         </p>
@@ -308,6 +394,84 @@ export default function AgentsManagementContent() {
           </p>
         ) : null}
       </section>
+
+      <Card className="space-y-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-subheading">Quick add agent</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Fast onboarding for new agents without editing the full spreadsheet.
+            </p>
+          </div>
+          <Button loading={quickAddBusy} disabled={quickAddBusy} onClick={() => void createQuickAgent()}>
+            <UserPlus size={14} />
+            Add agent
+          </Button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Input
+            label="Full name"
+            value={quickAdd.name}
+            onChange={(event) => updateQuickAdd("name", event.target.value)}
+            placeholder="Required"
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={quickAdd.email}
+            onChange={(event) => updateQuickAdd("email", event.target.value)}
+            placeholder="Required"
+          />
+          <Input
+            label="Agency"
+            value={quickAdd.agency_name}
+            onChange={(event) => updateQuickAdd("agency_name", event.target.value)}
+            placeholder="Required"
+          />
+          <Select
+            label="State"
+            value={quickAdd.state}
+            onChange={(event) => updateQuickAdd("state", event.target.value)}
+            options={stateOptions
+              .filter(Boolean)
+              .map((item) => ({ value: item, label: item }))}
+            placeholder="Required"
+          />
+          <Input
+            label="Phone"
+            value={quickAdd.phone}
+            onChange={(event) => updateQuickAdd("phone", event.target.value)}
+          />
+          <Input
+            label="Suburbs (comma separated)"
+            value={quickAdd.suburbs}
+            onChange={(event) => updateQuickAdd("suburbs", event.target.value)}
+            placeholder="e.g. Newtown, Surry Hills"
+          />
+          <Input
+            label="Specializations (comma separated)"
+            value={quickAdd.specializations}
+            onChange={(event) => updateQuickAdd("specializations", event.target.value)}
+            placeholder="e.g. Negotiation, Auction Bidding"
+          />
+          <Input
+            label="Fee structure"
+            value={quickAdd.fee_structure}
+            onChange={(event) => updateQuickAdd("fee_structure", event.target.value)}
+          />
+        </div>
+        <Input
+          label="Website URL"
+          value={quickAdd.website_url}
+          onChange={(event) => updateQuickAdd("website_url", event.target.value)}
+          placeholder="https://"
+        />
+        {quickAddResult ? (
+          <p className="rounded-md border border-border-light bg-surface-2 px-3 py-2 text-body-sm text-text-secondary">
+            {quickAddResult}
+          </p>
+        ) : null}
+      </Card>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total" value={agents.length} />

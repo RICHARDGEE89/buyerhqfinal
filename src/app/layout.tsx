@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   description:
     "Find verified buyer's agents across Australia. Compare specialists and submit brokered enquiries managed by BuyerHQ.",
   metadataBase: new URL("https://buyerhq.com.au"),
+  icons: {
+    icon: [{ url: "/icon", type: "image/png", sizes: "32x32" }],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+    shortcut: ["/icon"],
+  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "BuyerHQ | Australia's Verified Buyer's Agent Directory",
     description:

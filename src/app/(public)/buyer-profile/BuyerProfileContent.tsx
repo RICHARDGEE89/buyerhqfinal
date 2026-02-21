@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, RefreshCw } from "lucide-react";
+
+import { LoginRequiredCard } from "@/components/auth/LoginRequiredCard";
+import { createClient } from "@/lib/supabase/client";
 
 type ArchetypeKey = "researcher" | "decisive" | "investor" | "family";
 
@@ -94,6 +97,9 @@ const questions: Array<{
 ];
 
 export default function BuyerProfileContent() {
+  const supabase = useMemo(() => createClient(), []);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -125,6 +131,17 @@ export default function BuyerProfileContent() {
   }, [answers]);
 
   const current = questions[step];
+
+  useEffect(() => {
+    const hydrateUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsAuthenticated(Boolean(user));
+      setAuthResolved(true);
+    };
+    void hydrateUser();
+  }, [supabase]);
 
   return (
     <div className="py-12">
@@ -171,6 +188,16 @@ export default function BuyerProfileContent() {
               </button>
             ) : null}
           </div>
+        ) : !authResolved ? (
+          <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-card">
+            Checking your account...
+          </div>
+        ) : !isAuthenticated ? (
+          <LoginRequiredCard
+            title="Sign in to unlock your Buyer DNA result"
+            description="Your final archetype and tailored next steps are available after login."
+            nextPath="/buyer-profile"
+          />
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-6 shadow-card">

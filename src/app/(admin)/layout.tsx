@@ -16,6 +16,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/admin-login?next=/admin");
   }
   if (!isAdminEmail(user.email)) {
+    const { data: profileRow } = await supabase
+      .from("agent_profiles")
+      .select("agent_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileRow?.agent_id) {
+      redirect("/agent-portal");
+    }
     redirect("/dashboard");
   }
 

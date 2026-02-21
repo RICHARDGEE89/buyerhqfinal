@@ -26,6 +26,8 @@ const policyFixHint =
 type DbTables = Database["public"]["Tables"];
 type TableName = keyof DbTables;
 type DuplicateResolutionStrategy = "abort" | "update_existing" | "skip_duplicates";
+const createAgentStateCodes = new Set(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]);
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function getPrivilegedClient() {
   const serverClient = createServerClient();
@@ -438,6 +440,22 @@ export async function POST(request: Request) {
     | { type: "upsert_review_source"; source: Database["public"]["Tables"]["agency_review_sources"]["Insert"] & { id?: string } }
     | { type: "delete_review_source"; id: string }
     | {
+      type: "create_agent";
+      agent: {
+        name: string;
+        email: string;
+        agency_name?: string | null;
+        phone?: string | null;
+        state?: string | null;
+        suburbs?: string[] | null;
+        specializations?: string[] | null;
+        fee_structure?: string | null;
+        website_url?: string | null;
+        is_verified?: boolean;
+        is_active?: boolean;
+      };
+    }
+    | {
       type: "set_external_review_state";
       id: string;
       patch: Pick<
@@ -461,6 +479,101 @@ export async function POST(request: Request) {
     const fail = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
 
     switch (payload.type) {
+    case "create_agent": {
+      const name = payload.agent?.name?.trim() ?? "";
+      const email = payload.agent?.email?.trim().toLowerCase() ?? "";
+      if (!name || !email) return fail("Agent name and email are required.");
+      if (!emailPattern.test(email)) return fail("Enter a valid agent email.");
+
+      const normalizedState = (payload.agent.state ?? "").trim().toUpperCase();
+      const state = createAgentStateCodes.has(normalizedState)
+        ? (normalizedState as Database["public"]["Tables"]["agents"]["Row"]["state"])
+        : null;
+      const suburbs = Array.from(
+        new Set(
+          (payload.agent.suburbs ?? [])
+            .map((item) => (typeof item === "string" ? item.trim() : ""))
+            .filter(Boolean)
+        )
+      );
+      const specializations = Array.from(
+        new Set(
+          (payload.agent.specializations ?? [])
+            .map((item) => (typeof item === "string" ? item.trim() : ""))
+            .filter(Boolean)
+        )
+      );
+      const isVerified = Boolean(payload.agent.is_verified);
+      const now = new Date().toISOString();
+      let rows: Database["public"]["Tables"]["agents"]["Insert"][] = [
+        applyBuyerhqrankFields({
+          name,
+          email,
+          agency_name: payload.agent.agency_name?.trim() || null,
+          phone: payload.agent.phone?.trim() || null,
+          state,
+          suburbs,
+          specializations,
+          fee_structure: payload.agent.fee_structure?.trim() || null,
+          website_url: payload.agent.website_url?.trim() || null,
+          is_verified: isVerified,
+          verified: isVerified ? "Verified" : "Unverified",
+          profile_status: "Unclaimed",
+          is_active: payload.agent.is_active ?? true,
+          slug: buildAgentSlug(name, email),
+          last_updated: now,
+        }, now) as Database["public"]["Tables"]["agents"]["Insert"],
+      ];
+      const strippedColumns = new Set<string>();
+      let error: { message: string } | null = null;
+
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        const upsertResult = await client.from("agents").upsert(rows, { onConflict: "email" }).select("id").limit(1);
+        error = upsertResult.error;
+        if (!error) break;
+
+        if (isOnConflictConstraintError(error.message)) {
+          const manual = await manualUpsertAgentsWithoutConflict(client, rows);
+          error = manual.error;
+          break;
+        }
+
+        const missingColumn = extractMissingColumnName(error.message, "agents");
+        if (missingColumn) {
+          strippedColumns.add(missingColumn);
+          rows = stripColumnFromAgentRows(rows, missingColumn);
+          continue;
+        }
+
+        const notNullColumn = extractNotNullColumnName(error.message);
+        if (notNullColumn) {
+          const applied = applyAgentNotNullFallback(rows, notNullColumn);
+          if (applied.changed) {
+            rows = applied.rows;
+            continue;
+          }
+        }
+
+        break;
+      }
+
+      if (error) return fail(error.message, 500);
+
+      const { data: insertedRows, error: lookupError } = await client
+        .from("agents")
+        .select("id")
+        .eq("email", email)
+        .limit(1);
+      if (lookupError) return fail(lookupError.message, 500);
+
+      return NextResponse.json({
+        success: true,
+        id: insertedRows?.[0]?.id ?? null,
+        schemaFallback: strippedColumns.size > 0,
+        strippedColumns: Array.from(strippedColumns),
+      });
+    }
+
     case "update_agent": {
       const allowedFields = new Set([
         "is_verified",

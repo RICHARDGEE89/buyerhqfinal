@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { AgentCard } from "@/components/AgentCard";
+import { LoginRequiredCard } from "@/components/auth/LoginRequiredCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -35,6 +36,7 @@ const priorityOptions = [
   "Investment strategy",
   "First home guidance",
 ];
+const quizDraftStorageKey = "buyerhq-match-quiz-draft-v1";
 
 const specializationMap: Record<string, string> = {
   "Price negotiation": "Negotiation",
@@ -52,6 +54,8 @@ type LocationSuggestion = {
 
 export default function QuizContent() {
   const supabase = useMemo(() => createClient(), []);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [preselectedAgentId, setPreselectedAgentId] = useState("");
   const [step, setStep] = useState(0);
   const [buyType, setBuyType] = useState("");
@@ -91,6 +95,52 @@ export default function QuizContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    try {
+      const rawDraft = window.sessionStorage.getItem(quizDraftStorageKey);
+      if (!rawDraft) return;
+      const draft = JSON.parse(rawDraft) as {
+        step?: number;
+        buyType?: string;
+        budget?: string;
+        state?: string;
+        targetSuburb?: string;
+        selectedLocation?: LocationSuggestion | null;
+        priorities?: string[];
+      };
+      if (typeof draft.buyType === "string") setBuyType(draft.buyType);
+      if (typeof draft.budget === "string") setBudget(draft.budget);
+      if (typeof draft.state === "string") setState(draft.state);
+      if (typeof draft.targetSuburb === "string") setTargetSuburb(draft.targetSuburb);
+      if (draft.selectedLocation && typeof draft.selectedLocation === "object") {
+        setSelectedLocation(draft.selectedLocation);
+      }
+      if (Array.isArray(draft.priorities)) {
+        setPriorities(draft.priorities.filter((item) => typeof item === "string"));
+      }
+      if (typeof draft.step === "number" && Number.isFinite(draft.step)) {
+        setStep(Math.max(0, Math.min(5, Math.floor(draft.step))));
+      }
+    } catch {
+      // Ignore invalid local draft payloads and continue with defaults.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const draft = {
+      step,
+      buyType,
+      budget,
+      state,
+      targetSuburb,
+      selectedLocation,
+      priorities,
+    };
+    window.sessionStorage.setItem(quizDraftStorageKey, JSON.stringify(draft));
+  }, [budget, buyType, priorities, selectedLocation, state, step, targetSuburb]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     const agentFromQuery = new URLSearchParams(window.location.search).get("agent")?.trim() ?? "";
     setPreselectedAgentId(agentFromQuery);
   }, []);
@@ -100,7 +150,12 @@ export default function QuizContent() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsAuthenticated(false);
+        setAuthResolved(true);
+        return;
+      }
+      setIsAuthenticated(true);
       const first = typeof user.user_metadata?.first_name === "string" ? user.user_metadata.first_name : "";
       const last = typeof user.user_metadata?.last_name === "string" ? user.user_metadata.last_name : "";
       const phone = typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "";
@@ -108,6 +163,7 @@ export default function QuizContent() {
       if (fullName) setEnquiryName(fullName);
       if (user.email) setEnquiryEmail(user.email);
       if (phone) setEnquiryPhone(phone);
+      setAuthResolved(true);
     };
 
     void hydrateUser();
@@ -148,7 +204,7 @@ export default function QuizContent() {
   }, [selectedLocation, state, targetSuburb]);
 
   useEffect(() => {
-    if (step !== 5) return;
+    if (step !== 5 || !authResolved || !isAuthenticated) return;
 
     const fetchMatches = async () => {
       setLoadingMatches(true);
@@ -203,7 +259,7 @@ export default function QuizContent() {
     };
 
     fetchMatches();
-  }, [preselectedAgentId, priorities, selectedLocation, state, step, targetSuburb]);
+  }, [authResolved, isAuthenticated, preselectedAgentId, priorities, selectedLocation, state, step, targetSuburb]);
 
   const sendQuizEnquiry = async () => {
     setEnquiryError(null);
@@ -407,7 +463,19 @@ export default function QuizContent() {
 
         {step === 5 ? (
           <div className="mt-4 space-y-3">
-            {loadingMatches ? (
+            {!authResolved ? (
+              <p className="text-body-sm text-text-secondary">Checking your account…</p>
+            ) : null}
+
+            {authResolved && !isAuthenticated ? (
+              <LoginRequiredCard
+                title="Sign in to view your matched agents"
+                description="Your shortlist and brokered intro tools unlock once you sign in."
+                nextPath="/match-quiz"
+              />
+            ) : null}
+
+            {authResolved && isAuthenticated && loadingMatches ? (
               <div className="grid gap-3 md:grid-cols-2">
                 {Array.from({ length: 4 }, (_, i) => (
                   <AgentCardSkeleton key={i} />
@@ -415,18 +483,18 @@ export default function QuizContent() {
               </div>
             ) : null}
 
-            {matchError && !loadingMatches ? (
+            {authResolved && isAuthenticated && matchError && !loadingMatches ? (
               <ErrorState description={matchError} onRetry={() => setStep(4)} />
             ) : null}
 
-            {!loadingMatches && !matchError && matches.length === 0 ? (
+            {authResolved && isAuthenticated && !loadingMatches && !matchError && matches.length === 0 ? (
               <EmptyState
                 title="No matches yet"
                 description="Try another suburb/postcode or selecting fewer constraints."
               />
             ) : null}
 
-            {!loadingMatches && !matchError && matches.length > 0 ? (
+            {authResolved && isAuthenticated && !loadingMatches && !matchError && matches.length > 0 ? (
               <div className="space-y-4">
                 <div className="grid gap-3 md:grid-cols-2">
                   {matches.map((agent) => (
@@ -500,7 +568,24 @@ export default function QuizContent() {
               Next
             </Button>
           ) : (
-            <Button variant="secondary" onClick={() => setStep(0)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setStep(0);
+                setBuyType("");
+                setBudget("");
+                setState("");
+                setTargetSuburb("");
+                setSelectedLocation(null);
+                setPriorities([]);
+                setMatches([]);
+                setSelectedAgentId("");
+                setEnquiryMessage("");
+                if (typeof window !== "undefined") {
+                  window.sessionStorage.removeItem(quizDraftStorageKey);
+                }
+              }}
+            >
               Restart
             </Button>
           )}

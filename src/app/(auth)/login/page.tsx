@@ -4,7 +4,7 @@ import LoginContent from "./LoginContent";
 
 export const metadata: Metadata = {
   title: "Sign In | BuyerHQ",
-  description: "Sign in to your BuyerHQ buyer dashboard, agent portal, or admin console.",
+  description: "Sign in to continue your BuyerHQ account.",
 };
 
 export default function LoginPage({

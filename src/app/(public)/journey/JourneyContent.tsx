@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle, Circle } from "lucide-react";
 
+import { LoginRequiredCard } from "@/components/auth/LoginRequiredCard";
 import { Progress } from "@/components/ui/progress";
+import { createClient } from "@/lib/supabase/client";
 
 type JourneyItem = {
   id: string;
@@ -73,6 +75,9 @@ const stages: Array<{ id: string; title: string; description: string; items: Jou
 const storageKey = "buyerhq-journey-progress-v1";
 
 export default function JourneyContent() {
+  const supabase = useMemo(() => createClient(), []);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -90,9 +95,21 @@ export default function JourneyContent() {
     window.localStorage.setItem(storageKey, JSON.stringify(Array.from(checked)));
   }, [checked]);
 
+  useEffect(() => {
+    const hydrateUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsAuthenticated(Boolean(user));
+      setAuthResolved(true);
+    };
+    void hydrateUser();
+  }, [supabase]);
+
   const allItems = useMemo(() => stages.flatMap((stage) => stage.items), []);
   const doneCount = allItems.filter((item) => checked.has(item.id)).length;
   const progress = allItems.length > 0 ? Math.round((doneCount / allItems.length) * 100) : 0;
+  const isComplete = progress === 100;
 
   const toggleItem = (id: string) => {
     setChecked((current) => {
@@ -170,6 +187,37 @@ export default function JourneyContent() {
             </section>
           ))}
         </div>
+
+        {isComplete ? (
+          <section className="mt-4">
+            {!authResolved ? (
+              <div className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground shadow-card">
+                Checking your account...
+              </div>
+            ) : isAuthenticated ? (
+              <div className="rounded-lg border border-border bg-card p-5 shadow-card">
+                <h2 className="font-display text-xl font-bold text-navy">Journey complete</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Great work. Your milestone completion is unlocked and ready in your buyer dashboard.
+                </p>
+                <div className="mt-4">
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white hover:bg-navy-mid"
+                  >
+                    Open dashboard <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <LoginRequiredCard
+                title="Sign in to unlock your completed journey summary"
+                description="Create or sign in to a buyer account to save progress beyond this device."
+                nextPath="/journey"
+              />
+            )}
+          </section>
+        ) : null}
       </div>
     </div>
   );

@@ -3,15 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { isAdminEmail } from "@/lib/admin-access";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
 import { resolveAgentProfileForUser } from "@/lib/agent-profile";
 import { createClient } from "@/lib/supabase/client";
 
-const adminAllowList = new Set(["richardgoodwin@live.com", "cam.dirtymack@gmail.com"]);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginContent({ nextPath }: { nextPath: string | null }) {
@@ -57,7 +58,7 @@ export default function LoginContent({ nextPath }: { nextPath: string | null }) 
 
     const userEmail = data.user.email?.toLowerCase() ?? "";
 
-    if (adminAllowList.has(userEmail)) {
+    if (isAdminEmail(userEmail)) {
       setLoading(false);
       router.push(resolveNextPath("/admin"));
       router.refresh();
@@ -86,23 +87,25 @@ export default function LoginContent({ nextPath }: { nextPath: string | null }) 
   return (
     <div className="container grid gap-6 py-12 lg:grid-cols-[1.1fr_1fr]">
       <section className="rounded-xl border border-border bg-surface p-6 md:p-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-body-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          <ArrowLeft size={14} />
+          Back to home
+        </Link>
         <p className="font-mono text-label uppercase text-text-secondary">Welcome Back</p>
         <h1 className="mt-3 text-display text-text-primary">Sign in to BuyerHQ</h1>
         <p className="mt-3 max-w-xl text-body text-text-secondary">
-          Access buyer dashboards, agent workspaces, and admin controls from one secure login flow.
+          Continue your buying journey, manage saved agents, and pick up where you left off.
         </p>
-        <div className="mt-6 grid gap-2 text-body-sm text-text-secondary">
-          <p>• Buyer accounts go to dashboard</p>
-          <p>• Agent accounts go to agent portal</p>
-          <p>• Approved admin accounts go to admin console</p>
-        </div>
       </section>
 
       <Card className="space-y-6 p-6">
         <div>
           <h2 className="text-heading">Sign in</h2>
           <p className="mt-2 text-body-sm text-text-secondary">
-            Access your buyer dashboard, agent portal, or admin console.
+            Enter your email and password to continue.
           </p>
         </div>
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -95,6 +95,13 @@ export default function SignupPage() {
   return (
     <div className="container grid gap-6 py-12 lg:grid-cols-[1.1fr_1fr]">
       <section className="rounded-xl border border-border bg-surface p-6 md:p-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-body-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          <ArrowLeft size={14} />
+          Back to home
+        </Link>
         <p className="font-mono text-label uppercase text-text-secondary">BuyerHQ Access</p>
         <h1 className="mt-3 text-display text-text-primary">Create your buyer account</h1>
         <p className="mt-3 max-w-xl text-body text-text-secondary">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -57,6 +58,13 @@ export default function LoginContent({ nextPath }: { nextPath?: string }) {
   return (
     <div className="container flex min-h-[70vh] items-center justify-center py-10">
       <Card className="w-full max-w-md p-6">
+        <Link
+          href="/"
+          className="mb-3 inline-flex items-center gap-1 text-body-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          <ArrowLeft size={14} />
+          Back to home
+        </Link>
         <h1 className="text-heading text-text-primary">Agent Portal Login</h1>
         <p className="mt-2 text-body-sm text-text-secondary">
           Sign in to update your profile and respond to BuyerHQ admin requests.

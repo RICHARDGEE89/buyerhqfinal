@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Calculator } from "lucide-react";
+
+import { LoginRequiredCard } from "@/components/auth/LoginRequiredCard";
+import { createClient } from "@/lib/supabase/client";
 
 const stateRates: Record<string, { rate: number; fhbLimit: number }> = {
   NSW: { rate: 0.045, fhbLimit: 650000 },
@@ -20,6 +23,9 @@ function currency(value: number) {
 }
 
 export default function ToolsContent() {
+  const supabase = useMemo(() => createClient(), []);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [active, setActive] = useState<"borrow" | "repay" | "stamp">("borrow");
 
   const [income, setIncome] = useState(140000);
@@ -83,6 +89,31 @@ export default function ToolsContent() {
       exemption,
     };
   }, [firstHome, stampPrice, stampState]);
+
+  useEffect(() => {
+    const hydrateUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsAuthenticated(Boolean(user));
+      setAuthResolved(true);
+    };
+    void hydrateUser();
+  }, [supabase]);
+
+  const renderResultGate = (title: string, description: string) => {
+    if (!authResolved) {
+      return (
+        <div className="rounded-lg border border-border bg-muted/30 p-5 text-sm text-muted-foreground">
+          Checking your account...
+        </div>
+      );
+    }
+    if (!isAuthenticated) {
+      return <LoginRequiredCard title={title} description={description} nextPath="/tools" />;
+    }
+    return null;
+  };
 
   return (
     <div className="py-12">
@@ -177,25 +208,32 @@ export default function ToolsContent() {
                 />
               </label>
             </div>
-            <div className="rounded-lg border border-border bg-muted/30 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Estimated capacity</p>
-              <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(borrowing.maxLoan)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Indicative maximum loan amount</p>
-              <div className="mt-5 space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Estimated loan</span>
-                  <span className="font-semibold text-foreground">{currency(borrowing.maxLoan)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Deposit</span>
-                  <span className="font-semibold text-foreground">{currency(deposit)}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-border pt-2">
-                  <span className="text-muted-foreground">Indicative max purchase</span>
-                  <span className="font-semibold text-foreground">{currency(borrowing.maxPurchase)}</span>
+            {isAuthenticated ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Estimated capacity</p>
+                <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(borrowing.maxLoan)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Indicative maximum loan amount</p>
+                <div className="mt-5 space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Estimated loan</span>
+                    <span className="font-semibold text-foreground">{currency(borrowing.maxLoan)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Deposit</span>
+                    <span className="font-semibold text-foreground">{currency(deposit)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-2">
+                    <span className="text-muted-foreground">Indicative max purchase</span>
+                    <span className="font-semibold text-foreground">{currency(borrowing.maxPurchase)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              renderResultGate(
+                "Sign in to unlock borrowing power results",
+                "Inputs are ready. Login is required to reveal your calculated borrowing range."
+              )
+            )}
           </section>
         ) : null}
 
@@ -231,21 +269,28 @@ export default function ToolsContent() {
                 />
               </label>
             </div>
-            <div className="rounded-lg border border-border bg-muted/30 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Repayment estimate</p>
-              <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(repayment.monthly)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Monthly principal &amp; interest</p>
-              <div className="mt-5 space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Weekly repayment</span>
-                  <span className="font-semibold text-foreground">{currency(repayment.weekly)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Total interest</span>
-                  <span className="font-semibold text-foreground">{currency(repayment.totalInterest)}</span>
+            {isAuthenticated ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Repayment estimate</p>
+                <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(repayment.monthly)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Monthly principal &amp; interest</p>
+                <div className="mt-5 space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Weekly repayment</span>
+                    <span className="font-semibold text-foreground">{currency(repayment.weekly)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total interest</span>
+                    <span className="font-semibold text-foreground">{currency(repayment.totalInterest)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              renderResultGate(
+                "Sign in to unlock repayment estimates",
+                "Login to reveal monthly, weekly, and total interest calculations."
+              )
+            )}
           </section>
         ) : null}
 
@@ -285,17 +330,24 @@ export default function ToolsContent() {
                 First home buyer
               </label>
             </div>
-            <div className="rounded-lg border border-border bg-muted/30 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Indicative stamp duty</p>
-              <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(stampDuty.duty)}</p>
-              {stampDuty.exemption ? (
-                <p className="mt-1 text-sm font-semibold text-foreground">First-home concession applied at this price.</p>
-              ) : (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Estimate uses state-level baseline rates and may differ from final assessed duty.
-                </p>
-              )}
-            </div>
+            {isAuthenticated ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Indicative stamp duty</p>
+                <p className="mt-2 font-display text-4xl font-bold text-navy">{currency(stampDuty.duty)}</p>
+                {stampDuty.exemption ? (
+                  <p className="mt-1 text-sm font-semibold text-foreground">First-home concession applied at this price.</p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Estimate uses state-level baseline rates and may differ from final assessed duty.
+                  </p>
+                )}
+              </div>
+            ) : (
+              renderResultGate(
+                "Sign in to unlock stamp duty estimates",
+                "Login to reveal state-based stamp duty calculations and first-home concession outcomes."
+              )
+            )}
           </section>
         ) : null}
 
